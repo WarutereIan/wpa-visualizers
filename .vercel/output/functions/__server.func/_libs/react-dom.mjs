@@ -10775,6 +10775,6 @@ var server_nodeExports = /* @__PURE__ */ requireServer_node();
 const ReactDOMServer = /* @__PURE__ */ getDefaultExportFromCjs(server_nodeExports);
 export {
   ReactDOMServer as R,
-  reactDomExports as a,
-  requireReactDom as r
+  requireReactDom as a,
+  reactDomExports as r
 };

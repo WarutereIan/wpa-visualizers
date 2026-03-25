@@ -1658,6 +1658,120 @@ function requireRange() {
 }
 var rangeExports = /* @__PURE__ */ requireRange();
 const range = /* @__PURE__ */ getDefaultExportFromCjs(rangeExports);
+var maxBy$3 = {};
+var maxBy$2 = {};
+var hasRequiredMaxBy$2;
+function requireMaxBy$2() {
+  if (hasRequiredMaxBy$2) return maxBy$2;
+  hasRequiredMaxBy$2 = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    function maxBy2(items, getValue) {
+      if (items.length === 0) {
+        return void 0;
+      }
+      let maxElement = items[0];
+      let max = getValue(maxElement, 0, items);
+      for (let i = 1; i < items.length; i++) {
+        const element = items[i];
+        const value = getValue(element, i, items);
+        if (value > max) {
+          max = value;
+          maxElement = element;
+        }
+      }
+      return maxElement;
+    }
+    exports$1.maxBy = maxBy2;
+  })(maxBy$2);
+  return maxBy$2;
+}
+var hasRequiredMaxBy$1;
+function requireMaxBy$1() {
+  if (hasRequiredMaxBy$1) return maxBy$3;
+  hasRequiredMaxBy$1 = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    const maxBy$12 = /* @__PURE__ */ requireMaxBy$2();
+    const identity2 = /* @__PURE__ */ requireIdentity();
+    const iteratee2 = /* @__PURE__ */ requireIteratee();
+    function maxBy2(items, iteratee$1) {
+      if (items == null) {
+        return void 0;
+      }
+      return maxBy$12.maxBy(Array.from(items), iteratee2.iteratee(iteratee$1 ?? identity2.identity));
+    }
+    exports$1.maxBy = maxBy2;
+  })(maxBy$3);
+  return maxBy$3;
+}
+var maxBy$1;
+var hasRequiredMaxBy;
+function requireMaxBy() {
+  if (hasRequiredMaxBy) return maxBy$1;
+  hasRequiredMaxBy = 1;
+  maxBy$1 = requireMaxBy$1().maxBy;
+  return maxBy$1;
+}
+var maxByExports = /* @__PURE__ */ requireMaxBy();
+const maxBy = /* @__PURE__ */ getDefaultExportFromCjs(maxByExports);
+var minBy$3 = {};
+var minBy$2 = {};
+var hasRequiredMinBy$2;
+function requireMinBy$2() {
+  if (hasRequiredMinBy$2) return minBy$2;
+  hasRequiredMinBy$2 = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    function minBy2(items, getValue) {
+      if (items.length === 0) {
+        return void 0;
+      }
+      let minElement = items[0];
+      let min = getValue(minElement, 0, items);
+      for (let i = 1; i < items.length; i++) {
+        const element = items[i];
+        const value = getValue(element, i, items);
+        if (value < min) {
+          min = value;
+          minElement = element;
+        }
+      }
+      return minElement;
+    }
+    exports$1.minBy = minBy2;
+  })(minBy$2);
+  return minBy$2;
+}
+var hasRequiredMinBy$1;
+function requireMinBy$1() {
+  if (hasRequiredMinBy$1) return minBy$3;
+  hasRequiredMinBy$1 = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    const minBy$12 = /* @__PURE__ */ requireMinBy$2();
+    const identity2 = /* @__PURE__ */ requireIdentity();
+    const iteratee2 = /* @__PURE__ */ requireIteratee();
+    function minBy2(items, iteratee$1) {
+      if (items == null) {
+        return void 0;
+      }
+      return minBy$12.minBy(Array.from(items), iteratee2.iteratee(iteratee$1 ?? identity2.identity));
+    }
+    exports$1.minBy = minBy2;
+  })(minBy$3);
+  return minBy$3;
+}
+var minBy$1;
+var hasRequiredMinBy;
+function requireMinBy() {
+  if (hasRequiredMinBy) return minBy$1;
+  hasRequiredMinBy = 1;
+  minBy$1 = requireMinBy$1().minBy;
+  return minBy$1;
+}
+var minByExports = /* @__PURE__ */ requireMinBy();
+const minBy = /* @__PURE__ */ getDefaultExportFromCjs(minByExports);
 var isPlainObject$2 = {};
 var hasRequiredIsPlainObject$1;
 function requireIsPlainObject$1() {
@@ -1706,9 +1820,70 @@ function requireIsPlainObject() {
 }
 var isPlainObjectExports = /* @__PURE__ */ requireIsPlainObject();
 const isPlainObject = /* @__PURE__ */ getDefaultExportFromCjs(isPlainObjectExports);
+var last$3 = {};
+var last$2 = {};
+var hasRequiredLast$2;
+function requireLast$2() {
+  if (hasRequiredLast$2) return last$2;
+  hasRequiredLast$2 = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    function last2(arr) {
+      return arr[arr.length - 1];
+    }
+    exports$1.last = last2;
+  })(last$2);
+  return last$2;
+}
+var toArray = {};
+var hasRequiredToArray;
+function requireToArray() {
+  if (hasRequiredToArray) return toArray;
+  hasRequiredToArray = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    function toArray2(value) {
+      return Array.isArray(value) ? value : Array.from(value);
+    }
+    exports$1.toArray = toArray2;
+  })(toArray);
+  return toArray;
+}
+var hasRequiredLast$1;
+function requireLast$1() {
+  if (hasRequiredLast$1) return last$3;
+  hasRequiredLast$1 = 1;
+  (function(exports$1) {
+    Object.defineProperty(exports$1, Symbol.toStringTag, { value: "Module" });
+    const last$12 = /* @__PURE__ */ requireLast$2();
+    const toArray2 = /* @__PURE__ */ requireToArray();
+    const isArrayLike2 = /* @__PURE__ */ requireIsArrayLike();
+    function last2(array) {
+      if (!isArrayLike2.isArrayLike(array)) {
+        return void 0;
+      }
+      return last$12.last(toArray2.toArray(array));
+    }
+    exports$1.last = last2;
+  })(last$3);
+  return last$3;
+}
+var last$1;
+var hasRequiredLast;
+function requireLast() {
+  if (hasRequiredLast) return last$1;
+  hasRequiredLast = 1;
+  last$1 = requireLast$1().last;
+  return last$1;
+}
+var lastExports = /* @__PURE__ */ requireLast();
+const last = /* @__PURE__ */ getDefaultExportFromCjs(lastExports);
 export {
+  minBy as a,
   get as g,
   isPlainObject as i,
+  last as l,
+  maxBy as m,
   range as r,
   sortBy as s,
   throttle as t,

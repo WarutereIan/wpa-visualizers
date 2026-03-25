@@ -1,6 +1,6 @@
 import { a as requireReact } from "./react.mjs";
 import { r as requirePropTypes } from "./prop-types.mjs";
-import { r as requireReactDom } from "./react-dom.mjs";
+import { a as requireReactDom } from "./react-dom.mjs";
 import { r as requireClsx } from "./clsx.mjs";
 var cjs = { exports: {} };
 var Draggable = {};
