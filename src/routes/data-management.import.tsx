@@ -65,11 +65,11 @@ function DataImportPage() {
         defval: null,
       }).map((r) => normalizeRow(r))
       if (rows.length === 0) throw new Error('No rows found in sheet.')
-      const table = importTable({
+    /*   const table = importTable({
         name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
         rows,
       })
-      setExcelMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      setExcelMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`) */
     } catch (err) {
       setExcelMsg(err instanceof Error ? err.message : 'Failed to import Excel file.')
     } finally {

@@ -9,17 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OutputsAndIndicatorsRouteImport } from './routes/outputs-and-indicators'
 import { Route as IndicatorVisualizationRouteImport } from './routes/indicator-visualization'
 import { Route as DataManagementRouteImport } from './routes/data-management'
 import { Route as BaselineMappingRouteImport } from './routes/baseline-mapping'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardsIndexRouteImport } from './routes/dashboards.index'
+import { Route as OutputsAndIndicatorsOutputsRouteImport } from './routes/outputs-and-indicators.outputs'
+import { Route as OutputsAndIndicatorsIndicatorsRouteImport } from './routes/outputs-and-indicators.indicators'
 import { Route as DataManagementImportRouteImport } from './routes/data-management.import'
 import { Route as DashboardsAddRouteImport } from './routes/dashboards.add'
 import { Route as DashboardsDashboardIdRouteImport } from './routes/dashboards.$dashboardId'
 import { Route as DashboardsDashboardIdManageRouteImport } from './routes/dashboards.$dashboardId.manage'
 import { Route as DashboardsDashboardIdEditRouteImport } from './routes/dashboards.$dashboardId.edit'
 
+const OutputsAndIndicatorsRoute = OutputsAndIndicatorsRouteImport.update({
+  id: '/outputs-and-indicators',
+  path: '/outputs-and-indicators',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndicatorVisualizationRoute = IndicatorVisualizationRouteImport.update({
   id: '/indicator-visualization',
   path: '/indicator-visualization',
@@ -45,6 +53,18 @@ const DashboardsIndexRoute = DashboardsIndexRouteImport.update({
   path: '/dashboards/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OutputsAndIndicatorsOutputsRoute =
+  OutputsAndIndicatorsOutputsRouteImport.update({
+    id: '/outputs',
+    path: '/outputs',
+    getParentRoute: () => OutputsAndIndicatorsRoute,
+  } as any)
+const OutputsAndIndicatorsIndicatorsRoute =
+  OutputsAndIndicatorsIndicatorsRouteImport.update({
+    id: '/indicators',
+    path: '/indicators',
+    getParentRoute: () => OutputsAndIndicatorsRoute,
+  } as any)
 const DataManagementImportRoute = DataManagementImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -78,9 +98,12 @@ export interface FileRoutesByFullPath {
   '/baseline-mapping': typeof BaselineMappingRoute
   '/data-management': typeof DataManagementRouteWithChildren
   '/indicator-visualization': typeof IndicatorVisualizationRoute
+  '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
+  '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
+  '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
   '/dashboards/': typeof DashboardsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
@@ -90,9 +113,12 @@ export interface FileRoutesByTo {
   '/baseline-mapping': typeof BaselineMappingRoute
   '/data-management': typeof DataManagementRouteWithChildren
   '/indicator-visualization': typeof IndicatorVisualizationRoute
+  '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
+  '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
+  '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
   '/dashboards': typeof DashboardsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
@@ -103,9 +129,12 @@ export interface FileRoutesById {
   '/baseline-mapping': typeof BaselineMappingRoute
   '/data-management': typeof DataManagementRouteWithChildren
   '/indicator-visualization': typeof IndicatorVisualizationRoute
+  '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
+  '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
+  '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
   '/dashboards/': typeof DashboardsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
@@ -117,9 +146,12 @@ export interface FileRouteTypes {
     | '/baseline-mapping'
     | '/data-management'
     | '/indicator-visualization'
+    | '/outputs-and-indicators'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
+    | '/outputs-and-indicators/indicators'
+    | '/outputs-and-indicators/outputs'
     | '/dashboards/'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
@@ -129,9 +161,12 @@ export interface FileRouteTypes {
     | '/baseline-mapping'
     | '/data-management'
     | '/indicator-visualization'
+    | '/outputs-and-indicators'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
+    | '/outputs-and-indicators/indicators'
+    | '/outputs-and-indicators/outputs'
     | '/dashboards'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
@@ -141,9 +176,12 @@ export interface FileRouteTypes {
     | '/baseline-mapping'
     | '/data-management'
     | '/indicator-visualization'
+    | '/outputs-and-indicators'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
+    | '/outputs-and-indicators/indicators'
+    | '/outputs-and-indicators/outputs'
     | '/dashboards/'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
@@ -154,6 +192,7 @@ export interface RootRouteChildren {
   BaselineMappingRoute: typeof BaselineMappingRoute
   DataManagementRoute: typeof DataManagementRouteWithChildren
   IndicatorVisualizationRoute: typeof IndicatorVisualizationRoute
+  OutputsAndIndicatorsRoute: typeof OutputsAndIndicatorsRouteWithChildren
   DashboardsDashboardIdRoute: typeof DashboardsDashboardIdRouteWithChildren
   DashboardsAddRoute: typeof DashboardsAddRoute
   DashboardsIndexRoute: typeof DashboardsIndexRoute
@@ -161,6 +200,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/outputs-and-indicators': {
+      id: '/outputs-and-indicators'
+      path: '/outputs-and-indicators'
+      fullPath: '/outputs-and-indicators'
+      preLoaderRoute: typeof OutputsAndIndicatorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/indicator-visualization': {
       id: '/indicator-visualization'
       path: '/indicator-visualization'
@@ -195,6 +241,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboards/'
       preLoaderRoute: typeof DashboardsIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/outputs-and-indicators/outputs': {
+      id: '/outputs-and-indicators/outputs'
+      path: '/outputs'
+      fullPath: '/outputs-and-indicators/outputs'
+      preLoaderRoute: typeof OutputsAndIndicatorsOutputsRouteImport
+      parentRoute: typeof OutputsAndIndicatorsRoute
+    }
+    '/outputs-and-indicators/indicators': {
+      id: '/outputs-and-indicators/indicators'
+      path: '/indicators'
+      fullPath: '/outputs-and-indicators/indicators'
+      preLoaderRoute: typeof OutputsAndIndicatorsIndicatorsRouteImport
+      parentRoute: typeof OutputsAndIndicatorsRoute
     }
     '/data-management/import': {
       id: '/data-management/import'
@@ -246,6 +306,19 @@ const DataManagementRouteWithChildren = DataManagementRoute._addFileChildren(
   DataManagementRouteChildren,
 )
 
+interface OutputsAndIndicatorsRouteChildren {
+  OutputsAndIndicatorsIndicatorsRoute: typeof OutputsAndIndicatorsIndicatorsRoute
+  OutputsAndIndicatorsOutputsRoute: typeof OutputsAndIndicatorsOutputsRoute
+}
+
+const OutputsAndIndicatorsRouteChildren: OutputsAndIndicatorsRouteChildren = {
+  OutputsAndIndicatorsIndicatorsRoute: OutputsAndIndicatorsIndicatorsRoute,
+  OutputsAndIndicatorsOutputsRoute: OutputsAndIndicatorsOutputsRoute,
+}
+
+const OutputsAndIndicatorsRouteWithChildren =
+  OutputsAndIndicatorsRoute._addFileChildren(OutputsAndIndicatorsRouteChildren)
+
 interface DashboardsDashboardIdRouteChildren {
   DashboardsDashboardIdEditRoute: typeof DashboardsDashboardIdEditRoute
   DashboardsDashboardIdManageRoute: typeof DashboardsDashboardIdManageRoute
@@ -266,6 +339,7 @@ const rootRouteChildren: RootRouteChildren = {
   BaselineMappingRoute: BaselineMappingRoute,
   DataManagementRoute: DataManagementRouteWithChildren,
   IndicatorVisualizationRoute: IndicatorVisualizationRoute,
+  OutputsAndIndicatorsRoute: OutputsAndIndicatorsRouteWithChildren,
   DashboardsDashboardIdRoute: DashboardsDashboardIdRouteWithChildren,
   DashboardsAddRoute: DashboardsAddRoute,
   DashboardsIndexRoute: DashboardsIndexRoute,

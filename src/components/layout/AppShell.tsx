@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar'
-import { LayoutGrid, Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Home } from 'lucide-react'
+import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree } from 'lucide-react'
 import ThemeToggle from '#/components/ThemeToggle'
 import { useDashboardStore } from '#/stores/dashboardStore'
 import { Button } from '#/components/ui/button'
@@ -19,6 +19,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     /\/dashboards\/[^/]+\/(manage|edit)$/.test(pathname)
   const isDataRoot = pathname === '/data-management'
   const isDataImport = pathname === '/data-management/import'
+  const isOutputsRoot = pathname.startsWith('/outputs-and-indicators')
+  const isOutputsPage = pathname === '/outputs-and-indicators/outputs'
+  const isIndicatorsPage = pathname === '/outputs-and-indicators/indicators'
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full bg-[var(--bg-base)] text-[var(--sea-ink)]">
@@ -94,6 +97,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SubMenu>
         
           <SubMenu
+            label="Outputs and indicators"
+            icon={<ListTree size={18} />}
+            defaultOpen={isOutputsRoot}
+          >
+            <MenuItem
+              icon={<Target size={16} />}
+              active={isOutputsPage}
+              onClick={() => navigate({ to: '/outputs-and-indicators/outputs' })}
+            >
+              Outputs
+            </MenuItem>
+            <MenuItem
+              icon={<LineChart size={16} />}
+              active={isIndicatorsPage}
+              onClick={() => navigate({ to: '/outputs-and-indicators/indicators' })}
+            >
+              Indicators
+            </MenuItem>
+          </SubMenu>
+
+          <SubMenu
             label="Data management"
             icon={<Database size={18} />}
             defaultOpen={isDataRoot || isDataImport}
@@ -114,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Menu>
       </Sidebar>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-[var(--line)] bg-[var(--header-bg)] px-4 backdrop-blur-lg">
           <Button
             type="button"
@@ -131,7 +155,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <ThemeToggle />
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col overflow-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   )
