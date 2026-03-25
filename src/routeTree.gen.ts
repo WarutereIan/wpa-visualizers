@@ -14,9 +14,12 @@ import { Route as IndicatorVisualizationRouteImport } from './routes/indicator-v
 import { Route as DataManagementRouteImport } from './routes/data-management'
 import { Route as BaselineMappingRouteImport } from './routes/baseline-mapping'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MappingsIndexRouteImport } from './routes/mappings.index'
 import { Route as DashboardsIndexRouteImport } from './routes/dashboards.index'
 import { Route as OutputsAndIndicatorsOutputsRouteImport } from './routes/outputs-and-indicators.outputs'
 import { Route as OutputsAndIndicatorsIndicatorsRouteImport } from './routes/outputs-and-indicators.indicators'
+import { Route as MappingsAddRouteImport } from './routes/mappings.add'
+import { Route as MappingsMappingIdRouteImport } from './routes/mappings.$mappingId'
 import { Route as DataManagementImportRouteImport } from './routes/data-management.import'
 import { Route as DashboardsAddRouteImport } from './routes/dashboards.add'
 import { Route as DashboardsDashboardIdRouteImport } from './routes/dashboards.$dashboardId'
@@ -48,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MappingsIndexRoute = MappingsIndexRouteImport.update({
+  id: '/mappings/',
+  path: '/mappings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardsIndexRoute = DashboardsIndexRouteImport.update({
   id: '/dashboards/',
   path: '/dashboards/',
@@ -65,6 +73,16 @@ const OutputsAndIndicatorsIndicatorsRoute =
     path: '/indicators',
     getParentRoute: () => OutputsAndIndicatorsRoute,
   } as any)
+const MappingsAddRoute = MappingsAddRouteImport.update({
+  id: '/mappings/add',
+  path: '/mappings/add',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MappingsMappingIdRoute = MappingsMappingIdRouteImport.update({
+  id: '/mappings/$mappingId',
+  path: '/mappings/$mappingId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DataManagementImportRoute = DataManagementImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -102,9 +120,12 @@ export interface FileRoutesByFullPath {
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
+  '/mappings/$mappingId': typeof MappingsMappingIdRoute
+  '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
   '/dashboards/': typeof DashboardsIndexRoute
+  '/mappings/': typeof MappingsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
 }
@@ -117,9 +138,12 @@ export interface FileRoutesByTo {
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
+  '/mappings/$mappingId': typeof MappingsMappingIdRoute
+  '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
   '/dashboards': typeof DashboardsIndexRoute
+  '/mappings': typeof MappingsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
 }
@@ -133,9 +157,12 @@ export interface FileRoutesById {
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
+  '/mappings/$mappingId': typeof MappingsMappingIdRoute
+  '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
   '/dashboards/': typeof DashboardsIndexRoute
+  '/mappings/': typeof MappingsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
 }
@@ -150,9 +177,12 @@ export interface FileRouteTypes {
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
+    | '/mappings/$mappingId'
+    | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
     | '/dashboards/'
+    | '/mappings/'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
   fileRoutesByTo: FileRoutesByTo
@@ -165,9 +195,12 @@ export interface FileRouteTypes {
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
+    | '/mappings/$mappingId'
+    | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
     | '/dashboards'
+    | '/mappings'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
   id:
@@ -180,9 +213,12 @@ export interface FileRouteTypes {
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
+    | '/mappings/$mappingId'
+    | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
     | '/dashboards/'
+    | '/mappings/'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
   fileRoutesById: FileRoutesById
@@ -195,7 +231,10 @@ export interface RootRouteChildren {
   OutputsAndIndicatorsRoute: typeof OutputsAndIndicatorsRouteWithChildren
   DashboardsDashboardIdRoute: typeof DashboardsDashboardIdRouteWithChildren
   DashboardsAddRoute: typeof DashboardsAddRoute
+  MappingsMappingIdRoute: typeof MappingsMappingIdRoute
+  MappingsAddRoute: typeof MappingsAddRoute
   DashboardsIndexRoute: typeof DashboardsIndexRoute
+  MappingsIndexRoute: typeof MappingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -235,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mappings/': {
+      id: '/mappings/'
+      path: '/mappings'
+      fullPath: '/mappings/'
+      preLoaderRoute: typeof MappingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboards/': {
       id: '/dashboards/'
       path: '/dashboards'
@@ -255,6 +301,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/outputs-and-indicators/indicators'
       preLoaderRoute: typeof OutputsAndIndicatorsIndicatorsRouteImport
       parentRoute: typeof OutputsAndIndicatorsRoute
+    }
+    '/mappings/add': {
+      id: '/mappings/add'
+      path: '/mappings/add'
+      fullPath: '/mappings/add'
+      preLoaderRoute: typeof MappingsAddRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mappings/$mappingId': {
+      id: '/mappings/$mappingId'
+      path: '/mappings/$mappingId'
+      fullPath: '/mappings/$mappingId'
+      preLoaderRoute: typeof MappingsMappingIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/data-management/import': {
       id: '/data-management/import'
@@ -342,7 +402,10 @@ const rootRouteChildren: RootRouteChildren = {
   OutputsAndIndicatorsRoute: OutputsAndIndicatorsRouteWithChildren,
   DashboardsDashboardIdRoute: DashboardsDashboardIdRouteWithChildren,
   DashboardsAddRoute: DashboardsAddRoute,
+  MappingsMappingIdRoute: MappingsMappingIdRoute,
+  MappingsAddRoute: MappingsAddRoute,
   DashboardsIndexRoute: DashboardsIndexRoute,
+  MappingsIndexRoute: MappingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

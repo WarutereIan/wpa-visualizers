@@ -4,6 +4,7 @@ import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar'
 import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree } from 'lucide-react'
 import ThemeToggle from '#/components/ThemeToggle'
 import { useDashboardStore } from '#/stores/dashboardStore'
+import { useMappingStore } from '#/stores/mappingStore'
 import { Button } from '#/components/ui/button'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -11,6 +12,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
   const dashboards = useDashboardStore((s) => s.dashboards)
+  const mappings = useMappingStore((s) => s.mappings)
+
+  const isMappingRoot = pathname === '/mappings' || pathname === '/mappings/'
+  const isMappingAdd = pathname === '/mappings/add'
+  const isMappingView = /^\/mappings\/[^/]+$/.test(pathname) && !isMappingAdd
+  const isBaselinePage = pathname === '/baseline-mapping'
 
   const isDashRoot = pathname === '/dashboards' || pathname === '/dashboards/'
   const isDashAdd = pathname === '/dashboards/add'
@@ -54,14 +61,49 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             }),
           }}
         >
-      
-          <MenuItem
+          <SubMenu
+            label="Mapping"
             icon={<Map size={18} />}
-            active={pathname === '/baseline-mapping'}
-            onClick={() => navigate({ to: '/baseline-mapping' })}
+            defaultOpen={
+              isMappingRoot || isMappingAdd || isMappingView || isBaselinePage
+            }
           >
-            Baseline mapping
-          </MenuItem>
+            <MenuItem
+              active={isBaselinePage}
+              onClick={() => navigate({ to: '/baseline-mapping' })}
+            >
+              Baseline map
+            </MenuItem>
+            <MenuItem
+              active={isMappingRoot}
+              onClick={() => navigate({ to: '/mappings' })}
+            >
+              All mappings
+            </MenuItem>
+            <MenuItem
+              icon={<Plus size={16} />}
+              active={isMappingAdd}
+              onClick={() => navigate({ to: '/mappings/add' })}
+            >
+              Add mapping
+            </MenuItem>
+            {mappings.map((m) => (
+              <MenuItem
+                key={m.id}
+                active={pathname === `/mappings/${m.id}`}
+                onClick={() =>
+                  navigate({ to: '/mappings/$mappingId', params: { mappingId: m.id } })
+                }
+              >
+                {m.name}
+              </MenuItem>
+            ))}
+            {mappings.length === 0 && !collapsed && (
+              <div className="px-4 py-2 text-xs text-[var(--sea-ink-soft)]">
+                No saved mappings yet — use Add mapping
+              </div>
+            )}
+          </SubMenu>
           <SubMenu
             label="Indicator visualization"
             icon={<LineChart size={18} />}
