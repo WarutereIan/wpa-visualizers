@@ -29,6 +29,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isOutputsRoot = pathname.startsWith('/outputs-and-indicators')
   const isOutputsPage = pathname === '/outputs-and-indicators/outputs'
   const isIndicatorsPage = pathname === '/outputs-and-indicators/indicators'
+  const isHomeLanding = pathname === '/' || pathname === ''
+
+  if (isHomeLanding) {
+    return (
+      <div className="flex min-h-[calc(100vh-0px)] w-full flex-col bg-[#fafbff] text-slate-900 [color-scheme:light]">
+        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full bg-[var(--bg-base)] text-[var(--sea-ink)]">

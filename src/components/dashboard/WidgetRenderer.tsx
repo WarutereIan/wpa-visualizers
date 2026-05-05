@@ -21,7 +21,7 @@ const ECHARTS_MAP: Partial<Record<WidgetType, EChartsWidgetKind>> = {
   stacked_area: 'stacked_area',
   pie: 'pie',
   donut: 'donut',
- /*  sunburst: 'sunburst',
+  sunburst: 'sunburst',
   treemap: 'treemap',
   funnel: 'funnel',
   scatter: 'scatter',
@@ -33,7 +33,7 @@ const ECHARTS_MAP: Partial<Record<WidgetType, EChartsWidgetKind>> = {
   candlestick: 'candlestick',
   histogram: 'histogram',
   gauge: 'gauge',
-  waterfall: 'waterfall', */
+  waterfall: 'waterfall',
 }
 
 function EChartsViz({ kind, title, rows }: { kind: EChartsWidgetKind; title: string; rows: DemoRow[] }) {
