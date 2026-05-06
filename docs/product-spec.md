@@ -1,4 +1,4 @@
-# bi-dimes — Product Specification
+# DIMES-BI — Product Specification
 
 **Version:** 0.1 Draft
 **Date:** May 2026
@@ -8,9 +8,9 @@
 
 ## 1. Product Overview
 
-bi-dimes is a bring-your-own-data (BYOD) MEAL, analytics, and dashboarding platform designed for organizations that collect data across many tools but need one trusted place to connect, model, analyze, visualize, and act on that data. It combines the analytical depth of platforms like Power BI with a more guided, opinionated experience tailored to MEAL teams, program managers, analysts, partners, and decision-makers in the NGO, humanitarian, development, research, and public sector spaces.
+DIMES-BI is a bring-your-own-data (BYOD) MEAL, analytics, and dashboarding platform designed for organizations that collect data across many tools but need one trusted place to connect, model, analyze, visualize, and act on that data. It combines the analytical depth of platforms like Power BI with a more guided, opinionated experience tailored to MEAL teams, program managers, analysts, partners, and decision-makers in the NGO, humanitarian, development, research, and public sector spaces.
 
-Rather than forcing organizations to standardize on a single data collection tool, bi-dimes sits above existing tools as an intelligent integration and analytics layer. It allows users to bring in data from multiple sources, structure it into a shared semantic model, build reusable indicators and queries, and generate interactive dashboards and reports that support monitoring, reporting, learning, accountability, and strategic decision-making.
+Rather than forcing organizations to standardize on a single data collection tool, DIMES-BI sits above existing tools as an intelligent integration and analytics layer. It allows users to bring in data from multiple sources, structure it into a shared semantic model, build reusable indicators and queries, and generate interactive dashboards and reports that support monitoring, reporting, learning, accountability, and strategic decision-making.
 
 ---
 

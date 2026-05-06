@@ -22,7 +22,7 @@ Behind the scenes, the platform will provide:
 
 Robust connector layer for current and future data sources (Kobo, Excel, Microsoft 365, SurveyCTO, Google Forms, Microsoft Forms, etc.), handling sync, schema detection, and incremental updates.
 A unified data model and query layer that abstracts away raw source complexity and lets users think in terms of projects, indicators, time, location, and cohorts rather than tables and joins.
-A widget and dashboard engine (building on your current bi-dimes demo) that makes it easy to configure, arrange, and share visual elements while keeping them live-linked to underlying queries.
+A widget and dashboard engine (building on your current DIMES-BI demo) that makes it easy to configure, arrange, and share visual elements while keeping them live-linked to underlying queries.
 Secure, multi‑tenant backend services for authentication, authorization, metadata, query execution, caching, and audit logs.
 An extensible architecture so organizations can plug in new sources, custom transformations, and domain‑specific visual components without re‑architecting the core.
 In short, the platform is intended to become a comprehensive, extensible MEAL and analytics environment where organizations can plug in all their existing data tools, model their world once, and then continuously generate insight, dashboards, and learning products on top of that shared foundation.

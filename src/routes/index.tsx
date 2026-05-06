@@ -33,7 +33,7 @@ export const Route = createFileRoute('/')({
 function RainbowLogo({ className }: { className?: string }) {
   return (
     <Link to="/" className={`inline-flex items-baseline font-extrabold tracking-tight no-underline ${className ?? ''}`}>
-      <span className="text-slate-900 dark:text-white">bi-dimes</span>
+      <span className="text-slate-900 dark:text-white">DIMES-BI</span>
     </Link>
   )
 }
@@ -113,7 +113,7 @@ function HomePage() {
     {
       title: 'No new tools to adopt',
       description:
-        'Connect Kobo, Excel, Microsoft 365, SurveyCTO, Google Forms, SharePoint, CSVs, and APIs. Your teams keep working exactly as they do today—bi-dimes syncs, detects schemas, and monitors freshness automatically.',
+        'Connect Kobo, Excel, Microsoft 365, SurveyCTO, Google Forms, SharePoint, CSVs, and APIs. Your teams keep working exactly as they do today—DIMES-BI syncs, detects schemas, and monitors freshness automatically.',
       icon: Link2,
     },
     {
@@ -176,7 +176,7 @@ function HomePage() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-400 sm:text-lg">
             Your organization collects data across Kobo, Excel, Google Forms, SurveyCTO, Microsoft 365, and
-            more. bi-dimes connects all of it—without changing a single workflow—so you can build interactive
+            more. DIMES-BI connects all of it—without changing a single workflow—so you can build interactive
             dashboards, track indicators, run spatial analysis, and deliver decision-ready reports from one
             trusted workspace.
           </p>
@@ -217,10 +217,10 @@ function HomePage() {
             Keep your workflows. Get real analytics.
           </p>
           <h2 className="display-title mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-[#141627] dark:text-slate-50 md:text-5xl">
-            Your teams keep collecting. bi-dimes turns it all into insight.
+            Your teams keep collecting. DIMES-BI turns it all into insight.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-400 sm:text-lg">
-            No one has to adopt a new tool or change how they work. bi-dimes pulls data from Kobo, Excel, SurveyCTO,
+            No one has to adopt a new tool or change how they work. DIMES-BI pulls data from Kobo, Excel, SurveyCTO,
             Google Forms, SharePoint, APIs, and flat files into one central workspace—then lets you build interactive
             dashboards, choropleth and bubble maps, KPI cards, pivot tables, narrative reports, donor layouts,
             and spatial analysis views on top of it all.
@@ -486,7 +486,7 @@ function HomePage() {
             Not just charts. The full monitoring, evaluation, and learning cycle.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-slate-600 dark:text-slate-400 sm:text-base">
-            bi-dimes goes beyond dashboarding. It supports the workflows MEAL teams actually use—baseline to
+            DIMES-BI goes beyond dashboarding. It supports the workflows MEAL teams actually use—baseline to
             endline, disaggregation, target tracking, beneficiary monitoring, feedback loops, and learning reviews.
           </p>
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -559,7 +559,7 @@ function HomePage() {
               </h2>
               <p className="mt-4 max-w-lg text-sm leading-relaxed text-slate-600 dark:text-slate-400 sm:text-base">
                 Teams don&apos;t just need charts. They need to explain what changed, capture what they learned, and
-                show stakeholders why decisions were made. bi-dimes lets you annotate, comment, snapshot, and
+                show stakeholders why decisions were made. DIMES-BI lets you annotate, comment, snapshot, and
                 build narrative reports directly alongside your data.
               </p>
             </div>
@@ -635,7 +635,7 @@ function HomePage() {
           />
           <div className="relative mx-auto flex max-w-5xl flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
             <div>
-              <h2 className="display-title text-3xl font-semibold text-white md:text-4xl">Start with bi-dimes</h2>
+              <h2 className="display-title text-3xl font-semibold text-white md:text-4xl">Start with DIMES-BI</h2>
               <p className="mt-3 max-w-xl text-violet-100">
                 Open the workspace, connect a source, and publish your first live-linked dashboard—model once, analyze everywhere.
               </p>
@@ -699,8 +699,8 @@ function HomePage() {
             <div className="flex flex-col gap-6 sm:flex-row sm:gap-12">
               <div>
                 <p className="text-sm font-semibold text-white">Contact</p>
-                <a href="mailto:hello@bi-dimes.local" className="mt-2 block text-lg font-semibold text-white hover:text-violet-200">
-                  hello@bi-dimes.local
+                <a href="mailto:hello@dimes-bi.local" className="mt-2 block text-lg font-semibold text-white hover:text-violet-200">
+                  hello@dimes-bi.local
                 </a>
               </div>
               <div className="flex flex-wrap gap-10 text-sm">

@@ -55,7 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex h-14 items-center border-b border-[var(--line)] px-3">
           {!collapsed && (
             <span className="truncate text-sm font-bold tracking-tight text-[var(--sea-ink)]">
-              WPA Program
+              DIMES-BI
             </span>
           )}
         </div>
@@ -202,7 +202,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
           </Button>
           <div className="min-w-0 flex-1 text-sm font-medium text-[var(--sea-ink)] truncate">
-            Meal / welfare program analytics
+            DIMES-BI analytics workspace
           </div>
           <ThemeToggle />
         </header>
