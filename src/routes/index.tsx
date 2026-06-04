@@ -23,28 +23,32 @@ import {
   Target,
   Users,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ThemeToggle from '#/components/ThemeToggle'
+import { landingFaqs } from '#/data/landingFaqs'
+
+const CONTACT_EMAIL = 'support@gartsafrica.com'
+
+const SITE_DESCRIPTION =
+  'DIMES-BI connects Kobo, Excel, SurveyCTO, and more into one MEAL workspace — build indicators, dashboards, maps, and donor reports without changing how your teams collect data.'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
+  head: () => ({
+    meta: [
+      { title: 'DIMES-BI — BYOD MEAL Analytics & Dashboards' },
+      { name: 'description', content: SITE_DESCRIPTION },
+      { property: 'og:title', content: 'DIMES-BI — BYOD MEAL Analytics & Dashboards' },
+      { property: 'og:description', content: SITE_DESCRIPTION },
+      { property: 'og:type', content: 'website' },
+    ],
+  }),
 })
 
 function RainbowLogo({ className }: { className?: string }) {
   return (
     <Link to="/" className={`inline-flex items-baseline font-extrabold tracking-tight no-underline ${className ?? ''}`}>
       <span className="text-slate-900 dark:text-white">DIMES-BI</span>
-    </Link>
-  )
-}
-
-function NavPill({ to, children }: { to: string; children: React.ReactNode }) {
-  return (
-    <Link
-      to={to}
-      className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10"
-    >
-      {children}
     </Link>
   )
 }
@@ -109,6 +113,26 @@ const connectorCards = [
 function HomePage() {
   const [email, setEmail] = useState('')
 
+  useEffect(() => {
+    const scriptId = 'landing-jsonld'
+    const existing = document.getElementById(scriptId)
+    existing?.remove()
+    const script = document.createElement('script')
+    script.id = scriptId
+    script.type = 'application/ld+json'
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'DIMES-BI',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description: SITE_DESCRIPTION,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Interactive workspace demo' },
+    })
+    document.head.appendChild(script)
+    return () => document.getElementById(scriptId)?.remove()
+  }, [])
+
   const pillars = [
     {
       title: 'No new tools to adopt',
@@ -141,25 +165,26 @@ function HomePage() {
             className="order-3 flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-auto pb-0.5 sm:gap-2 md:order-2 md:w-auto md:flex-1 md:px-2"
             aria-label="Primary"
           >
-            <NavPill to="/dashboards">Dashboards</NavPill>
-            <NavPill to="/data-management">Data</NavPill>
-            <NavPill to="/mappings">Mappings</NavPill>
-            <NavPill to="/outputs-and-indicators/outputs">Outputs</NavPill>
+            <a href="#how-it-works" className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10">
+              How it works
+            </a>
+            <a href="#connectors" className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10">
+              Connectors
+            </a>
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=DIMES-BI%20inquiry`}
+              className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10"
+            >
+              Contact
+            </a>
           </nav>
           <div className="order-2 flex shrink-0 items-center gap-1.5 sm:gap-2 md:order-3">
             <ThemeToggle />
-            <button
-              type="button"
-              className="hidden rounded-full border border-slate-200/90 bg-white/80 p-2 text-slate-600 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:inline-flex"
-              aria-label="Language"
-            >
-              <Globe className="size-4" />
-            </button>
             <Link
               to="/dashboards/add"
               className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-slate-900/20 transition hover:bg-slate-800 sm:px-4 sm:text-sm dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 no-underline"
             >
-              Book a demo
+              Try the workspace
               <ArrowRight className="size-3.5 sm:size-4" />
             </Link>
           </div>
@@ -180,12 +205,15 @@ function HomePage() {
             dashboards, track indicators, run spatial analysis, and deliver decision-ready reports from one
             trusted workspace.
           </p>
+          <p className="mx-auto mt-4 max-w-xl text-sm font-medium text-violet-700/90 dark:text-violet-300/90">
+            Kobo · Excel · SurveyCTO · Google Forms · Microsoft 365 · CSV & APIs
+          </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/dashboards/add"
               className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 no-underline"
             >
-              Unify your data sources
+              Try the workspace free
               <ArrowRight className="size-4" />
             </Link>
             <a
@@ -598,7 +626,7 @@ function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-24 max-w-6xl px-4 sm:px-6 md:mt-28">
+        <section id="connectors" className="mx-auto mt-24 max-w-6xl scroll-mt-28 px-4 sm:px-6 md:mt-28">
           <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-amber-800/90 dark:text-amber-200/80">
             Connectors
           </p>
@@ -624,6 +652,26 @@ function HomePage() {
           </div>
         </section>
 
+        <section className="mx-auto mt-24 max-w-3xl px-4 sm:px-6 md:mt-28">
+          <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-violet-600 dark:text-violet-400">
+            FAQ
+          </p>
+          <h2 className="display-title mx-auto mt-3 text-center text-2xl font-semibold tracking-tight text-[#141627] dark:text-slate-50 sm:text-3xl">
+            Common questions
+          </h2>
+          <dl className="mt-10 space-y-4">
+            {landingFaqs.map((faq) => (
+              <div
+                key={faq.question}
+                className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
+              >
+                <dt className="text-sm font-semibold text-[#141627] dark:text-slate-100">{faq.question}</dt>
+                <dd className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{faq.answer}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
         <section className="relative mx-4 mt-24 overflow-hidden rounded-[2rem] bg-gradient-to-br from-violet-600 via-violet-700 to-indigo-900 px-4 py-16 sm:mx-6 sm:px-8 md:mx-auto md:mt-28 md:max-w-6xl">
           <div
             className="pointer-events-none absolute inset-0 opacity-25"
@@ -637,23 +685,23 @@ function HomePage() {
             <div>
               <h2 className="display-title text-3xl font-semibold text-white md:text-4xl">Start with DIMES-BI</h2>
               <p className="mt-3 max-w-xl text-violet-100">
-                Open the workspace, connect a source, and publish your first live-linked dashboard—model once, analyze everywhere.
+                Open the workspace, connect a source, and publish your first live-linked dashboard — about 10 minutes in the demo.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
-                to="/dashboards"
+                to="/dashboards/add"
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-violet-900 shadow-lg transition hover:bg-violet-50 no-underline"
               >
-                View dashboards
+                Try the workspace
                 <ArrowUpRight className="size-4" />
               </Link>
-              <Link
-                to="/data-management"
+              <a
+                href={`mailto:${CONTACT_EMAIL}?subject=DIMES-BI%20demo%20or%20enterprise`}
                 className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 no-underline"
               >
-                Open data workspace
-              </Link>
+                Talk to our team
+              </a>
             </div>
           </div>
         </section>
@@ -674,6 +722,9 @@ function HomePage() {
                 className="mt-6 flex flex-col gap-3 sm:flex-row"
                 onSubmit={(e) => {
                   e.preventDefault()
+                  const trimmed = email.trim()
+                  if (!trimmed) return
+                  window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('DIMES-BI product updates')}&body=${encodeURIComponent(`Please add me to product updates: ${trimmed}`)}`
                 }}
               >
                 <label htmlFor="landing-email" className="sr-only">
@@ -691,16 +742,16 @@ function HomePage() {
                   type="submit"
                   className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
                 >
-                  Subscribe
+                  Request updates
                 </button>
               </form>
-              <p className="mt-3 text-xs text-slate-500">Demo workspace — subscribe is UI-only until backend is wired.</p>
+              <p className="mt-2 text-xs text-slate-500">Opens your email client — we reply from {CONTACT_EMAIL}</p>
             </div>
             <div className="flex flex-col gap-6 sm:flex-row sm:gap-12">
               <div>
                 <p className="text-sm font-semibold text-white">Contact</p>
-                <a href="mailto:hello@dimes-bi.local" className="mt-2 block text-lg font-semibold text-white hover:text-violet-200">
-                  hello@dimes-bi.local
+                <a href={`mailto:${CONTACT_EMAIL}`} className="mt-2 block text-lg font-semibold text-white hover:text-violet-200">
+                  {CONTACT_EMAIL}
                 </a>
               </div>
               <div className="flex flex-wrap gap-10 text-sm">
@@ -730,7 +781,17 @@ function HomePage() {
           </div>
           <div className="relative mx-auto mt-14 flex max-w-6xl flex-col items-start justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
             <RainbowLogo className="text-base opacity-90" />
-            <p className="text-xs text-slate-500">BYOD MEAL & analytics workspace · See docs for roadmap and enterprise capabilities.</p>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <p className="text-xs text-slate-500">BYOD MEAL & analytics workspace · See docs for roadmap and enterprise capabilities.</p>
+              <a
+                href="https://gartsafrica.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-slate-400 no-underline transition hover:text-white"
+              >
+                © GARTS Africa
+              </a>
+            </div>
           </div>
         </footer>
       </main>

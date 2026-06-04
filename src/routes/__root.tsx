@@ -17,7 +17,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'DIMES-BI Dashboard',
+        title: 'DIMES-BI — BYOD MEAL Analytics',
       },
     ],
     links: [

@@ -1,0 +1,23 @@
+# DIMES-BI
+
+> Bring-your-own-data (BYOD) MEAL analytics and dashboarding — connect Kobo, Excel, SurveyCTO, Google Forms, Microsoft 365, CSV, and APIs; build indicators, dashboards, maps, and narrative reports in one workspace.
+
+DIMES-BI is for NGOs, humanitarian programs, research teams, and government MEAL units that collect data in many tools but need one trusted place to analyze, visualize, and report.
+
+## Primary actions
+
+- Try the workspace: /dashboards/add
+- Import data: /data-management/import
+- View dashboards: /dashboards
+
+## Core capabilities
+
+- No-code indicator formulas and cross-dataset queries
+- Dashboard builder: charts, maps, KPIs, tables, narrative blocks
+- MEAL workflows: baselines, targets, disaggregation, feedback, snapshots
+- Scheduled refresh, alerts, PDF/PowerPoint export, shareable links
+
+## Contact
+
+- support@gartsafrica.com
+- https://gartsafrica.com
