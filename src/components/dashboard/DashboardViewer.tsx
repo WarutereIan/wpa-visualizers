@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import type { DashboardDefinition } from '#/types/dashboard'
 import { WidgetRenderer } from '#/components/dashboard/WidgetRenderer'
 import { useDashboardFilterStore } from '#/stores/dashboardFilterStore'
+import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import { Button } from '#/components/ui/button'
 
 const GridWithWidth = WidthProvider(GridLayout)
@@ -20,11 +21,14 @@ export function DashboardViewer({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="flex min-w-0 items-start gap-3">
+          <DimesBiLogo size="xs" variant="icon" linkToHome={false} className="mt-0.5 shrink-0" />
+          <div className="min-w-0">
           <h1 className="text-xl font-bold text-[var(--sea-ink)]">{dashboard.name}</h1>
           {dashboard.description && (
             <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">{dashboard.description}</p>
           )}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-[var(--sea-ink-soft)]">Global filters</span>

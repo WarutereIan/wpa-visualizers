@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "logo-generation": {
+      "source": "eachlabs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/logo-generation/SKILL.md",
+      "computedHash": "f6fb7f3edab53ebe7d18740ef420918a3cb7288202d00e719c523aef6ba85784"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useDashboardStore } from '#/stores/dashboardStore'
+import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/dashboards/')({
@@ -12,11 +13,14 @@ function DashboardsIndexPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="flex items-start gap-3">
+          <DimesBiLogo size="sm" linkToHome={false} className="mt-1 shrink-0" />
+          <div>
           <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Dashboards</h1>
           <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
             Create layouts, attach datasets, and organize visualizations.
           </p>
+          </div>
         </div>
         <Button asChild>
           <Link to="/dashboards/add">Create with wizard</Link>

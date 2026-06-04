@@ -20,11 +20,28 @@ export const Route = createRootRoute({
       {
         title: 'DIMES-BI — BYOD MEAL Analytics',
       },
+      {
+        property: 'og:image',
+        content: '/dimes-bi.png',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'icon',
+        href: '/dimes-bi.png',
+        type: 'image/png',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/dimes-bi.png',
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
       },
     ],
   }),

@@ -66,6 +66,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-submenu-bg: #eef6f0;
+}
+
+html.dark {
+  --sidebar-submenu-bg: #0c161a;
 }
 
 :root[data-theme="dark"] {
@@ -88,6 +93,7 @@
   --link-bg-hover: rgba(24, 44, 49, 0.8);
   --hero-a: rgba(96, 215, 207, 0.18);
   --hero-b: rgba(110, 200, 154, 0.12);
+  --sidebar-submenu-bg: #0c161a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -111,7 +117,36 @@
     --link-bg-hover: rgba(24, 44, 49, 0.8);
     --hero-a: rgba(96, 215, 207, 0.18);
     --hero-b: rgba(110, 200, 154, 0.12);
+    --sidebar-submenu-bg: #0c161a;
   }
+}
+
+/* react-pro-sidebar: theme-aware submenu (library defaults to light #fbfcfd) */
+.ps-sidebar-root .ps-submenu-content {
+  background-color: var(--sidebar-submenu-bg) !important;
+}
+
+.ps-sidebar-root .ps-menu-button {
+  color: var(--sea-ink) !important;
+}
+
+.ps-sidebar-root .ps-menu-button .ps-menu-icon,
+.ps-sidebar-root .ps-menu-button .ps-submenu-expand-icon {
+  color: var(--sea-ink-soft) !important;
+}
+
+.ps-sidebar-root .ps-menu-button:hover {
+  background-color: rgba(79, 184, 178, 0.14) !important;
+  color: var(--sea-ink) !important;
+}
+
+.ps-sidebar-root .ps-menu-button.ps-active {
+  background-color: rgba(79, 184, 178, 0.22) !important;
+  color: var(--lagoon-deep) !important;
+}
+
+.ps-sidebar-root .ps-menu-button.ps-active .ps-menu-icon {
+  color: var(--lagoon-deep) !important;
 }
 
 * {
@@ -175,6 +210,50 @@ a {
 
 a:hover {
   color: #246f76;
+}
+
+/* Landing page: global anchor color must not override pill CTAs and nav */
+a.landing-cta-primary,
+a.landing-cta-primary:hover {
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+html.dark a.landing-cta-primary,
+html.dark a.landing-cta-primary:hover {
+  color: #0f172a !important;
+}
+
+a.landing-cta-primary svg {
+  color: currentColor;
+}
+
+a.landing-cta-secondary,
+a.landing-cta-secondary:hover {
+  color: #1e293b !important;
+  text-decoration: none !important;
+}
+
+html.dark a.landing-cta-secondary,
+html.dark a.landing-cta-secondary:hover {
+  color: #f1f5f9 !important;
+}
+
+a.landing-nav-link,
+a.landing-nav-link:hover {
+  color: #334155 !important;
+  text-decoration: none !important;
+}
+
+html.dark a.landing-nav-link,
+html.dark a.landing-nav-link:hover {
+  color: #e2e8f0 !important;
+}
+
+a.landing-cta-violet,
+a.landing-cta-violet:hover {
+  color: #4c1d95 !important;
+  text-decoration: none !important;
 }
 
 code {

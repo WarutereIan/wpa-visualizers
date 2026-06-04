@@ -27,6 +27,7 @@ import {
 import { WhatsappLogo } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import ThemeToggle from '#/components/ThemeToggle'
+import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import { FloatingContactActions } from '#/components/public/FloatingContactActions'
 import { landingFaqs } from '#/data/landingFaqs'
 import { CONTACT_EMAIL, whatsappUrl } from '#/lib/contact'
@@ -46,14 +47,6 @@ export const Route = createFileRoute('/')({
     ],
   }),
 })
-
-function RainbowLogo({ className }: { className?: string }) {
-  return (
-    <Link to="/" className={`inline-flex items-baseline font-extrabold tracking-tight no-underline ${className ?? ''}`}>
-      <span className="text-slate-900 dark:text-white">DIMES-BI</span>
-    </Link>
-  )
-}
 
 const mapPins = [
   { label: 'Canada', x: 18, y: 22 },
@@ -129,6 +122,7 @@ function HomePage() {
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
       description: SITE_DESCRIPTION,
+      image: `${window.location.origin}/dimes-bi.png`,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Interactive workspace demo' },
     })
     document.head.appendChild(script)
@@ -161,21 +155,21 @@ function HomePage() {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_90%_55%_at_50%_-8%,rgba(139,92,246,0.12),transparent_55%),radial-gradient(ellipse_70%_45%_at_100%_40%,rgba(56,189,248,0.08),transparent_50%),radial-gradient(ellipse_60%_40%_at_0%_60%,rgba(244,114,182,0.07),transparent_45%)] dark:bg-[radial-gradient(ellipse_90%_55%_at_50%_-8%,rgba(139,92,246,0.18),transparent_55%),radial-gradient(ellipse_70%_45%_at_100%_40%,rgba(56,189,248,0.1),transparent_50%)]" />
 
       <header className="sticky top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4">
-        <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-full border border-slate-200/70 bg-white/80 px-3 py-2 shadow-[0_8px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65 sm:gap-x-4 sm:px-5 md:flex-nowrap md:py-2">
-          <RainbowLogo className="order-1 shrink-0 text-lg sm:text-xl" />
+        <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-full border border-slate-200/70 bg-white/80 px-3 py-2.5 shadow-[0_8px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65 sm:min-h-[4.75rem] sm:gap-x-4 sm:px-5 md:flex-nowrap md:py-2.5">
+          <DimesBiLogo className="order-1 shrink-0" size="2xl" />
           <nav
             className="order-3 flex w-full min-w-0 items-center justify-center gap-1.5 overflow-x-auto pb-0.5 sm:gap-2 md:order-2 md:w-auto md:flex-1 md:px-2"
             aria-label="Primary"
           >
-            <a href="#how-it-works" className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10">
+            <a href="#how-it-works" className="landing-nav-link shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10">
               How it works
             </a>
-            <a href="#connectors" className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10">
+            <a href="#connectors" className="landing-nav-link shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10">
               Connectors
             </a>
             <a
               href={`mailto:${CONTACT_EMAIL}?subject=DIMES-BI%20inquiry`}
-              className="shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10"
+              className="landing-nav-link shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
             >
               Contact
             </a>
@@ -184,7 +178,7 @@ function HomePage() {
             <ThemeToggle />
             <Link
               to="/dashboards/add"
-              className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-slate-900/20 transition hover:bg-slate-800 sm:px-4 sm:text-sm dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 no-underline"
+              className="landing-cta-primary inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-2 text-xs font-semibold shadow-md shadow-slate-900/20 transition hover:bg-slate-800 sm:px-4 sm:text-sm dark:bg-white dark:hover:bg-slate-100 no-underline"
             >
               Try the workspace
               <ArrowRight className="size-3.5 sm:size-4" />
@@ -213,14 +207,14 @@ function HomePage() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/dashboards/add"
-              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 no-underline"
+              className="landing-cta-primary inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold shadow-lg shadow-slate-900/25 transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 no-underline"
             >
               Try the workspace free
               <ArrowRight className="size-4" />
             </Link>
             <a
               href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('DIMES-BI BYOD workflow enquiry')}`}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/90 px-6 py-3 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:hover:border-white/25 dark:hover:bg-white/10"
+              className="landing-cta-secondary inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/90 px-6 py-3 text-sm font-semibold shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white dark:border-white/15 dark:bg-white/5 dark:hover:border-white/25 dark:hover:bg-white/10 no-underline"
             >
               Contact us about BYOD
             </a>
@@ -257,7 +251,7 @@ function HomePage() {
           </p>
           <Link
             to="/data-management/import"
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 no-underline"
+            className="landing-cta-primary mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold shadow-lg transition hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 no-underline"
           >
             See how BYOD works
             <ArrowRight className="size-4" />
@@ -268,8 +262,8 @@ function HomePage() {
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 md:mt-16">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-[0_28px_90px_-28px_rgba(15,23,42,0.22)] dark:border-white/10 dark:bg-slate-900/80 dark:shadow-[0_28px_90px_-28px_rgba(0,0,0,0.5)]">
             <div className="flex border-b border-slate-100 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/50">
-              <aside className="hidden w-44 shrink-0 border-r border-slate-100 p-4 dark:border-white/10 lg:block">
-                <RainbowLogo className="text-sm" />
+              <aside className="hidden w-44 shrink-0 border-r border-slate-100 p-4 dark:border-white/10 md:block">
+                <DimesBiLogo size="md" linkToHome={false} />
                 <p className="mt-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Workspace</p>
                 <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Demo program</p>
                 <ul className="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-400">
@@ -281,8 +275,8 @@ function HomePage() {
               </aside>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-6 dark:border-white/10">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <RainbowLogo className="text-base sm:hidden" />
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                    <DimesBiLogo size="md" linkToHome={false} className="md:hidden" />
                     <span className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">Outputs</span>
                     <span className="text-slate-300 dark:text-slate-600">/</span>
                     <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">Q3 performance</span>
@@ -297,13 +291,20 @@ function HomePage() {
                 </div>
                 <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 px-4 py-5 sm:px-6">
                   <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
+                    <div className="flex min-w-0 flex-1 items-start gap-4">
+                      <DimesBiLogo
+                        size="lg"
+                        linkToHome={false}
+                        className="hidden shrink-0 sm:inline-flex"
+                      />
+                      <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-wider text-emerald-200/90">Live workspace</p>
                       <p className="mt-1 text-xl font-semibold text-white sm:text-2xl">Regional health program</p>
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-emerald-100/90">
                         <span className="rounded-full bg-white/10 px-2 py-0.5">12 projects</span>
                         <span className="rounded-full bg-white/10 px-2 py-0.5">4.2k responses</span>
                         <span className="rounded-full bg-white/10 px-2 py-0.5">Last sync 2h</span>
+                      </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -693,7 +694,7 @@ function HomePage() {
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/dashboards/add"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-violet-900 shadow-lg transition hover:bg-violet-50 no-underline"
+                className="landing-cta-violet inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold shadow-lg transition hover:bg-violet-50 no-underline"
               >
                 Try the workspace
                 <ArrowUpRight className="size-4" />
@@ -809,7 +810,7 @@ function HomePage() {
             </div>
           </div>
           <div className="relative mx-auto mt-14 flex max-w-6xl flex-col items-start justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
-            <RainbowLogo className="text-base opacity-90" />
+            <DimesBiLogo size="lg" linkToHome={false} className="opacity-95" />
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <p className="text-xs text-slate-500">BYOD MEAL & analytics workspace · See docs for roadmap and enterprise capabilities.</p>
               <a

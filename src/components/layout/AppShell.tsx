@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar'
 import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree } from 'lucide-react'
+import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import ThemeToggle from '#/components/ThemeToggle'
 import { useDashboardStore } from '#/stores/dashboardStore'
 import { useMappingStore } from '#/stores/mappingStore'
@@ -29,14 +30,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isOutputsRoot = pathname.startsWith('/outputs-and-indicators')
   const isOutputsPage = pathname === '/outputs-and-indicators/outputs'
   const isIndicatorsPage = pathname === '/outputs-and-indicators/indicators'
-  const isHomeLanding = pathname === '/' || pathname === ''
+  const isLanding = pathname === '/' || pathname === ''
 
-  if (isHomeLanding) {
-    return (
-      <div className="flex min-h-[calc(100vh-0px)] w-full flex-col bg-[#fafbff] text-slate-900 [color-scheme:light]">
-        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
-      </div>
-    )
+  if (isLanding) {
+    return <div className="min-h-screen w-full">{children}</div>
   }
 
   return (
@@ -52,22 +49,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           borderRight: '1px solid var(--line)',
         }}
       >
-        <div className="flex h-14 items-center border-b border-[var(--line)] px-3">
-          {!collapsed && (
-            <span className="truncate text-sm font-bold tracking-tight text-[var(--sea-ink)]">
-              DIMES-BI
-            </span>
-          )}
+        <div className="flex h-14 items-center justify-center border-b border-[var(--line)] px-2">
+          <DimesBiLogo
+            size={collapsed ? 'xs' : 'sm'}
+            variant={collapsed ? 'icon' : 'lockup'}
+          />
         </div>
         <Menu
           menuItemStyles={{
-            button: ({ active }) => ({
-              backgroundColor: active ? 'rgba(79, 184, 178, 0.2)' : undefined,
+            subMenuContent: {
+              backgroundColor: 'var(--sidebar-submenu-bg)',
+              color: 'var(--sea-ink)',
+            },
+            button: ({ active, level }) => ({
+              backgroundColor: active ? 'rgba(79, 184, 178, 0.22)' : 'transparent',
               color: active ? 'var(--lagoon-deep)' : 'var(--sea-ink)',
               fontWeight: active ? 600 : 500,
               borderRadius: '8px',
-              margin: '2px 8px',
+              margin: level === 0 ? '2px 8px' : '2px 8px 2px 12px',
+              '&:hover': {
+                backgroundColor: 'rgba(79, 184, 178, 0.14)',
+                color: 'var(--sea-ink)',
+              },
             }),
+            label: {
+              color: 'inherit',
+            },
+            icon: {
+              color: 'var(--sea-ink-soft)',
+            },
+            SubMenuExpandIcon: {
+              color: 'var(--sea-ink-soft)',
+            },
           }}
         >
           <SubMenu
@@ -201,7 +214,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
           </Button>
-          <div className="min-w-0 flex-1 text-sm font-medium text-[var(--sea-ink)] truncate">
+          <DimesBiLogo size="xs" className="shrink-0 md:hidden" />
+          <div className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--sea-ink)]">
             DIMES-BI analytics workspace
           </div>
           <ThemeToggle />
