@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   LineChart,
   Link2,
+  Mail,
   Map,
   MessageSquare,
   PieChart,
@@ -23,11 +24,12 @@ import {
   Target,
   Users,
 } from 'lucide-react'
+import { WhatsappLogo } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import ThemeToggle from '#/components/ThemeToggle'
+import { FloatingContactActions } from '#/components/public/FloatingContactActions'
 import { landingFaqs } from '#/data/landingFaqs'
-
-const CONTACT_EMAIL = 'support@gartsafrica.com'
+import { CONTACT_EMAIL, whatsappUrl } from '#/lib/contact'
 
 const SITE_DESCRIPTION =
   'DIMES-BI connects Kobo, Excel, SurveyCTO, and more into one MEAL workspace — build indicators, dashboards, maps, and donor reports without changing how your teams collect data.'
@@ -217,10 +219,10 @@ function HomePage() {
               <ArrowRight className="size-4" />
             </Link>
             <a
-              href="#how-it-works"
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('DIMES-BI BYOD workflow enquiry')}`}
               className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/90 px-6 py-3 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:hover:border-white/25 dark:hover:bg-white/10"
             >
-              See the BYOD workflow
+              Contact us about BYOD
             </a>
           </div>
         </section>
@@ -750,9 +752,36 @@ function HomePage() {
             <div className="flex flex-col gap-6 sm:flex-row sm:gap-12">
               <div>
                 <p className="text-sm font-semibold text-white">Contact</p>
-                <a href={`mailto:${CONTACT_EMAIL}`} className="mt-2 block text-lg font-semibold text-white hover:text-violet-200">
-                  {CONTACT_EMAIL}
-                </a>
+                <div className="mt-3 flex flex-col gap-2.5">
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}`}
+                    className="group inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 no-underline transition hover:border-white/20 hover:bg-white/10"
+                    aria-label={`Email ${CONTACT_EMAIL}`}
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-200 transition group-hover:bg-violet-500/30">
+                      <Mail className="size-5" aria-hidden />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold text-white">Email</span>
+                      <span className="block text-xs text-slate-400">Send us a message</span>
+                    </span>
+                  </a>
+                  <a
+                    href={whatsappUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 no-underline transition hover:border-[#25D366]/40 hover:bg-white/10"
+                    aria-label="Chat on WhatsApp"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#25D366]/20 text-[#25D366] transition group-hover:bg-[#25D366]/30">
+                      <WhatsappLogo className="size-5" weight="fill" aria-hidden />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold text-white">Phone</span>
+                      <span className="block text-xs text-slate-400">Chat with our team</span>
+                    </span>
+                  </a>
+                </div>
               </div>
               <div className="flex flex-wrap gap-10 text-sm">
                 <div className="space-y-2">
@@ -794,6 +823,7 @@ function HomePage() {
             </div>
           </div>
         </footer>
+        <FloatingContactActions />
       </main>
     </div>
   )

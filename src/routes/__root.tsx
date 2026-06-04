@@ -1,4 +1,5 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { Analytics } from '@vercel/analytics/react'
 import { AppProviders } from '#/providers/AppProviders'
 import { AppShell } from '#/components/layout/AppShell'
 
@@ -41,6 +42,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AppProviders>
           <AppShell>{children}</AppShell>
         </AppProviders>
+        <Analytics />
         <Scripts />
       </body>
     </html>
