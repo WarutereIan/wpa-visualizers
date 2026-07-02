@@ -30,9 +30,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isOutputsRoot = pathname.startsWith('/outputs-and-indicators')
   const isOutputsPage = pathname === '/outputs-and-indicators/outputs'
   const isIndicatorsPage = pathname === '/outputs-and-indicators/indicators'
-  const isLanding = pathname === '/' || pathname === ''
+  const isPublicPage =
+    pathname === '/' || pathname === '' || pathname === '/pricing'
 
-  if (isLanding) {
+  if (isPublicPage) {
     return <div className="min-h-screen w-full">{children}</div>
   }
 

@@ -167,6 +167,12 @@ function HomePage() {
             <a href="#connectors" className="landing-nav-link shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10">
               Connectors
             </a>
+            <Link
+              to="/pricing"
+              className="landing-nav-link shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
+            >
+              Pricing
+            </Link>
             <a
               href={`mailto:${CONTACT_EMAIL}?subject=DIMES-BI%20inquiry`}
               className="landing-nav-link shrink-0 rounded-full border border-slate-200/90 bg-white/85 px-3.5 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:bg-white no-underline dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
@@ -787,6 +793,9 @@ function HomePage() {
               <div className="flex flex-wrap gap-10 text-sm">
                 <div className="space-y-2">
                   <p className="font-semibold text-white">Product</p>
+                  <Link to="/pricing" className="block text-slate-400 hover:text-white no-underline">
+                    Pricing
+                  </Link>
                   <Link to="/dashboards/add" className="block text-slate-400 hover:text-white no-underline">
                     New dashboard
                   </Link>

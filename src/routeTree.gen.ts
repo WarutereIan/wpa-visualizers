@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OutputsAndIndicatorsRouteImport } from './routes/outputs-and-indicators'
 import { Route as IndicatorVisualizationRouteImport } from './routes/indicator-visualization'
 import { Route as DataManagementRouteImport } from './routes/data-management'
@@ -26,6 +27,11 @@ import { Route as DashboardsDashboardIdRouteImport } from './routes/dashboards.$
 import { Route as DashboardsDashboardIdManageRouteImport } from './routes/dashboards.$dashboardId.manage'
 import { Route as DashboardsDashboardIdEditRouteImport } from './routes/dashboards.$dashboardId.edit'
 
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OutputsAndIndicatorsRoute = OutputsAndIndicatorsRouteImport.update({
   id: '/outputs-and-indicators',
   path: '/outputs-and-indicators',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/data-management': typeof DataManagementRouteWithChildren
   '/indicator-visualization': typeof IndicatorVisualizationRoute
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
+  '/pricing': typeof PricingRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/data-management': typeof DataManagementRouteWithChildren
   '/indicator-visualization': typeof IndicatorVisualizationRoute
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
+  '/pricing': typeof PricingRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/data-management': typeof DataManagementRouteWithChildren
   '/indicator-visualization': typeof IndicatorVisualizationRoute
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
+  '/pricing': typeof PricingRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/data-management'
     | '/indicator-visualization'
     | '/outputs-and-indicators'
+    | '/pricing'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/data-management'
     | '/indicator-visualization'
     | '/outputs-and-indicators'
+    | '/pricing'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/data-management'
     | '/indicator-visualization'
     | '/outputs-and-indicators'
+    | '/pricing'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   DataManagementRoute: typeof DataManagementRouteWithChildren
   IndicatorVisualizationRoute: typeof IndicatorVisualizationRoute
   OutputsAndIndicatorsRoute: typeof OutputsAndIndicatorsRouteWithChildren
+  PricingRoute: typeof PricingRoute
   DashboardsDashboardIdRoute: typeof DashboardsDashboardIdRouteWithChildren
   DashboardsAddRoute: typeof DashboardsAddRoute
   MappingsMappingIdRoute: typeof MappingsMappingIdRoute
@@ -239,6 +252,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/outputs-and-indicators': {
       id: '/outputs-and-indicators'
       path: '/outputs-and-indicators'
@@ -400,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataManagementRoute: DataManagementRouteWithChildren,
   IndicatorVisualizationRoute: IndicatorVisualizationRoute,
   OutputsAndIndicatorsRoute: OutputsAndIndicatorsRouteWithChildren,
+  PricingRoute: PricingRoute,
   DashboardsDashboardIdRoute: DashboardsDashboardIdRouteWithChildren,
   DashboardsAddRoute: DashboardsAddRoute,
   MappingsMappingIdRoute: MappingsMappingIdRoute,
