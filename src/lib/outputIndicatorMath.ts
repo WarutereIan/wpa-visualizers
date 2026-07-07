@@ -1,9 +1,11 @@
 import type { OutputIndicatorLink, WpaIndicator } from '#/types/outputsIndicators'
 
-/** Achievement toward target, 0–1 (capped). */
+/** Achievement toward target, 0–1 (capped). Null baseline/target/current treated as 0. */
 export function indicatorProgress01(ind: WpaIndicator): number {
-  if (ind.target <= 0) return 0
-  return Math.min(1, ind.current / ind.target)
+  const target = ind.target ?? 0
+  const current = ind.current ?? 0
+  if (target <= 0) return 0
+  return Math.min(1, current / target)
 }
 
 export function indicatorProgressPercent(ind: WpaIndicator): number {

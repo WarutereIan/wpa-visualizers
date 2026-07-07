@@ -78,7 +78,10 @@ export function WidgetRenderer({
   const rawRows = (data ?? []) as Record<string, string | number | boolean | null>[]
   const { title, type } = config
 
-  if (type === 'kpi')      return <KpiWidget title={title} rows={rows} readOnly={readOnly} />
+  if (type === 'kpi') {
+    const indicatorId = config.options?.indicatorId as string | undefined
+    return <KpiWidget title={title} rows={rows} indicatorId={indicatorId} readOnly={readOnly} />
+  }
   if (type === 'table')    return <TableWidget title={title} rows={rawRows} />
   if (type === 'composed') return <ComposedChartWidget title={title} rows={rows} />
 

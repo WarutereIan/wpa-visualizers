@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { isSupabaseConfigured } from '#/lib/env'
 import type {
   OutputIndicatorLink,
   WpaIndicator,
@@ -194,6 +195,7 @@ export const useOutputsIndicatorsStore = create<OutputsIndicatorsState>()(
     {
       name: STORAGE_KEY,
       partialize: (s) => ({ selectedProjectId: s.selectedProjectId }),
+      skipHydration: isSupabaseConfigured(),
     },
   ),
 )

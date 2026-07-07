@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { MappingDefinition, MappingSource } from '#/types/mapping'
-import { useDataStore } from '#/stores/dataStore'
+import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import { guessGeoColumns } from '#/lib/geo'
 import { Button } from '#/components/ui/button'
 
@@ -33,7 +33,7 @@ export function MappingWizard({
   const maxStep = LABELS.length - 1
   const [stepIndex, setStepIndex] = useState(0)
   const [draft, setDraft] = useState<MappingDefinition>(initialDraft)
-  const tables = useDataStore((s) => s.tables)
+  const { tables } = useWorkspaceData()
 
   const selectedTable = draft.dataTableId
     ? tables.find((t) => t.id === draft.dataTableId)

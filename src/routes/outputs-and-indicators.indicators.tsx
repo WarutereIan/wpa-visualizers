@@ -1,29 +1,49 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Link2 } from 'lucide-react'
+import {
+  IndicatorEditForm,
+  IndicatorEditorActions,
+  IndicatorLinkManager,
+  NewIndicatorForm,
+  ProjectSelect,
+} from '#/components/outputs/MealForms'
 import {
   IndicatorGauge,
   IndicatorsRadarChart,
   IndicatorsValueComparisonChart,
 } from '#/components/outputs/IndicatorsPortfolioCharts'
-import { ProjectSelect } from '#/components/outputs/ProjectSelect'
+import { useWorkspaceData } from '#/hooks/useWorkspaceData'
+import { useWorkspaceMeal } from '#/hooks/useWorkspaceMeal'
 import { indicatorProgressPercent } from '#/lib/outputIndicatorMath'
-import { useOutputsIndicatorsStore } from '#/stores/outputsIndicatorsStore'
 
 export const Route = createFileRoute('/outputs-and-indicators/indicators')({
   component: IndicatorsPage,
 })
 
 function IndicatorsPage() {
-  const selectedProjectId = useOutputsIndicatorsStore((s) => s.selectedProjectId)
-  const projects = useOutputsIndicatorsStore((s) => s.projects)
-  const indicators = useOutputsIndicatorsStore((s) => s.indicators)
-  const outputsForIndicator = useOutputsIndicatorsStore((s) => s.outputsForIndicator)
-  const links = useOutputsIndicatorsStore((s) => s.links)
+  const meal = useWorkspaceMeal()
+  const { queries } = useWorkspaceData()
+  const {
+    selectedProjectId,
+    projects,
+    indicators,
+    outputs,
+    outputsForIndicator,
+    loading,
+    updateIndicator,
+  } = meal
 
   const filtered =
     selectedProjectId === null || selectedProjectId === ''
       ? indicators
       : indicators.filter((i) => i.projectId === selectedProjectId)
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 text-sm text-[var(--sea-ink-soft)]">
+        Loading MEAL data…
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -31,10 +51,14 @@ function IndicatorsPage() {
         <div>
           <h2 className="text-base font-semibold text-[var(--sea-ink)]">Indicators</h2>
           <p className="text-sm text-[var(--sea-ink-soft)]">
-            Portfolio charts plus per-indicator gauges, values, and linked outputs (sample linkages).
+            Portfolio charts plus per-indicator gauges. Link a saved query to compute{' '}
+            <strong>current</strong> from imported data (MEAL catalog — separate from imported indicator datasets).
           </p>
         </div>
-        <ProjectSelect />
+        <div className="flex flex-col gap-3 sm:items-end">
+          <ProjectSelect />
+          <NewIndicatorForm projectId={selectedProjectId} />
+        </div>
       </div>
 
       {filtered.length > 0 && (
@@ -48,7 +72,6 @@ function IndicatorsPage() {
         {filtered.map((ind) => {
           const project = projects.find((p) => p.id === ind.projectId)
           const outs = outputsForIndicator(ind.id)
-          const linkMeta = links.filter((l) => l.indicatorId === ind.id)
           const progPct = indicatorProgressPercent(ind)
           const progressBar = Math.min(100, Math.round(progPct))
 
@@ -111,34 +134,22 @@ function IndicatorsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 border-t border-[var(--line)] pt-3">
-                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
-                  <Link2 size={14} />
-                  Linked outputs
-                </h4>
-                {outs.length === 0 ? (
-                  <p className="text-sm text-[var(--sea-ink-soft)]">No linked outputs.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {outs.map((o) => {
-                      const lm = linkMeta.find((x) => x.outputId === o.id)
-                      return (
-                        <li
-                          key={o.id}
-                          className="rounded-md border border-[var(--line)] bg-[var(--bg-base)]/40 px-3 py-2 text-sm"
-                        >
-                          <div className="font-medium text-[var(--sea-ink)]">{o.title}</div>
-                          <div className="text-xs text-[var(--sea-ink-soft)]">
-                            {o.status.replace('_', ' ')}
-                            {lm ? ` · weight ${lm.weight.toFixed(2)}` : ''}
-                            {lm?.note ? ` · ${lm.note}` : ''}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
+              <IndicatorEditorActions
+                indicatorId={ind.id}
+                sourceQueryId={ind.sourceQueryId}
+                queries={queries.map((q) => ({ id: q.id, name: q.name }))}
+                onSourceQueryChange={(queryId) => {
+                  void updateIndicator(ind.id, { sourceQueryId: queryId })
+                }}
+              />
+
+              <IndicatorEditForm indicator={ind} />
+
+              <IndicatorLinkManager
+                indicatorId={ind.id}
+                linkedOutputs={outs}
+                outputs={selectedProjectId ? outputs.filter((o) => o.projectId === selectedProjectId) : outputs}
+              />
             </article>
           )
         })}

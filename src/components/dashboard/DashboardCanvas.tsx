@@ -9,7 +9,7 @@ import {
 } from '#/lib/widgetPalette'
 import { WidgetRenderer } from '#/components/dashboard/WidgetRenderer'
 import { Button } from '#/components/ui/button'
-import { useDataStore } from '#/stores/dataStore'
+import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 
 const GridWithWidth = WidthProvider(GridLayout)
 
@@ -35,8 +35,8 @@ export function DashboardCanvas({
     () => new Set(['General', 'Comparison', 'Trend']),
   )
   const selected = selectedId ? widgets[selectedId] : null
-  const queries = useDataStore((s) => s.queries)
-  const getQueryById = useDataStore((s) => s.getQueryById)
+  const { queries } = useWorkspaceData()
+  const getQueryById = (id: string) => queries.find((q) => q.id === id)
 
   const toggleGroup = (g: PaletteGroup) =>
     setExpandedGroups((prev) => {

@@ -1,19 +1,23 @@
 import { useState } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar'
-import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree } from 'lucide-react'
+import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree, Plug, FileText, Shield, ClipboardCheck } from 'lucide-react'
 import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import ThemeToggle from '#/components/ThemeToggle'
-import { useDashboardStore } from '#/stores/dashboardStore'
-import { useMappingStore } from '#/stores/mappingStore'
+import { AuthGate } from '#/components/auth/AuthGate'
+import { UserMenu } from '#/components/auth/UserMenu'
+import { NotificationBell } from '#/components/notifications/NotificationBell'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
+import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import { Button } from '#/components/ui/button'
+import { isPublicPath } from '#/types/auth'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
-  const dashboards = useDashboardStore((s) => s.dashboards)
-  const mappings = useMappingStore((s) => s.mappings)
+  const { dashboards } = useWorkspaceDashboards()
+  const { mappings } = useWorkspaceMappings()
 
   const isMappingRoot = pathname === '/mappings' || pathname === '/mappings/'
   const isMappingAdd = pathname === '/mappings/add'
@@ -27,17 +31,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     /\/dashboards\/[^/]+\/(manage|edit)$/.test(pathname)
   const isDataRoot = pathname === '/data-management'
   const isDataImport = pathname === '/data-management/import'
+  const isConnections = pathname.startsWith('/connections')
   const isOutputsRoot = pathname.startsWith('/outputs-and-indicators')
   const isOutputsPage = pathname === '/outputs-and-indicators/outputs'
   const isIndicatorsPage = pathname === '/outputs-and-indicators/indicators'
-  const isPublicPage =
-    pathname === '/' || pathname === '' || pathname === '/pricing'
+  const isIndicatorViz = pathname === '/indicator-visualization'
+  const isReports = pathname === '/reports'
+  const isDataQuality = pathname === '/data-quality'
+  const isAudit = pathname === '/audit'
+  const isPublicPage = isPublicPath(pathname)
 
   if (isPublicPage) {
     return <div className="min-h-screen w-full">{children}</div>
   }
 
   return (
+    <AuthGate>
     <div className="flex min-h-[calc(100vh-0px)] w-full bg-[var(--bg-base)] text-[var(--sea-ink)]">
       <Sidebar
         collapsed={collapsed}
@@ -128,7 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </SubMenu>
           <SubMenu
-            label="Indicator visualization"
+            label="Dashboards"
             icon={<LineChart size={18} />}
             defaultOpen={isDashRoot || isDashAdd || isDashView || isDashManageOrEdit}
           >
@@ -160,6 +169,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             )}
           </SubMenu>
+
+          <MenuItem
+            icon={<LineChart size={18} />}
+            active={isIndicatorViz}
+            onClick={() => navigate({ to: '/indicator-visualization' })}
+          >
+            Indicator catalog
+          </MenuItem>
         
           <SubMenu
             label="Outputs and indicators"
@@ -185,7 +202,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SubMenu
             label="Data management"
             icon={<Database size={18} />}
-            defaultOpen={isDataRoot || isDataImport}
+            defaultOpen={isDataRoot || isDataImport || isConnections}
           >
             <MenuItem
               active={isDataRoot}
@@ -198,6 +215,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onClick={() => navigate({ to: '/data-management/import' })}
             >
               Data import
+            </MenuItem>
+            <MenuItem
+              icon={<Plug size={16} />}
+              active={isConnections}
+              onClick={() => navigate({ to: '/connections' })}
+            >
+              Connections
+            </MenuItem>
+            <MenuItem
+              icon={<ClipboardCheck size={16} />}
+              active={isDataQuality}
+              onClick={() => navigate({ to: '/data-quality' })}
+            >
+              Data quality
+            </MenuItem>
+            <MenuItem
+              icon={<FileText size={16} />}
+              active={isReports}
+              onClick={() => navigate({ to: '/reports' })}
+            >
+              Reports
+            </MenuItem>
+            <MenuItem
+              icon={<Shield size={16} />}
+              active={isAudit}
+              onClick={() => navigate({ to: '/audit' })}
+            >
+              Audit log
             </MenuItem>
           </SubMenu>
         </Menu>
@@ -219,10 +264,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--sea-ink)]">
             DIMES-BI analytics workspace
           </div>
+          <NotificationBell />
+          <UserMenu />
           <ThemeToggle />
         </header>
         <main className="flex min-h-0 flex-1 flex-col overflow-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
+    </AuthGate>
   )
 }

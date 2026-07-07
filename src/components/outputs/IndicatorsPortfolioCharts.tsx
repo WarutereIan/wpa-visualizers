@@ -82,9 +82,9 @@ export function IndicatorsValueComparisonChart({ indicators }: { indicators: Wpa
   const data = indicators.map((ind) => ({
     name: shortLabel(ind),
     full: `${ind.name} · ${ind.location}`,
-    baseline: ind.baseline,
-    current: ind.current,
-    target: ind.target,
+    baseline: ind.baseline ?? 0,
+    current: ind.current ?? 0,
+    target: ind.target ?? 0,
   }))
 
   if (data.length === 0) return null

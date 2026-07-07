@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { isSupabaseConfigured } from '#/lib/env'
 import type { DashboardDefinition } from '#/types/dashboard'
 import {
   getLayoutWidgetsForTemplate,
@@ -92,6 +93,9 @@ export const useDashboardStore = create<DashboardState>()(
 
       getById: (id) => get().dashboards.find((d) => d.id === id),
     }),
-    { name: STORAGE_KEY },
+    {
+      name: STORAGE_KEY,
+      skipHydration: isSupabaseConfigured(),
+    },
   ),
 )

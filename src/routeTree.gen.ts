@@ -9,14 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OutputsAndIndicatorsRouteImport } from './routes/outputs-and-indicators'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndicatorVisualizationRouteImport } from './routes/indicator-visualization'
+import { Route as DataQualityRouteImport } from './routes/data-quality'
 import { Route as DataManagementRouteImport } from './routes/data-management'
+import { Route as ConnectionsRouteImport } from './routes/connections'
 import { Route as BaselineMappingRouteImport } from './routes/baseline-mapping'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MappingsIndexRouteImport } from './routes/mappings.index'
 import { Route as DashboardsIndexRouteImport } from './routes/dashboards.index'
+import { Route as SharedTokenRouteImport } from './routes/shared.$token'
 import { Route as OutputsAndIndicatorsOutputsRouteImport } from './routes/outputs-and-indicators.outputs'
 import { Route as OutputsAndIndicatorsIndicatorsRouteImport } from './routes/outputs-and-indicators.indicators'
 import { Route as MappingsAddRouteImport } from './routes/mappings.add'
@@ -24,9 +31,20 @@ import { Route as MappingsMappingIdRouteImport } from './routes/mappings.$mappin
 import { Route as DataManagementImportRouteImport } from './routes/data-management.import'
 import { Route as DashboardsAddRouteImport } from './routes/dashboards.add'
 import { Route as DashboardsDashboardIdRouteImport } from './routes/dashboards.$dashboardId'
+import { Route as ConnectionsConnectionIdRouteImport } from './routes/connections.$connectionId'
 import { Route as DashboardsDashboardIdManageRouteImport } from './routes/dashboards.$dashboardId.manage'
 import { Route as DashboardsDashboardIdEditRouteImport } from './routes/dashboards.$dashboardId.edit'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -37,9 +55,19 @@ const OutputsAndIndicatorsRoute = OutputsAndIndicatorsRouteImport.update({
   path: '/outputs-and-indicators',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndicatorVisualizationRoute = IndicatorVisualizationRouteImport.update({
   id: '/indicator-visualization',
   path: '/indicator-visualization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataQualityRoute = DataQualityRouteImport.update({
+  id: '/data-quality',
+  path: '/data-quality',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataManagementRoute = DataManagementRouteImport.update({
@@ -47,9 +75,19 @@ const DataManagementRoute = DataManagementRouteImport.update({
   path: '/data-management',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConnectionsRoute = ConnectionsRouteImport.update({
+  id: '/connections',
+  path: '/connections',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BaselineMappingRoute = BaselineMappingRouteImport.update({
   id: '/baseline-mapping',
   path: '/baseline-mapping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +103,11 @@ const MappingsIndexRoute = MappingsIndexRouteImport.update({
 const DashboardsIndexRoute = DashboardsIndexRouteImport.update({
   id: '/dashboards/',
   path: '/dashboards/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharedTokenRoute = SharedTokenRouteImport.update({
+  id: '/shared/$token',
+  path: '/shared/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OutputsAndIndicatorsOutputsRoute =
@@ -104,6 +147,11 @@ const DashboardsDashboardIdRoute = DashboardsDashboardIdRouteImport.update({
   path: '/dashboards/$dashboardId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConnectionsConnectionIdRoute = ConnectionsConnectionIdRouteImport.update({
+  id: '/$connectionId',
+  path: '/$connectionId',
+  getParentRoute: () => ConnectionsRoute,
+} as any)
 const DashboardsDashboardIdManageRoute =
   DashboardsDashboardIdManageRouteImport.update({
     id: '/manage',
@@ -119,11 +167,18 @@ const DashboardsDashboardIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
   '/baseline-mapping': typeof BaselineMappingRoute
+  '/connections': typeof ConnectionsRouteWithChildren
   '/data-management': typeof DataManagementRouteWithChildren
+  '/data-quality': typeof DataQualityRoute
   '/indicator-visualization': typeof IndicatorVisualizationRoute
+  '/login': typeof LoginRoute
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/pricing': typeof PricingRoute
+  '/reports': typeof ReportsRoute
+  '/signup': typeof SignupRoute
+  '/connections/$connectionId': typeof ConnectionsConnectionIdRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
@@ -131,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
+  '/shared/$token': typeof SharedTokenRoute
   '/dashboards/': typeof DashboardsIndexRoute
   '/mappings/': typeof MappingsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
@@ -138,11 +194,18 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
   '/baseline-mapping': typeof BaselineMappingRoute
+  '/connections': typeof ConnectionsRouteWithChildren
   '/data-management': typeof DataManagementRouteWithChildren
+  '/data-quality': typeof DataQualityRoute
   '/indicator-visualization': typeof IndicatorVisualizationRoute
+  '/login': typeof LoginRoute
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/pricing': typeof PricingRoute
+  '/reports': typeof ReportsRoute
+  '/signup': typeof SignupRoute
+  '/connections/$connectionId': typeof ConnectionsConnectionIdRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
@@ -150,6 +213,7 @@ export interface FileRoutesByTo {
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
+  '/shared/$token': typeof SharedTokenRoute
   '/dashboards': typeof DashboardsIndexRoute
   '/mappings': typeof MappingsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
@@ -158,11 +222,18 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
   '/baseline-mapping': typeof BaselineMappingRoute
+  '/connections': typeof ConnectionsRouteWithChildren
   '/data-management': typeof DataManagementRouteWithChildren
+  '/data-quality': typeof DataQualityRoute
   '/indicator-visualization': typeof IndicatorVisualizationRoute
+  '/login': typeof LoginRoute
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/pricing': typeof PricingRoute
+  '/reports': typeof ReportsRoute
+  '/signup': typeof SignupRoute
+  '/connections/$connectionId': typeof ConnectionsConnectionIdRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
@@ -170,6 +241,7 @@ export interface FileRoutesById {
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
+  '/shared/$token': typeof SharedTokenRoute
   '/dashboards/': typeof DashboardsIndexRoute
   '/mappings/': typeof MappingsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
@@ -179,11 +251,18 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/audit'
     | '/baseline-mapping'
+    | '/connections'
     | '/data-management'
+    | '/data-quality'
     | '/indicator-visualization'
+    | '/login'
     | '/outputs-and-indicators'
     | '/pricing'
+    | '/reports'
+    | '/signup'
+    | '/connections/$connectionId'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
@@ -191,6 +270,7 @@ export interface FileRouteTypes {
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
+    | '/shared/$token'
     | '/dashboards/'
     | '/mappings/'
     | '/dashboards/$dashboardId/edit'
@@ -198,11 +278,18 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/audit'
     | '/baseline-mapping'
+    | '/connections'
     | '/data-management'
+    | '/data-quality'
     | '/indicator-visualization'
+    | '/login'
     | '/outputs-and-indicators'
     | '/pricing'
+    | '/reports'
+    | '/signup'
+    | '/connections/$connectionId'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
@@ -210,6 +297,7 @@ export interface FileRouteTypes {
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
+    | '/shared/$token'
     | '/dashboards'
     | '/mappings'
     | '/dashboards/$dashboardId/edit'
@@ -217,11 +305,18 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/audit'
     | '/baseline-mapping'
+    | '/connections'
     | '/data-management'
+    | '/data-quality'
     | '/indicator-visualization'
+    | '/login'
     | '/outputs-and-indicators'
     | '/pricing'
+    | '/reports'
+    | '/signup'
+    | '/connections/$connectionId'
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
@@ -229,6 +324,7 @@ export interface FileRouteTypes {
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
+    | '/shared/$token'
     | '/dashboards/'
     | '/mappings/'
     | '/dashboards/$dashboardId/edit'
@@ -237,21 +333,42 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditRoute: typeof AuditRoute
   BaselineMappingRoute: typeof BaselineMappingRoute
+  ConnectionsRoute: typeof ConnectionsRouteWithChildren
   DataManagementRoute: typeof DataManagementRouteWithChildren
+  DataQualityRoute: typeof DataQualityRoute
   IndicatorVisualizationRoute: typeof IndicatorVisualizationRoute
+  LoginRoute: typeof LoginRoute
   OutputsAndIndicatorsRoute: typeof OutputsAndIndicatorsRouteWithChildren
   PricingRoute: typeof PricingRoute
+  ReportsRoute: typeof ReportsRoute
+  SignupRoute: typeof SignupRoute
   DashboardsDashboardIdRoute: typeof DashboardsDashboardIdRouteWithChildren
   DashboardsAddRoute: typeof DashboardsAddRoute
   MappingsMappingIdRoute: typeof MappingsMappingIdRoute
   MappingsAddRoute: typeof MappingsAddRoute
+  SharedTokenRoute: typeof SharedTokenRoute
   DashboardsIndexRoute: typeof DashboardsIndexRoute
   MappingsIndexRoute: typeof MappingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -266,11 +383,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OutputsAndIndicatorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/indicator-visualization': {
       id: '/indicator-visualization'
       path: '/indicator-visualization'
       fullPath: '/indicator-visualization'
       preLoaderRoute: typeof IndicatorVisualizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-quality': {
+      id: '/data-quality'
+      path: '/data-quality'
+      fullPath: '/data-quality'
+      preLoaderRoute: typeof DataQualityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-management': {
@@ -280,11 +411,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/connections': {
+      id: '/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof ConnectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/baseline-mapping': {
       id: '/baseline-mapping'
       path: '/baseline-mapping'
       fullPath: '/baseline-mapping'
       preLoaderRoute: typeof BaselineMappingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -306,6 +451,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboards'
       fullPath: '/dashboards/'
       preLoaderRoute: typeof DashboardsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shared/$token': {
+      id: '/shared/$token'
+      path: '/shared/$token'
+      fullPath: '/shared/$token'
+      preLoaderRoute: typeof SharedTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/outputs-and-indicators/outputs': {
@@ -357,6 +509,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardsDashboardIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/connections/$connectionId': {
+      id: '/connections/$connectionId'
+      path: '/$connectionId'
+      fullPath: '/connections/$connectionId'
+      preLoaderRoute: typeof ConnectionsConnectionIdRouteImport
+      parentRoute: typeof ConnectionsRoute
+    }
     '/dashboards/$dashboardId/manage': {
       id: '/dashboards/$dashboardId/manage'
       path: '/manage'
@@ -373,6 +532,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface ConnectionsRouteChildren {
+  ConnectionsConnectionIdRoute: typeof ConnectionsConnectionIdRoute
+}
+
+const ConnectionsRouteChildren: ConnectionsRouteChildren = {
+  ConnectionsConnectionIdRoute: ConnectionsConnectionIdRoute,
+}
+
+const ConnectionsRouteWithChildren = ConnectionsRoute._addFileChildren(
+  ConnectionsRouteChildren,
+)
 
 interface DataManagementRouteChildren {
   DataManagementImportRoute: typeof DataManagementImportRoute
@@ -416,15 +587,22 @@ const DashboardsDashboardIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditRoute: AuditRoute,
   BaselineMappingRoute: BaselineMappingRoute,
+  ConnectionsRoute: ConnectionsRouteWithChildren,
   DataManagementRoute: DataManagementRouteWithChildren,
+  DataQualityRoute: DataQualityRoute,
   IndicatorVisualizationRoute: IndicatorVisualizationRoute,
+  LoginRoute: LoginRoute,
   OutputsAndIndicatorsRoute: OutputsAndIndicatorsRouteWithChildren,
   PricingRoute: PricingRoute,
+  ReportsRoute: ReportsRoute,
+  SignupRoute: SignupRoute,
   DashboardsDashboardIdRoute: DashboardsDashboardIdRouteWithChildren,
   DashboardsAddRoute: DashboardsAddRoute,
   MappingsMappingIdRoute: MappingsMappingIdRoute,
   MappingsAddRoute: MappingsAddRoute,
+  SharedTokenRoute: SharedTokenRoute,
   DashboardsIndexRoute: DashboardsIndexRoute,
   MappingsIndexRoute: MappingsIndexRoute,
 }

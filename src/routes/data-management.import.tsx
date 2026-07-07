@@ -2,7 +2,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { Button } from '#/components/ui/button'
-import { useDataStore } from '#/stores/dataStore'
+import { useTriggerIngest } from '#/lib/api/connections'
+import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
+import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import type { DataRow } from '#/types/data'
 
 const ENV_KOBO_URL = import.meta.env.VITE_KOBO_DEFAULT_URL as string | undefined
@@ -24,7 +26,10 @@ export const Route = createFileRoute('/data-management/import')({
 })
 
 function DataImportPage() {
-  const importTable = useDataStore((s) => s.importTable)
+  const { importTable, isImporting, workspaceReady } = useWorkspaceData()
+  const orgId = useOrgId()
+  const serverIngest = useTriggerIngest(workspaceReady ? orgId : null)
+  const useServerPath = workspaceReady && Boolean(orgId)
 
   const [activeTab, setActiveTab] = useState<'kobo' | 'excel' | 'dynamics365' | 'surveycto'>('kobo')
 
@@ -66,15 +71,28 @@ function DataImportPage() {
     }
     try {
       setKoboBusy(true)
-      const headers: Record<string, string> = {}
-      if (koboToken.trim()) headers.Authorization = `Bearer ${koboToken.trim()}`
-      const rows = await fetchAllKoboPages(koboUrl.trim(), headers)
-      if (rows.length === 0) throw new Error('No rows found in response.')
-      const table = importTable({
-        name: koboTableName.trim() || 'Kobo Import',
-        rows,
-      })
-      setKoboMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      if (useServerPath) {
+        const result = await serverIngest.mutateAsync({
+          connection: {
+            name: koboTableName.trim() || 'Kobo Import',
+            sourceType: 'kobo',
+            endpointUrl: koboUrl.trim(),
+            credentials: koboToken.trim() ? { token: koboToken.trim() } : {},
+            tableName: koboTableName.trim() || 'Kobo Import',
+          },
+        })
+        setKoboMsg(`Imported ${result.rowCount} rows (connection ${result.connectionId}).`)
+      } else {
+        const headers: Record<string, string> = {}
+        if (koboToken.trim()) headers.Authorization = `Bearer ${koboToken.trim()}`
+        const rows = await fetchAllKoboPages(koboUrl.trim(), headers)
+        if (rows.length === 0) throw new Error('No rows found in response.')
+        const table = await importTable({
+          name: koboTableName.trim() || 'Kobo Import',
+          rows,
+        })
+        setKoboMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      }
     } catch (err) {
       setKoboMsg(err instanceof Error ? err.message : 'Failed to import Kobo data.')
     } finally {
@@ -97,11 +115,23 @@ function DataImportPage() {
         })
         .map((r) => normalizeRow(r))
       if (rows.length === 0) throw new Error('No rows found in sheet.')
-      const table = importTable({
-        name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
-        rows,
-      })
-      setExcelMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      if (useServerPath) {
+        const result = await serverIngest.mutateAsync({
+          connection: {
+            name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
+            sourceType: 'excel',
+            tableName: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
+            rows,
+          },
+        })
+        setExcelMsg(`Imported ${result.rowCount} rows via server ingest (${result.connectionId}).`)
+      } else {
+        const table = await importTable({
+          name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
+          rows,
+        })
+        setExcelMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      }
     } catch (err) {
       setExcelMsg(err instanceof Error ? err.message : 'Failed to import Excel file.')
     } finally {
@@ -121,24 +151,48 @@ function DataImportPage() {
     }
     try {
       setDynamicsBusy(true)
-      let token = dynamicsToken.trim()
-      if (dynamicsAuthMode === 'client_credentials') {
-        token = await fetchDataverseAccessToken({
-          tenantId: dynamicsTenantId,
-          clientId: dynamicsClientId,
-          clientSecret: dynamicsClientSecret,
-          scope: dynamicsScope || buildDefaultDataverseScope(dynamicsUrl),
+      if (useServerPath) {
+        const credentials: Record<string, string> =
+          dynamicsAuthMode === 'client_credentials'
+            ? {
+                authMode: 'client_credentials',
+                tenantId: dynamicsTenantId,
+                clientId: dynamicsClientId,
+                clientSecret: dynamicsClientSecret,
+                scope: dynamicsScope || buildDefaultDataverseScope(dynamicsUrl),
+              }
+            : { authMode: 'bearer', token: dynamicsToken.trim() }
+
+        const result = await serverIngest.mutateAsync({
+          connection: {
+            name: dynamicsTableName.trim() || 'Dynamics 365 Import',
+            sourceType: 'dynamics365',
+            endpointUrl: dynamicsUrl.trim(),
+            credentials,
+            tableName: dynamicsTableName.trim() || 'Dynamics 365 Import',
+          },
         })
-      } else if (!token) {
-        throw new Error('Provide a Dataverse bearer token, or switch to OAuth client credentials.')
+        setDynamicsMsg(`Imported ${result.rowCount} rows (connection ${result.connectionId}).`)
+      } else {
+        let token = dynamicsToken.trim()
+        if (dynamicsAuthMode === 'client_credentials') {
+          token = await fetchDataverseAccessToken({
+            tenantId: dynamicsTenantId,
+            clientId: dynamicsClientId,
+            clientSecret: dynamicsClientSecret,
+            scope: dynamicsScope || buildDefaultDataverseScope(dynamicsUrl),
+          })
+        } else if (!token) {
+          throw new Error('Provide a Dataverse bearer token, or switch to OAuth client credentials.')
+        }
+        const rows = await fetchDataversePages(dynamicsUrl.trim(), token)
+        if (rows.length === 0) throw new Error('No rows found in response.')
+        const table = await importTable({
+          name: dynamicsTableName.trim() || 'Dynamics 365 Import',
+          rows,
+        })
+        setDynamicsMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
       }
-      const rows = await fetchDataversePages(dynamicsUrl.trim(), token)
-      if (rows.length === 0) throw new Error('No rows found in response.')
-      const table = importTable({
-        name: dynamicsTableName.trim() || 'Dynamics 365 Import',
-        rows,
-      })
-      setDynamicsMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
     } catch (err) {
       setDynamicsMsg(err instanceof Error ? err.message : 'Failed to import Dynamics 365 data.')
     } finally {
@@ -158,18 +212,35 @@ function DataImportPage() {
     }
     try {
       setSurveyCtoBusy(true)
-      const rows = await fetchSurveyCtoPages(
-        surveyCtoUrl.trim(),
-        surveyCtoUsername.trim(),
-        surveyCtoPassword,
-        Number(surveyCtoPageSize) || 500,
-      )
-      if (rows.length === 0) throw new Error('No rows found in response.')
-      const table = importTable({
-        name: surveyCtoTableName.trim() || 'SurveyCTO Import',
-        rows,
-      })
-      setSurveyCtoMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      if (useServerPath) {
+        const result = await serverIngest.mutateAsync({
+          connection: {
+            name: surveyCtoTableName.trim() || 'SurveyCTO Import',
+            sourceType: 'surveycto',
+            endpointUrl: surveyCtoUrl.trim(),
+            credentials: {
+              username: surveyCtoUsername.trim(),
+              password: surveyCtoPassword,
+              pageSize: surveyCtoPageSize,
+            },
+            tableName: surveyCtoTableName.trim() || 'SurveyCTO Import',
+          },
+        })
+        setSurveyCtoMsg(`Imported ${result.rowCount} rows (connection ${result.connectionId}).`)
+      } else {
+        const rows = await fetchSurveyCtoPages(
+          surveyCtoUrl.trim(),
+          surveyCtoUsername.trim(),
+          surveyCtoPassword,
+          Number(surveyCtoPageSize) || 500,
+        )
+        if (rows.length === 0) throw new Error('No rows found in response.')
+        const table = await importTable({
+          name: surveyCtoTableName.trim() || 'SurveyCTO Import',
+          rows,
+        })
+        setSurveyCtoMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
+      }
     } catch (err) {
       setSurveyCtoMsg(err instanceof Error ? err.message : 'Failed to import SurveyCTO data.')
     } finally {
@@ -184,6 +255,11 @@ function DataImportPage() {
         <p className="mt-2 max-w-3xl text-sm text-[var(--sea-ink-soft)]">
           Import Kobo, Excel, Microsoft Dynamics 365, and SurveyCTO datasets into Data Management
           tables for use in queries and widget bindings.
+          {useServerPath ? (
+            <span className="mt-1 block text-emerald-700 dark:text-emerald-400">
+              Signed in: Kobo and Excel imports run server-side with credentials stored in Vault.
+            </span>
+          ) : null}
         </p>
       </div>
 

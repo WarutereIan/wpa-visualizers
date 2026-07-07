@@ -1,8 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
+import {
+  MealProjectToolbar,
+  NewOutputForm,
+  OutputEditForm,
+  OutputEditorActions,
+  ProjectEditForm,
+  ProjectSelect,
+} from '#/components/outputs/MealForms'
 import { OutputContributionVisualizer } from '#/components/outputs/OutputContributionVisualizer'
 import { OutputsComparisonChart } from '#/components/outputs/OutputsComparisonChart'
-import { ProjectSelect } from '#/components/outputs/ProjectSelect'
-import { useOutputsIndicatorsStore } from '#/stores/outputsIndicatorsStore'
+import { useWorkspaceMeal } from '#/hooks/useWorkspaceMeal'
 import type { OutputStatus } from '#/types/outputsIndicators'
 
 export const Route = createFileRoute('/outputs-and-indicators/outputs')({
@@ -24,16 +31,21 @@ const statusClass: Record<OutputStatus, string> = {
 }
 
 function OutputsPage() {
-  const selectedProjectId = useOutputsIndicatorsStore((s) => s.selectedProjectId)
-  const projects = useOutputsIndicatorsStore((s) => s.projects)
-  const outputs = useOutputsIndicatorsStore((s) => s.outputs)
-  const links = useOutputsIndicatorsStore((s) => s.links)
-  const indicators = useOutputsIndicatorsStore((s) => s.indicators)
+  const meal = useWorkspaceMeal()
+  const { selectedProjectId, projects, outputs, links, indicators, loading } = meal
 
   const filtered =
     selectedProjectId === null || selectedProjectId === ''
       ? outputs
       : outputs.filter((o) => o.projectId === selectedProjectId)
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 text-sm text-[var(--sea-ink-soft)]">
+        Loading MEAL data…
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -45,7 +57,14 @@ function OutputsPage() {
             <strong>composite score</strong> (weighted mean % toward targets).
           </p>
         </div>
-        <ProjectSelect />
+        <div className="flex flex-col gap-3 sm:items-end">
+          <ProjectSelect />
+          <MealProjectToolbar />
+          {selectedProjectId && projects.find((p) => p.id === selectedProjectId) && (
+            <ProjectEditForm project={projects.find((p) => p.id === selectedProjectId)!} />
+          )}
+          <NewOutputForm projectId={selectedProjectId} />
+        </div>
       </div>
 
       {filtered.length > 0 && (
@@ -56,15 +75,20 @@ function OutputsPage() {
         {filtered.map((o) => {
           const project = projects.find((p) => p.id === o.projectId)
           return (
-            <OutputContributionVisualizer
-              key={o.id}
-              output={o}
-              project={project}
-              links={links}
-              indicators={indicators}
-              statusLabel={statusLabel}
-              statusClass={statusClass}
-            />
+            <div key={o.id}>
+              <OutputContributionVisualizer
+                output={o}
+                project={project}
+                links={links}
+                indicators={indicators}
+                statusLabel={statusLabel}
+                statusClass={statusClass}
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <OutputEditForm output={o} />
+                <OutputEditorActions outputId={o.id} />
+              </div>
+            </div>
           )
         })}
       </div>

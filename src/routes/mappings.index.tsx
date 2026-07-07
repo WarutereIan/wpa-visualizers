@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMappingStore } from '#/stores/mappingStore'
+import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/mappings/')({
@@ -7,7 +7,7 @@ export const Route = createFileRoute('/mappings/')({
 })
 
 function MappingsIndexPage() {
-  const mappings = useMappingStore((s) => s.mappings)
+  const { mappings } = useWorkspaceMappings()
 
   return (
     <div className="space-y-6">

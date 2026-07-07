@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { isSupabaseConfigured } from '#/lib/env'
 import type { MappingDefinition } from '#/types/mapping'
 
 const STORAGE_KEY = 'wpa-mappings-v2'
@@ -65,6 +66,9 @@ export const useMappingStore = create<MappingState>()(
 
       getById: (id) => get().mappings.find((m) => m.id === id),
     }),
-    { name: STORAGE_KEY },
+    {
+      name: STORAGE_KEY,
+      skipHydration: isSupabaseConfigured(),
+    },
   ),
 )

@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useRef } from 'react'
 import { DashboardWizard } from '#/components/dashboard/DashboardWizard'
-import { createNewDashboardDraft, useDashboardStore } from '#/stores/dashboardStore'
+import { createNewDashboardDraft } from '#/stores/dashboardStore'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import type { DashboardDefinition } from '#/types/dashboard'
 
 export const Route = createFileRoute('/dashboards/add')({
@@ -10,7 +11,7 @@ export const Route = createFileRoute('/dashboards/add')({
 
 function DashboardAddPage() {
   const navigate = useNavigate()
-  const upsertDashboard = useDashboardStore((s) => s.upsertDashboard)
+  const { upsertDashboard } = useWorkspaceDashboards()
   const draftRef = useRef<DashboardDefinition | null>(null)
   if (!draftRef.current) {
     draftRef.current = createNewDashboardDraft({ templateId: 'blank' })
@@ -25,11 +26,12 @@ function DashboardAddPage() {
       subtitle="Step through basics, pick a template, build your layout, then review."
       onCancel={() => navigate({ to: '/dashboards' })}
       onComplete={(next) => {
-        upsertDashboard(next)
-        navigate({
-          to: '/dashboards/$dashboardId',
-          params: { dashboardId: next.id },
-        })
+        void upsertDashboard(next).then(() =>
+          navigate({
+            to: '/dashboards/$dashboardId',
+            params: { dashboardId: next.id },
+          }),
+        )
       }}
     />
   )

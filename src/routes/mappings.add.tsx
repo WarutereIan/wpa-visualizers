@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useRef } from 'react'
 import { MappingWizard } from '#/components/mapping/MappingWizard'
-import { createNewMappingDraft, useMappingStore } from '#/stores/mappingStore'
+import { createNewMappingDraft } from '#/stores/mappingStore'
+import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import type { MappingDefinition } from '#/types/mapping'
 
 export const Route = createFileRoute('/mappings/add')({
@@ -10,7 +11,7 @@ export const Route = createFileRoute('/mappings/add')({
 
 function MappingsAddPage() {
   const navigate = useNavigate()
-  const upsertMapping = useMappingStore((s) => s.upsertMapping)
+  const { upsertMapping } = useWorkspaceMappings()
   const draftRef = useRef<MappingDefinition | null>(null)
   if (!draftRef.current) {
     draftRef.current = createNewMappingDraft()
@@ -24,11 +25,12 @@ function MappingsAddPage() {
       subtitle="Name it, choose a data source or embed, configure, then review."
       onCancel={() => navigate({ to: '/mappings' })}
       onComplete={(next) => {
-        upsertMapping(next)
-        navigate({
-          to: '/mappings/$mappingId',
-          params: { mappingId: next.id },
-        })
+        void upsertMapping(next).then(() =>
+          navigate({
+            to: '/mappings/$mappingId',
+            params: { mappingId: next.id },
+          }),
+        )
       }}
     />
   )

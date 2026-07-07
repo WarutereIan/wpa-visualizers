@@ -4,6 +4,8 @@
 **Date:** May 2026
 **Status:** Working Document
 
+**Related:** [Supabase backend plan](./supabase-backend-plan.md) — data inventory, gaps, and implementation phases for auth + persistence.
+
 ---
 
 ## 1. Product Overview

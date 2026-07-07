@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { DashboardWizard } from '#/components/dashboard/DashboardWizard'
-import { useDashboardStore } from '#/stores/dashboardStore'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/dashboards/$dashboardId/manage')({
@@ -22,8 +22,8 @@ export const Route = createFileRoute('/dashboards/$dashboardId/manage')({
 function DashboardManagePage() {
   const { dashboardId } = Route.useParams()
   const { step } = Route.useSearch()
-  const dashboard = useDashboardStore((s) => s.getById(dashboardId))
-  const upsertDashboard = useDashboardStore((s) => s.upsertDashboard)
+  const { getById, upsertDashboard } = useWorkspaceDashboards()
+  const dashboard = getById(dashboardId)
   const navigate = useNavigate()
 
   if (!dashboard) {
@@ -54,11 +54,12 @@ function DashboardManagePage() {
         })
       }
       onComplete={(next) => {
-        upsertDashboard(next)
-        navigate({
-          to: '/dashboards/$dashboardId',
-          params: { dashboardId: next.id },
-        })
+        void upsertDashboard(next).then(() =>
+          navigate({
+            to: '/dashboards/$dashboardId',
+            params: { dashboardId: next.id },
+          }),
+        )
       }}
     />
   )

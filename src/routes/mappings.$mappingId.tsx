@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { MappingViewer } from '#/components/mapping/MappingViewer'
-import { useMappingStore } from '#/stores/mappingStore'
+import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/mappings/$mappingId')({
@@ -9,8 +9,8 @@ export const Route = createFileRoute('/mappings/$mappingId')({
 
 function MappingViewPage() {
   const { mappingId } = Route.useParams()
-  const mapping = useMappingStore((s) => s.getById(mappingId))
-  const removeMapping = useMappingStore((s) => s.removeMapping)
+  const { getById, removeMapping } = useWorkspaceMappings()
+  const mapping = getById(mappingId)
   const navigate = useNavigate()
 
   if (!mapping) {
@@ -28,8 +28,7 @@ function MappingViewPage() {
     <MappingViewer
       mapping={mapping}
       onDelete={() => {
-        removeMapping(mappingId)
-        navigate({ to: '/mappings' })
+        void removeMapping(mappingId).then(() => navigate({ to: '/mappings' }))
       }}
     />
   )

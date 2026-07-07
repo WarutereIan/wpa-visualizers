@@ -74,4 +74,6 @@ export interface DashboardDefinition {
   /** React Grid Layout items (legacy Layout type) */
   layout: Layout
   widgets: Record<string, WidgetConfig>
+  /** Lifecycle status; defaults to 'draft' for new dashboards. */
+  status?: 'draft' | 'published' | 'archived'
 }

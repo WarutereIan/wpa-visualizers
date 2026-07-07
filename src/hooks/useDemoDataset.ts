@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useDataStore } from '#/stores/dataStore'
+import { runQueryOnServer, useQueries } from '#/lib/api/queries'
 import type { DataRow } from '#/types/data'
 
 export interface DemoRow {
@@ -23,38 +25,65 @@ function deriveChartRows(
   }))
 }
 
-/** Query-backed data for widgets; falls back to empty result when query is missing. */
+/** Query-backed data for widgets; uses Supabase when signed in. */
 export function useDemoDataset(
   dataSourceId: string | undefined,
   bindings?: Record<string, string>,
   enabled = true,
 ) {
-  const version = useDataStore((s) => s.version)
-  const runQuery = useDataStore((s) => s.runQuery)
+  const workspaceReady = useWorkspaceReady()
+  const orgId = useOrgId()
+  const demoVersion = useDataStore((s) => s.version)
+  const demoRunQuery = useDataStore((s) => s.runQuery)
+  const { data: serverQueries } = useQueries(workspaceReady ? orgId : null)
+
   return useQuery({
-    queryKey: ['dataset', 'query', dataSourceId, bindings?.xKey, bindings?.yKey, version],
+    queryKey: [
+      'dataset',
+      'query',
+      dataSourceId,
+      bindings?.xKey,
+      bindings?.yKey,
+      workspaceReady ? orgId : demoVersion,
+    ],
     queryFn: async () => {
       await new Promise((r) => setTimeout(r, 120))
       if (!dataSourceId) return [] as DemoRow[]
-      const rows = runQuery(dataSourceId)
+      let rows: DataRow[]
+      if (workspaceReady && orgId) {
+        const query = serverQueries?.find((q) => q.id === dataSourceId)
+        if (!query) return []
+        rows = await runQueryOnServer(orgId, query)
+      } else {
+        rows = demoRunQuery(dataSourceId)
+      }
       return deriveChartRows(rows, bindings)
     },
-    enabled: enabled && !!dataSourceId,
+    enabled: enabled && !!dataSourceId && (!workspaceReady || Boolean(serverQueries)),
     placeholderData: (prev) => prev,
   })
 }
 
 export function useDatasetRows(dataSourceId: string | undefined, enabled = true) {
-  const version = useDataStore((s) => s.version)
-  const runQuery = useDataStore((s) => s.runQuery)
+  const workspaceReady = useWorkspaceReady()
+  const orgId = useOrgId()
+  const demoVersion = useDataStore((s) => s.version)
+  const demoRunQuery = useDataStore((s) => s.runQuery)
+  const { data: serverQueries } = useQueries(workspaceReady ? orgId : null)
+
   return useQuery({
-    queryKey: ['dataset', 'raw', dataSourceId, version],
+    queryKey: ['dataset', 'raw', dataSourceId, workspaceReady ? orgId : demoVersion],
     queryFn: async () => {
       await new Promise((r) => setTimeout(r, 120))
       if (!dataSourceId) return [] as DataRow[]
-      return runQuery(dataSourceId)
+      if (workspaceReady && orgId) {
+        const query = serverQueries?.find((q) => q.id === dataSourceId)
+        if (!query) return []
+        return runQueryOnServer(orgId, query)
+      }
+      return demoRunQuery(dataSourceId)
     },
-    enabled: enabled && !!dataSourceId,
+    enabled: enabled && !!dataSourceId && (!workspaceReady || Boolean(serverQueries)),
     placeholderData: (prev) => prev,
   })
 }

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { DashboardViewer } from '#/components/dashboard/DashboardViewer'
-import { useDashboardStore } from '#/stores/dashboardStore'
+import { DashboardShareToolbar } from '#/components/dashboard/DashboardShareToolbar'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/dashboards/$dashboardId')({
@@ -9,8 +10,8 @@ export const Route = createFileRoute('/dashboards/$dashboardId')({
 
 function DashboardViewPage() {
   const { dashboardId } = Route.useParams()
-  const dashboard = useDashboardStore((s) => s.getById(dashboardId))
-  const removeDashboard = useDashboardStore((s) => s.removeDashboard)
+  const { getById, removeDashboard } = useWorkspaceDashboards()
+  const dashboard = getById(dashboardId)
   const navigate = useNavigate()
 
   if (!dashboard) {
@@ -26,14 +27,14 @@ function DashboardViewPage() {
 
   return (
     <div className="space-y-4">
+      <DashboardShareToolbar dashboardId={dashboardId} />
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => {
-            removeDashboard(dashboardId)
-            navigate({ to: '/dashboards' })
+            void removeDashboard(dashboardId).then(() => navigate({ to: '/dashboards' }))
           }}
         >
           Delete dashboard

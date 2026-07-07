@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useDashboardStore } from '#/stores/dashboardStore'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import { Button } from '#/components/ui/button'
 
@@ -8,7 +8,7 @@ export const Route = createFileRoute('/dashboards/')({
 })
 
 function DashboardsIndexPage() {
-  const dashboards = useDashboardStore((s) => s.dashboards)
+  const { dashboards } = useWorkspaceDashboards()
 
   return (
     <div className="space-y-6">

@@ -14,6 +14,9 @@ export interface DataTable {
   name: string
   columns: DataColumnDef[]
   rows: DataRow[]
+  storageBackend?: 'jsonb' | 'parquet'
+  rowCount?: number
+  sourceConnectionId?: string | null
 }
 
 export type DataFilterOperator =

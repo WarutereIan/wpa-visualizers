@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router'
 import type { MappingDefinition } from '#/types/mapping'
 import { getBaselineMapUrl } from '#/lib/env'
 import { guessGeoColumns } from '#/lib/geo'
+import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
+import { useTableWithRows } from '#/lib/api/tables'
 import { useDataStore } from '#/stores/dataStore'
 import { Button } from '#/components/ui/button'
 import { DatasetLeafletMap } from '#/components/mapping/DatasetLeafletMap'
@@ -25,7 +27,19 @@ export interface MappingViewerProps {
 }
 
 export function MappingViewer({ mapping, onDelete }: MappingViewerProps) {
-  const getTableById = useDataStore((s) => s.getTableById)
+  const workspaceReady = useWorkspaceReady()
+  const orgId = useOrgId()
+  const demoGetTableById = useDataStore((s) => s.getTableById)
+  const { data: serverTable, isLoading: tableLoading } = useTableWithRows(
+    workspaceReady ? orgId : null,
+    mapping.source === 'dataset_table' ? (mapping.dataTableId ?? null) : null,
+  )
+
+  const table = workspaceReady
+    ? serverTable
+    : mapping.dataTableId
+      ? demoGetTableById(mapping.dataTableId)
+      : undefined
 
   const iframeSrc = useMemo(() => {
     if (mapping.source === 'baseline_embed') return getBaselineMapUrl()
@@ -37,7 +51,13 @@ export function MappingViewer({ mapping, onDelete }: MappingViewerProps) {
   }, [mapping])
 
   if (mapping.source === 'dataset_table') {
-    const table = mapping.dataTableId ? getTableById(mapping.dataTableId) : undefined
+    if (tableLoading) {
+      return (
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-8 text-center text-sm text-[var(--sea-ink-soft)]">
+          Loading dataset…
+        </div>
+      )
+    }
     if (!table) {
       return (
         <div className="space-y-4">
