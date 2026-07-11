@@ -5,7 +5,7 @@ import {
 } from '#/components/outputs/IndicatorsPortfolioCharts'
 import { useIndicatorDefinitions, useIndicatorTrends } from '#/lib/api/indicatorDefinitions'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
-import type { WpaIndicator } from '#/types/outputsIndicators'
+import { INDICATOR_TYPE_LABELS, type Indicator } from '#/types/outputsIndicators'
 
 export const Route = createFileRoute('/indicator-visualization')({
   component: IndicatorVisualizationPage,
@@ -40,18 +40,25 @@ function IndicatorVisualizationPage() {
     }
   }
 
-  const chartIndicators: WpaIndicator[] = definitions.map((d) => {
+  const chartIndicators: Indicator[] = definitions.map((d) => {
     const latest = latestByIndicator.get(d.id)
     return {
       id: d.id,
-      projectId: d.projectId ?? '',
+      organizationId: d.organizationId,
+      projectId: d.projectId,
       name: d.name,
-      location: '',
-      unit: '',
+      type: d.type,
+      location: d.location,
+      unit: d.unit,
       baseline: d.baseline,
       target: d.target,
-      current: latest?.value ?? null,
-      period: latest?.period ?? d.period ?? '',
+      current: latest?.value ?? d.current ?? null,
+      period: latest?.period ?? d.period,
+      sourceQueryId: d.sourceQueryId,
+      formula: d.formula,
+      disaggregations: d.disaggregations,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
     }
   })
 
@@ -84,6 +91,8 @@ function IndicatorVisualizationPage() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Type</th>
+                  <th className="px-4 py-3 font-medium">Location</th>
+                  <th className="px-4 py-3 font-medium">Unit</th>
                   <th className="px-4 py-3 font-medium">Baseline</th>
                   <th className="px-4 py-3 font-medium">Current</th>
                   <th className="px-4 py-3 font-medium">Target</th>
@@ -96,9 +105,11 @@ function IndicatorVisualizationPage() {
                   return (
                     <tr key={d.id} className="border-b border-[var(--line)] last:border-0">
                       <td className="px-4 py-3 font-medium text-[var(--sea-ink)]">{d.name}</td>
-                      <td className="px-4 py-3">{d.type}</td>
+                      <td className="px-4 py-3">{INDICATOR_TYPE_LABELS[d.type] ?? d.type}</td>
+                      <td className="px-4 py-3">{d.location ?? '—'}</td>
+                      <td className="px-4 py-3">{d.unit ?? '—'}</td>
                       <td className="px-4 py-3">{d.baseline ?? '—'}</td>
-                      <td className="px-4 py-3">{latest?.value ?? '—'}</td>
+                      <td className="px-4 py-3">{latest?.value ?? d.current ?? '—'}</td>
                       <td className="px-4 py-3">{d.target ?? '—'}</td>
                       <td className="px-4 py-3 text-[var(--sea-ink-soft)]">{latest?.period ?? d.period ?? '—'}</td>
                     </tr>

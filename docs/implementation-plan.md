@@ -22,9 +22,9 @@ This document expands the five phases in `supabase-backend-plan.md` §12 into a 
 
 | Phase | Name | Status | Migrations | Notes |
 |-------|------|--------|------------|-------|
-| **A** | Foundation (auth, orgs, RLS) | 🟡 In progress | `0001`–`0009` applied remotely | Signup/org flow works; RLS cross-org test + vitest + invites flow pending |
+| **A** | Foundation (auth, orgs, RLS) | 🟡 In progress | `0001`–`0009`, `0022` applied remotely | Signup/org flow works; profile provisioning self-heals (`0022`); `/settings` page + theme/sidebar prefs sync; AuthGate blocks silent demo fallback; RLS cross-org test + vitest + invites flow pending |
 | **B** | Core workspace data | 🟡 In progress | `0002`–`0010` applied | API + edge functions deployed; delete-table UI + `dashboard_view_states` done; RLS/perf tests pending |
-| **C** | MEAL layer | 🟡 In progress | `0004`, `0011`, `0015` applied | CRUD + compute + link manager; integration/parity tests + RLS cross-org test pending |
+| **C** | MEAL layer | 🟡 In progress | `0004`, `0011`, `0015`, `0020`, `0021` applied | Consolidated onto `indicator_definitions`; `outputs.district`→`location`; `/projects` CRUD + detail tabs shipped; portfolio Outputs/Indicators routes retained; edge fns updated (redeploy pending); RLS/perf tests pending |
 | **D** | BYOD + analytical engine | ✅ Complete | `0005`, `0012`, `0016` applied | Parquet path + scheduled refresh fixed; perf validation pending |
 | **E** | Product extras | ✅ Complete | `0006`–`0019` applied | Export worker + cron helpers shipped; ops: deploy worker, insert `edge_cron_config`, run E.7 smoke tests in staging |
 
@@ -107,10 +107,18 @@ Stand up Supabase, email/password auth, the organization tenancy model, profiles
 - [x] `/` and `/pricing` remain public
 - [ ] RLS verified: no cross-org reads
 - [x] `authStore` survives refresh via Supabase session persistence
+- [x] Profile provisioning is self-healing (`create_default_organization` INSERTs the profile row if the `handle_new_user` trigger didn't fire — migration `0022`)
+- [x] Signup collects an optional display name written to `profiles.display_name`
+- [x] Authenticated users with an unresolvable workspace see a "Workspace not ready" error + retry instead of silently falling back to demo data (`AuthGate`)
+- [x] `/settings` page edits `display_name` / `avatar_url` and syncs `user_preferences.theme` + `sidebar_collapsed` across devices
+- [x] `UserMenu` renders the avatar image and links to `/settings`
+- [x] `organization_invites.role` check constraint includes `data_manager` (`0022`)
 
 ### A.9 Risks / notes
 - **Org vs workspace naming** (Open Decision #1): commit to `organizations` in the DB; UI may still say "workspace."
 - **Demo mode** (Open Decision #8): if you allow anonymous trial, gate the guard on a `demoMode` flag rather than removing the guard.
+- **RPC signature change (`0022`)**: `create_default_organization` was renamed from `(org_name, org_slug)` to `(p_org_name, p_org_slug, p_display_name)`. Frontend and migration shipped together; PostgREST schema cache reloaded via `NOTIFY pgrst, 'reload schema'`. If a stale-cache error recurs, re-send the notify or wait ~10s.
+- **`refreshMembership`** in `authStore` is now wired to the `AuthGate` retry button (no longer dead code).
 
 ---
 
@@ -282,10 +290,18 @@ Promote the read-only MEAL demo into full CRUD backed by Supabase, scoped to org
 - [x] Full CRUD on projects, outputs, indicators (create + edit + delete; link create/delete via manager).
 - [x] `selectedProjectId` persists across sessions via `user_preferences`.
 - [x] An indicator can be linked to a saved query and its `current` value computed server-side (auth fixed).
+- [x] Indicators unified onto `indicator_definitions`; legacy `indicators` table dropped (migration `0020`).
+- [x] `Output.location` (optional) replaces `district` (migration `0021`); MEAL framework terminology.
+- [x] `/projects` list + `/projects/$projectId` detail (Overview/Outputs/Indicators/Links tabs) for project-scoped CRUD.
+- [ ] Edge functions `compute-indicator-current`, `refresh-aggregates`, `evaluate-alerts` redeployed (ops task).
 - [ ] RLS verified: a user in org B sees none of org A's MEAL entities.
 
 ### C.9 Risks / notes
-- **Indicator duplication** (Open Decision #3): keep MEAL `indicators` and the imported `tbl-indicators` dataset clearly separated in UI copy. The future unified `indicator_definitions` table is deferred to Phase E.
+- **Indicator consolidation (done)**: MEAL `indicators` has been retired; all indicators now live on the unified `indicator_definitions` table (migration `0020_unify_indicators.sql`). FKs from `output_indicator_links` and `alert_rules` re-pointed; org-match trigger moved; `seed_meal_template_for_org` rewritten to seed `indicator_definitions`. Edge functions `compute-indicator-current`, `refresh-aggregates`, and `evaluate-alerts` updated to read/write `indicator_definitions` — **redeploy pending** (ops task).
+- **`outputs.district` → `outputs.location` (done)**: migration `0021_output_location.sql` renamed the column to `location` (optional) to match MEAL framework terminology (geographic/site scope of an output).
+- **Project management menu (done)**: `/projects` list + `/projects/$projectId` detail route with Overview/Outputs/Indicators/Links tabs now own project CRUD and output/indicator creation. The legacy `/outputs-and-indicators/outputs` and `/outputs-and-indicators/indicators` routes remain as cross-project portfolio views.
+- **Type refactor (done)**: `WpaProject`/`WpaOutput`/`WpaIndicator` replaced by production-grade `Project`/`Output`/`Indicator` types with a full `IndicatorType` enum (`count`, `sum`, `average`, `percentage`, `disaggregated`, `composite`, …) and `INDICATOR_TYPE_LABELS`. Deprecated `Wpa*` aliases kept for transition.
+- **Indicator duplication** (Open Decision #3): the imported `tbl-indicators` dataset remains separate from the MEAL `indicator_definitions` catalog in UI copy.
 - **`program` hierarchy** (Open Decision #2): decide whether `program` is a free-text field on `projects` or a separate `programs` table; for v1 keep it as text on `projects` to match the demo.
 
 ---

@@ -2,7 +2,16 @@ import { useState } from 'react'
 import { Button } from '#/components/ui/button'
 import { useWorkspaceMeal } from '#/hooks/useWorkspaceMeal'
 import { useSelectedProject } from '#/hooks/useSelectedProject'
-import type { OutputStatus, ProjectStatus, WpaIndicator, WpaOutput, WpaProject } from '#/types/outputsIndicators'
+import {
+  INDICATOR_TYPES,
+  INDICATOR_TYPE_LABELS,
+  type IndicatorType,
+  type OutputStatus,
+  type ProjectStatus,
+  type Indicator,
+  type Output,
+  type Project,
+} from '#/types/outputsIndicators'
 
 const outputStatuses: OutputStatus[] = ['planned', 'in_progress', 'completed', 'at_risk']
 const projectStatuses: ProjectStatus[] = ['planned', 'in_progress', 'completed', 'at_risk']
@@ -38,80 +47,11 @@ export function ProjectSelect() {
   )
 }
 
-export function MealProjectToolbar() {
-  const meal = useWorkspaceMeal()
-  const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
-  const [program, setProgram] = useState('')
-  const [status, setStatus] = useState<ProjectStatus>('in_progress')
-  const [saving, setSaving] = useState(false)
-  const [err, setErr] = useMutationError()
-
-  if (!meal.canEdit) return null
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
-        {open ? 'Cancel' : 'New project'}
-      </Button>
-      {open && (
-        <form
-          className="flex w-full flex-wrap items-end gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!name.trim()) return
-            setSaving(true)
-            setErr(null)
-            void meal
-              .createProject({ name, code, program, description: '', status })
-              .then(() => {
-                setName('')
-                setCode('')
-                setProgram('')
-                setOpen(false)
-              })
-              .catch((e: unknown) => setErr(e instanceof Error ? e.message : 'Failed to create project'))
-              .finally(() => setSaving(false))
-          }}
-        >
-          <label className="min-w-[140px] flex-1 text-sm">
-            Name
-            <input className={fieldClass()} value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
-          <label className="min-w-[100px] text-sm">
-            Code
-            <input className={fieldClass()} value={code} onChange={(e) => setCode(e.target.value)} />
-          </label>
-          <label className="min-w-[100px] text-sm">
-            Program
-            <input className={fieldClass()} value={program} onChange={(e) => setProgram(e.target.value)} />
-          </label>
-          <label className="min-w-[120px] text-sm">
-            Status
-            <select className={fieldClass()} value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus)}>
-              {projectStatuses.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace('_', ' ')}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button type="submit" size="sm" disabled={saving}>
-            {saving ? 'Saving…' : 'Create'}
-          </Button>
-          {err && <p className="w-full text-sm text-red-600 dark:text-red-400">{err}</p>}
-        </form>
-      )}
-    </div>
-  )
-}
-
 export function NewOutputForm({ projectId }: { projectId: string | null }) {
   const meal = useWorkspaceMeal()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
-  const [district, setDistrict] = useState('')
+  const [location, setLocation] = useState('')
   const [status, setStatus] = useState<OutputStatus>('planned')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useMutationError()
@@ -137,12 +77,12 @@ export function NewOutputForm({ projectId }: { projectId: string | null }) {
                 title,
                 description: '',
                 status,
-                district,
+                location: location || null,
                 targetPeriod: '2026-Q1',
               })
               .then(() => {
                 setTitle('')
-                setDistrict('')
+                setLocation('')
                 setOpen(false)
               })
               .catch((e: unknown) => setErr(e instanceof Error ? e.message : 'Failed to create output'))
@@ -154,8 +94,8 @@ export function NewOutputForm({ projectId }: { projectId: string | null }) {
             <input className={fieldClass()} value={title} onChange={(e) => setTitle(e.target.value)} required />
           </label>
           <label className="text-sm">
-            District
-            <input className={fieldClass()} value={district} onChange={(e) => setDistrict(e.target.value)} />
+            Location <span className="text-[var(--sea-ink-soft)]">(optional)</span>
+            <input className={fieldClass()} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. North, East, Site A" />
           </label>
           <label className="text-sm">
             Status
@@ -183,6 +123,7 @@ export function NewIndicatorForm({ projectId }: { projectId: string | null }) {
   const meal = useWorkspaceMeal()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [type, setType] = useState<IndicatorType>('count')
   const [location, setLocation] = useState('')
   const [unit, setUnit] = useState('')
   const [baseline, setBaseline] = useState('0')
@@ -210,12 +151,16 @@ export function NewIndicatorForm({ projectId }: { projectId: string | null }) {
               .createIndicator({
                 projectId,
                 name,
-                location,
-                unit,
+                type,
+                location: location || null,
+                unit: unit || null,
                 baseline: Number(baseline),
                 target: Number(target),
                 current: Number(current),
                 period: '2026-Q1',
+                sourceQueryId: null,
+                formula: {},
+                disaggregations: [],
               })
               .then(() => {
                 setName('')
@@ -226,17 +171,27 @@ export function NewIndicatorForm({ projectId }: { projectId: string | null }) {
               .finally(() => setSaving(false))
           }}
         >
-          <label className="text-sm">
+          <label className="text-sm sm:col-span-2">
             Name
             <input className={fieldClass()} value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
           <label className="text-sm">
-            Location
+            Type
+            <select className={fieldClass()} value={type} onChange={(e) => setType(e.target.value as IndicatorType)}>
+              {INDICATOR_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {INDICATOR_TYPE_LABELS[t]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            Location <span className="text-[var(--sea-ink-soft)]">(optional)</span>
             <input className={fieldClass()} value={location} onChange={(e) => setLocation(e.target.value)} />
           </label>
           <label className="text-sm">
-            Unit
-            <input className={fieldClass()} value={unit} onChange={(e) => setUnit(e.target.value)} />
+            Unit <span className="text-[var(--sea-ink-soft)]">(optional)</span>
+            <input className={fieldClass()} value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g. % households" />
           </label>
           <label className="text-sm">
             Baseline
@@ -357,12 +312,12 @@ export function OutputEditorActions({ outputId }: { outputId: string }) {
 }
 
 /** Inline edit form for a project's editable fields. */
-export function ProjectEditForm({ project }: { project: WpaProject }) {
+export function ProjectEditForm({ project }: { project: Project }) {
   const meal = useWorkspaceMeal()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(project.name)
-  const [code, setCode] = useState(project.code)
-  const [program, setProgram] = useState(project.program)
+  const [code, setCode] = useState(project.code ?? '')
+  const [program, setProgram] = useState(project.program ?? '')
   const [description, setDescription] = useState(project.description)
   const [status, setStatus] = useState<ProjectStatus>(project.status ?? 'in_progress')
   const [saving, setSaving] = useState(false)
@@ -432,14 +387,14 @@ export function ProjectEditForm({ project }: { project: WpaProject }) {
 }
 
 /** Inline edit form for an output's editable fields. */
-export function OutputEditForm({ output }: { output: WpaOutput }) {
+export function OutputEditForm({ output }: { output: Output }) {
   const meal = useWorkspaceMeal()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState(output.title)
   const [description, setDescription] = useState(output.description)
   const [status, setStatus] = useState<OutputStatus>(output.status)
-  const [district, setDistrict] = useState(output.district)
-  const [targetPeriod, setTargetPeriod] = useState(output.targetPeriod)
+  const [location, setLocation] = useState(output.location ?? '')
+  const [targetPeriod, setTargetPeriod] = useState(output.targetPeriod ?? '')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useMutationError()
 
@@ -461,7 +416,13 @@ export function OutputEditForm({ output }: { output: WpaOutput }) {
         setSaving(true)
         setErr(null)
         void meal
-          .updateOutput(output.id, { title, description, status, district, targetPeriod })
+          .updateOutput(output.id, {
+            title,
+            description,
+            status,
+            location: location || null,
+            targetPeriod: targetPeriod || null,
+          })
           .then(() => setOpen(false))
           .catch((e: unknown) => setErr(e instanceof Error ? e.message : 'Failed to update output'))
           .finally(() => setSaving(false))
@@ -476,8 +437,8 @@ export function OutputEditForm({ output }: { output: WpaOutput }) {
         <input className={fieldClass()} value={description} onChange={(e) => setDescription(e.target.value)} />
       </label>
       <label className="text-sm">
-        District
-        <input className={fieldClass()} value={district} onChange={(e) => setDistrict(e.target.value)} />
+        Location <span className="text-[var(--sea-ink-soft)]">(optional)</span>
+        <input className={fieldClass()} value={location} onChange={(e) => setLocation(e.target.value)} />
       </label>
       <label className="text-sm">
         Target period
@@ -507,16 +468,17 @@ export function OutputEditForm({ output }: { output: WpaOutput }) {
 }
 
 /** Inline edit form for an indicator's editable fields (excludes sourceQueryId — handled by IndicatorEditorActions). */
-export function IndicatorEditForm({ indicator }: { indicator: WpaIndicator }) {
+export function IndicatorEditForm({ indicator }: { indicator: Indicator }) {
   const meal = useWorkspaceMeal()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(indicator.name)
-  const [location, setLocation] = useState(indicator.location)
-  const [unit, setUnit] = useState(indicator.unit)
+  const [type, setType] = useState<IndicatorType>(indicator.type)
+  const [location, setLocation] = useState(indicator.location ?? '')
+  const [unit, setUnit] = useState(indicator.unit ?? '')
   const [baseline, setBaseline] = useState(String(indicator.baseline ?? 0))
   const [target, setTarget] = useState(String(indicator.target ?? 0))
   const [current, setCurrent] = useState(String(indicator.current ?? 0))
-  const [period, setPeriod] = useState(indicator.period)
+  const [period, setPeriod] = useState(indicator.period ?? '')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useMutationError()
 
@@ -540,12 +502,13 @@ export function IndicatorEditForm({ indicator }: { indicator: WpaIndicator }) {
         void meal
           .updateIndicator(indicator.id, {
             name,
-            location,
-            unit,
+            type,
+            location: location || null,
+            unit: unit || null,
             baseline: Number(baseline),
             target: Number(target),
             current: Number(current),
-            period,
+            period: period || null,
           })
           .then(() => setOpen(false))
           .catch((e: unknown) => setErr(e instanceof Error ? e.message : 'Failed to update indicator'))
@@ -557,11 +520,21 @@ export function IndicatorEditForm({ indicator }: { indicator: WpaIndicator }) {
         <input className={fieldClass()} value={name} onChange={(e) => setName(e.target.value)} required />
       </label>
       <label className="text-sm">
-        Location
+        Type
+        <select className={fieldClass()} value={type} onChange={(e) => setType(e.target.value as IndicatorType)}>
+          {INDICATOR_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {INDICATOR_TYPE_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm">
+        Location <span className="text-[var(--sea-ink-soft)]">(optional)</span>
         <input className={fieldClass()} value={location} onChange={(e) => setLocation(e.target.value)} />
       </label>
       <label className="text-sm">
-        Unit
+        Unit <span className="text-[var(--sea-ink-soft)]">(optional)</span>
         <input className={fieldClass()} value={unit} onChange={(e) => setUnit(e.target.value)} />
       </label>
       <label className="text-sm">
@@ -600,8 +573,8 @@ export function IndicatorLinkManager({
   outputs,
 }: {
   indicatorId: string
-  linkedOutputs: WpaOutput[]
-  outputs: WpaOutput[]
+  linkedOutputs: Output[]
+  outputs: Output[]
 }) {
   const meal = useWorkspaceMeal()
   const [adding, setAdding] = useState(false)
@@ -637,6 +610,7 @@ export function IndicatorLinkManager({
                 outputId,
                 indicatorId,
                 weight: Number(weight) || 1,
+                note: null,
               })
               .then(() => {
                 setOutputId('')

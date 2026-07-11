@@ -1,4 +1,4 @@
-import { LogOut, User } from 'lucide-react'
+import { LogOut, User, Settings } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '#/components/ui/button'
 import { useAuthStore } from '#/stores/authStore'
@@ -14,10 +14,8 @@ export function UserMenu() {
 
   if (!isSupabaseConfigured() || !user) return null
 
-  const label =
-    profile?.displayName?.trim() ||
-    user.email?.split('@')[0] ||
-    'Account'
+  const label = profile?.displayName?.trim() || user.email?.split('@')[0] || 'Account'
+  const avatarUrl = profile?.avatarUrl?.trim() || null
 
   return (
     <div className="flex items-center gap-2">
@@ -30,6 +28,32 @@ export function UserMenu() {
           </div>
         )}
       </div>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={label}
+          className="h-8 w-8 shrink-0 rounded-full border border-[var(--line)] object-cover"
+          onError={(e) => {
+            // Hide broken avatar images so the UI doesn't show a broken icon.
+            (e.currentTarget as HTMLImageElement).style.display = 'none'
+          }}
+        />
+      ) : (
+        <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--bg-base)] text-[var(--sea-ink-soft)] sm:flex">
+          <User size={14} />
+        </div>
+      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="shrink-0"
+        onClick={() => navigate({ to: '/settings' })}
+        aria-label="Settings"
+        title="Settings"
+      >
+        <Settings size={16} />
+      </Button>
       <Button
         type="button"
         variant="outline"
@@ -37,7 +61,6 @@ export function UserMenu() {
         className="gap-1.5"
         onClick={() => void signOut().then(() => navigate({ to: '/login' }))}
       >
-        <User size={14} className="sm:hidden" />
         <LogOut size={14} className="hidden sm:block" />
         <span className="hidden sm:inline">Sign out</span>
       </Button>

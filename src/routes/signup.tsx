@@ -22,6 +22,7 @@ function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [workspaceName, setWorkspaceName] = useState('My workspace')
   const [localError, setLocalError] = useState<string | null>(null)
 
@@ -50,7 +51,7 @@ function SignupPage() {
     }
 
     try {
-      await signUp(email.trim(), password, workspaceName.trim())
+      await signUp(email.trim(), password, workspaceName.trim(), displayName.trim() || undefined)
       void navigate({ to: '/data-management' })
     } catch (err) {
       setLocalError(formatSupabaseError(err, 'signup.onSubmit'))
@@ -67,6 +68,16 @@ function SignupPage() {
             {error}
           </div>
         )}
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-[var(--sea-ink)]">Your name <span className="font-normal text-[var(--sea-ink-soft)]">(optional)</span></span>
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className="h-9 border border-[var(--line)] bg-[var(--surface-strong)] px-3 text-sm outline-none focus:border-[var(--lagoon)]"
+            placeholder="Jane Doe"
+          />
+        </label>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-[var(--sea-ink)]">Workspace name</span>
           <input

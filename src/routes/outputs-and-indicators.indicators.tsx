@@ -87,35 +87,37 @@ function IndicatorsPage() {
                     <div>
                       <h3 className="font-semibold text-[var(--sea-ink)]">
                         {ind.name}
-                        <span className="ml-2 font-normal text-[var(--sea-ink-soft)]">· {ind.location}</span>
+                        {ind.location && (
+                          <span className="ml-2 font-normal text-[var(--sea-ink-soft)]">· {ind.location}</span>
+                        )}
                       </h3>
                       {project && (
                         <p className="mt-0.5 text-xs text-[var(--sea-ink-soft)]">
-                          {project.code} · {project.name}
+                          {project.code ?? '—'} · {project.name}
                         </p>
                       )}
                     </div>
                     <span className="rounded-md bg-[var(--bg-base)] px-2 py-0.5 text-xs font-mono text-[var(--sea-ink-soft)]">
-                      {ind.period}
+                      {ind.period ?? '—'}
                     </span>
                   </div>
 
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
                     <div>
                       <dt className="text-[var(--sea-ink-soft)]">Unit</dt>
-                      <dd className="font-medium text-[var(--sea-ink)]">{ind.unit}</dd>
+                      <dd className="font-medium text-[var(--sea-ink)]">{ind.unit ?? '—'}</dd>
                     </div>
                     <div>
                       <dt className="text-[var(--sea-ink-soft)]">Baseline</dt>
-                      <dd className="font-medium text-[var(--sea-ink)]">{ind.baseline}</dd>
+                      <dd className="font-medium text-[var(--sea-ink)]">{ind.baseline ?? '—'}</dd>
                     </div>
                     <div>
                       <dt className="text-[var(--sea-ink-soft)]">Current</dt>
-                      <dd className="font-medium text-[var(--sea-ink)]">{ind.current}</dd>
+                      <dd className="font-medium text-[var(--sea-ink)]">{ind.current ?? '—'}</dd>
                     </div>
                     <div>
                       <dt className="text-[var(--sea-ink-soft)]">Target</dt>
-                      <dd className="font-medium text-[var(--sea-ink)]">{ind.target}</dd>
+                      <dd className="font-medium text-[var(--sea-ink)]">{ind.target ?? '—'}</dd>
                     </div>
                   </dl>
                 </div>

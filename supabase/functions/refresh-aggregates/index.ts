@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: indicators, error: indErr } = await admin
-      .from('indicators')
+      .from('indicator_definitions')
       .select('id, period, source_query_id')
       .eq('organization_id', orgId)
       .not('source_query_id', 'is', null)
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
 
       const period = indicator.period ?? 'default'
 
-      await admin.from('indicators').update({ current: scalar }).eq('id', indicator.id)
+      await admin.from('indicator_definitions').update({ current: scalar }).eq('id', indicator.id)
 
       await admin.from('indicator_values').upsert(
         {

@@ -4,13 +4,13 @@ import { useOutputsIndicatorsStore } from '#/stores/outputsIndicatorsStore'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useUpdateUserPreferences, useUserPreferences } from '#/lib/api/userPreferences'
 import { isSupabaseConfigured } from '#/lib/env'
-import type { WpaProject } from '#/types/outputsIndicators'
+import type { Project } from '#/types/outputsIndicators'
 
 /**
  * Selected project id — persisted to `user_preferences` when signed in,
  * otherwise via `outputsIndicatorsStore` localStorage.
  */
-export function useSelectedProject(projects?: WpaProject[]) {
+export function useSelectedProject(projects?: Project[]) {
   const workspaceReady = useWorkspaceReady()
   const orgId = useOrgId()
   const userId = useAuthStore((s) => s.user?.id ?? null)

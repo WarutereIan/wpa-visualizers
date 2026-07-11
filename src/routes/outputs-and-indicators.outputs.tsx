@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
-  MealProjectToolbar,
   NewOutputForm,
   OutputEditForm,
   OutputEditorActions,
@@ -59,7 +58,6 @@ function OutputsPage() {
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
           <ProjectSelect />
-          <MealProjectToolbar />
           {selectedProjectId && projects.find((p) => p.id === selectedProjectId) && (
             <ProjectEditForm project={projects.find((p) => p.id === selectedProjectId)!} />
           )}

@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import { computeOutputContribution } from '#/lib/outputIndicatorMath'
 import { CONTRIBUTION_COLORS } from '#/components/outputs/chartTheme'
-import type { OutputIndicatorLink, WpaIndicator, WpaOutput } from '#/types/outputsIndicators'
+import type { OutputIndicatorLink, Indicator, Output } from '#/types/outputsIndicators'
 
 type Row = { id: string; label: string; composite: number; short: string }
 
@@ -19,9 +19,9 @@ export function OutputsComparisonChart({
   links,
   indicators,
 }: {
-  outputs: WpaOutput[]
+  outputs: Output[]
   links: OutputIndicatorLink[]
-  indicators: WpaIndicator[]
+  indicators: Indicator[]
 }) {
   const data: Row[] = outputs.map((o) => {
     const { compositePercent } = computeOutputContribution(o.id, links, indicators)

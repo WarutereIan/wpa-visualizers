@@ -16,11 +16,10 @@ import { throwIfSupabaseError } from '#/lib/supabaseErrors'
 import type {
   MealBundle,
   OutputIndicatorLink,
-  OutputStatus,
   ProjectStatus,
-  WpaIndicator,
-  WpaOutput,
-  WpaProject,
+  Indicator,
+  Output,
+  Project,
 } from '#/types/outputsIndicators'
 
 async function ensureMealSeeded(orgId: string): Promise<void> {
@@ -51,8 +50,12 @@ export async function fetchMealBundle(orgId: string): Promise<MealBundle> {
   const [outputsRes, indicatorsRes] = await Promise.all([
     projectIds.length
       ? supabase.from('outputs').select('*').in('project_id', projectIds).order('created_at')
-      : Promise.resolve({ data: [], error: null }),
-    supabase.from('indicators').select('*').eq('organization_id', orgId).order('created_at'),
+      : Promise.resolve({ data: [], error: null } as { data: never[]; error: null }),
+    supabase
+      .from('indicator_definitions')
+      .select('*')
+      .eq('organization_id', orgId)
+      .order('created_at'),
   ])
 
   throwIfSupabaseError(outputsRes.error, 'api.fetchOutputs', { orgId })
@@ -136,7 +139,7 @@ export function useUpdateProject(orgId: string | null) {
       patch,
     }: {
       id: string
-      patch: Partial<Pick<WpaProject, 'name' | 'code' | 'program' | 'description' | 'status' | 'startDate' | 'endDate'>>
+      patch: Partial<Pick<Project, 'name' | 'code' | 'program' | 'description' | 'status' | 'startDate' | 'endDate'>>
     }) => {
       if (!orgId) throw new Error('No organization')
       const supabase = getSupabase()
@@ -189,7 +192,7 @@ export function useCreateOutput(orgId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (
-      input: Omit<WpaOutput, 'id'> & { projectId: string },
+      input: Omit<Output, 'id' | 'createdAt' | 'updatedAt'> & { projectId: string },
     ) => {
       if (!orgId) throw new Error('No organization')
       const supabase = getSupabase()
@@ -202,7 +205,7 @@ export function useCreateOutput(orgId: string | null) {
           title: input.title.trim(),
           description: input.description?.trim() || '',
           status: input.status,
-          district: input.district || null,
+          location: input.location || null,
           target_period: input.targetPeriod || null,
         })
         .select('*')
@@ -220,7 +223,7 @@ export function useCreateOutput(orgId: string | null) {
 export function useUpdateOutput(orgId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<WpaOutput> }) => {
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Output> }) => {
       if (!orgId) throw new Error('No organization')
       const supabase = getSupabase()
       if (!supabase) throw new Error('Supabase is not configured')
@@ -229,7 +232,7 @@ export function useUpdateOutput(orgId: string | null) {
       if (patch.title !== undefined) update.title = patch.title
       if (patch.description !== undefined) update.description = patch.description
       if (patch.status !== undefined) update.status = patch.status
-      if (patch.district !== undefined) update.district = patch.district || null
+      if (patch.location !== undefined) update.location = patch.location || null
       if (patch.targetPeriod !== undefined) update.target_period = patch.targetPeriod || null
       if (patch.projectId !== undefined) update.project_id = patch.projectId
 
@@ -269,17 +272,18 @@ export function useDeleteOutput(orgId: string | null) {
 export function useCreateIndicator(orgId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: Omit<WpaIndicator, 'id'>) => {
+    mutationFn: async (input: Omit<Indicator, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>) => {
       if (!orgId) throw new Error('No organization')
       const supabase = getSupabase()
       if (!supabase) throw new Error('Supabase is not configured')
 
       const { data, error } = await supabase
-        .from('indicators')
+        .from('indicator_definitions')
         .insert({
           organization_id: orgId,
           project_id: input.projectId,
           name: input.name.trim(),
+          type: input.type ?? 'count',
           location: input.location || null,
           unit: input.unit || null,
           baseline: input.baseline,
@@ -287,6 +291,8 @@ export function useCreateIndicator(orgId: string | null) {
           current: input.current,
           period: input.period || null,
           source_query_id: input.sourceQueryId ?? null,
+          formula: input.formula ?? {},
+          disaggregations: input.disaggregations ?? [],
         })
         .select('*')
         .single()
@@ -303,13 +309,14 @@ export function useCreateIndicator(orgId: string | null) {
 export function useUpdateIndicator(orgId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<WpaIndicator> }) => {
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Indicator> }) => {
       if (!orgId) throw new Error('No organization')
       const supabase = getSupabase()
       if (!supabase) throw new Error('Supabase is not configured')
 
       const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
       if (patch.name !== undefined) update.name = patch.name
+      if (patch.type !== undefined) update.type = patch.type
       if (patch.location !== undefined) update.location = patch.location || null
       if (patch.unit !== undefined) update.unit = patch.unit || null
       if (patch.baseline !== undefined) update.baseline = patch.baseline
@@ -318,9 +325,11 @@ export function useUpdateIndicator(orgId: string | null) {
       if (patch.period !== undefined) update.period = patch.period || null
       if (patch.projectId !== undefined) update.project_id = patch.projectId
       if (patch.sourceQueryId !== undefined) update.source_query_id = patch.sourceQueryId
+      if (patch.formula !== undefined) update.formula = patch.formula
+      if (patch.disaggregations !== undefined) update.disaggregations = patch.disaggregations
 
       const { data, error } = await supabase
-        .from('indicators')
+        .from('indicator_definitions')
         .update(update)
         .eq('id', id)
         .eq('organization_id', orgId)
@@ -344,7 +353,11 @@ export function useDeleteIndicator(orgId: string | null) {
       const supabase = getSupabase()
       if (!supabase) throw new Error('Supabase is not configured')
 
-      const { error } = await supabase.from('indicators').delete().eq('id', id).eq('organization_id', orgId)
+      const { error } = await supabase
+        .from('indicator_definitions')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId)
       throwIfSupabaseError(error, 'api.deleteIndicator', { orgId, id })
     },
     onSuccess: () => {

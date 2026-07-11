@@ -1,14 +1,14 @@
-import type { OutputIndicatorLink, WpaIndicator } from '#/types/outputsIndicators'
+import type { OutputIndicatorLink, Indicator } from '#/types/outputsIndicators'
 
 /** Achievement toward target, 0–1 (capped). Null baseline/target/current treated as 0. */
-export function indicatorProgress01(ind: WpaIndicator): number {
+export function indicatorProgress01(ind: Indicator): number {
   const target = ind.target ?? 0
   const current = ind.current ?? 0
   if (target <= 0) return 0
   return Math.min(1, current / target)
 }
 
-export function indicatorProgressPercent(ind: WpaIndicator): number {
+export function indicatorProgressPercent(ind: Indicator): number {
   return Math.round(indicatorProgress01(ind) * 1000) / 10
 }
 
@@ -35,7 +35,7 @@ export interface OutputContributionResult {
 export function computeOutputContribution(
   outputId: string,
   links: OutputIndicatorLink[],
-  indicators: WpaIndicator[],
+  indicators: Indicator[],
 ): OutputContributionResult {
   const parts: ContributionPart[] = []
   for (const link of links.filter((l) => l.outputId === outputId)) {
@@ -44,7 +44,7 @@ export function computeOutputContribution(
     const p = indicatorProgress01(ind)
     parts.push({
       indicatorId: ind.id,
-      label: `${ind.name} · ${ind.location}`,
+      label: `${ind.name}${ind.location ? ` · ${ind.location}` : ''}`,
       weight: link.weight,
       progress01: p,
       progressPercent: Math.round(p * 1000) / 10,

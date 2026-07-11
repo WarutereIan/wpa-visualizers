@@ -88,11 +88,11 @@ Deno.serve(async (req) => {
     for (const rule of rules ?? []) {
       if (!rule.indicator_id) continue
 
-      // NOTE: reads indicators.current which may be stale if refresh-aggregates has not
-      // run since the latest data. For freshest values, re-run rule.source_query_id via
-      // runQueryForTable — deferred to keep this function cheap on the cron path.
+      // NOTE: reads indicator_definitions.current which may be stale if refresh-aggregates
+      // has not run since the latest data. For freshest values, re-run rule.source_query_id
+      // via runQueryForTable — deferred to keep this function cheap on the cron path.
       const { data: indicator } = await admin
-        .from('indicators')
+        .from('indicator_definitions')
         .select('id, name, current, target, organization_id')
         .eq('id', rule.indicator_id)
         .maybeSingle()

@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     await assertOrgMember(admin, organizationId, user.id)
 
     const { data: indicator, error: indError } = await admin
-      .from('indicators')
+      .from('indicator_definitions')
       .select('*')
       .eq('id', indicatorId)
       .eq('organization_id', organizationId)
@@ -163,12 +163,32 @@ Deno.serve(async (req) => {
     }
 
     const { error: updateError } = await admin
-      .from('indicators')
+      .from('indicator_definitions')
       .update({ current: scalar, updated_at: new Date().toISOString() })
       .eq('id', indicatorId)
       .eq('organization_id', organizationId)
 
     if (updateError) throw updateError
+
+    // Mirror the computed value into indicator_values so the trend history /
+    // indicator-visualization catalog stays current alongside indicator_definitions.current.
+    const period = indicator.period ?? 'default'
+    const { error: trendError } = await admin.from('indicator_values').upsert(
+      {
+        organization_id: organizationId,
+        indicator_id: indicatorId,
+        period,
+        disaggregation_key: {},
+        value: scalar,
+        row_count: rows.length,
+        source_query_id: indicator.source_query_id,
+        computed_at: new Date().toISOString(),
+      },
+      { onConflict: 'indicator_id,period,disaggregation_key' },
+    )
+    if (trendError) {
+      console.error('compute-indicator-current: indicator_values upsert failed', trendError)
+    }
 
     return new Response(JSON.stringify({ indicatorId, current: scalar }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

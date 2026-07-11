@@ -22,7 +22,13 @@ interface AuthState {
   initialize: () => Promise<void>
   refreshMembership: () => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, workspaceName?: string) => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    workspaceName?: string,
+    displayName?: string,
+  ) => Promise<void>
+  updateProfile: (patch: { displayName?: string | null; avatarUrl?: string | null }) => Promise<void>
   signOut: () => Promise<void>
   clearError: () => void
 }
@@ -41,13 +47,17 @@ function mapProfile(row: {
   }
 }
 
-async function ensureDefaultOrganization(workspaceName?: string): Promise<string | null> {
+async function ensureDefaultOrganization(
+  workspaceName?: string,
+  displayName?: string,
+): Promise<string | null> {
   const supabase = getSupabase()
   if (!supabase) return null
 
   const { data, error } = await supabase.rpc('create_default_organization', {
-    org_name: workspaceName?.trim() || 'My workspace',
-    org_slug: null,
+    p_org_name: workspaceName?.trim() || 'My workspace',
+    p_org_slug: null,
+    p_display_name: displayName?.trim() || null,
   })
 
   if (error) {
@@ -90,11 +100,47 @@ async function loadProfileAndOrg(userId: string): Promise<{
     .maybeSingle()
 
   throwIfSupabaseError(profileError, 'auth.loadProfile', { userId })
+
+  // Self-heal: if the handle_new_user() trigger didn't fire, the provisioning RPC
+  // (which now INSERTs the profile row) can recreate it. Retry once, then re-read.
   if (!profileRow) {
-    logSupabaseError('auth.loadProfile', new Error('Profile row missing after signup'), { userId })
-    return { profile: null, organization: null, role: null }
+    try {
+      await ensureDefaultOrganization()
+    } catch (e) {
+      logSupabaseError('auth.loadProfile.selfHeal', e, { userId })
+    }
+    const { data: retryRow } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url, default_organization_id')
+      .eq('id', userId)
+      .maybeSingle()
+    if (!retryRow) {
+      logSupabaseError(
+        'auth.loadProfile',
+        new Error('Profile row still missing after self-heal attempt'),
+        { userId },
+      )
+      return { profile: null, organization: null, role: null }
+    }
+    return loadOrgForProfile(retryRow, supabase)
   }
 
+  return loadOrgForProfile(profileRow, supabase)
+}
+
+async function loadOrgForProfile(
+  profileRow: {
+    id: string
+    display_name: string | null
+    avatar_url: string | null
+    default_organization_id: string | null
+  },
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+): Promise<{
+  profile: UserProfile | null
+  organization: OrganizationSummary | null
+  role: OrganizationRole | null
+}> {
   const profile = mapProfile(profileRow)
   if (!profile.defaultOrganizationId) {
     return { profile, organization: null, role: null }
@@ -110,8 +156,8 @@ async function loadProfileAndOrg(userId: string): Promise<{
       supabase.rpc('current_org_role', { org_id: orgId }),
     ])
 
-  throwIfSupabaseError(orgError, 'auth.loadOrganization', { userId, orgId })
-  throwIfSupabaseError(roleError, 'auth.loadRole', { userId, orgId })
+  throwIfSupabaseError(orgError, 'auth.loadOrganization', { userId: profileRow.id, orgId })
+  throwIfSupabaseError(roleError, 'auth.loadRole', { userId: profileRow.id, orgId })
 
   return {
     profile,
@@ -270,7 +316,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signUp: async (email, password, workspaceName) => {
+  signUp: async (email, password, workspaceName, displayName) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase is not configured')
 
@@ -291,7 +337,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw err
       }
 
-      await ensureDefaultOrganization(workspaceName)
+      await ensureDefaultOrganization(workspaceName, displayName)
       const { profile, organization, role } = await loadProfileAndOrg(data.session.user.id)
       set({
         session: data.session,
@@ -307,6 +353,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false, error: message })
       throw e
     }
+  },
+
+  updateProfile: async (patch) => {
+    const supabase = getSupabase()
+    const user = get().user
+    if (!supabase) throw new Error('Supabase is not configured')
+    if (!user) throw new Error('Not signed in')
+
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    if (patch.displayName !== undefined) update.display_name = patch.displayName
+    if (patch.avatarUrl !== undefined) update.avatar_url = patch.avatarUrl
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(update)
+      .eq('id', user.id)
+      .select('id, display_name, avatar_url, default_organization_id')
+      .single()
+
+    throwIfSupabaseError(error, 'auth.updateProfile', { userId: user.id })
+    if (data) set({ profile: mapProfile(data) })
   },
 
   signOut: async () => {

@@ -15,16 +15,16 @@ import { CONTRIBUTION_COLORS } from '#/components/outputs/chartTheme'
 import type {
   OutputIndicatorLink,
   OutputStatus,
-  WpaIndicator,
-  WpaOutput,
-  WpaProject,
+  Indicator,
+  Output,
+  Project,
 } from '#/types/outputsIndicators'
 
 type Props = {
-  output: WpaOutput
-  project?: WpaProject
+  output: Output
+  project?: Project
   links: OutputIndicatorLink[]
-  indicators: WpaIndicator[]
+  indicators: Indicator[]
   statusLabel: Record<OutputStatus, string>
   statusClass: Record<OutputStatus, string>
 }
@@ -66,14 +66,17 @@ export function OutputContributionVisualizer({
             <h3 className="font-semibold text-[var(--sea-ink)]">{output.title}</h3>
             <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">{output.description}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--sea-ink-soft)]">
-              <span className="inline-flex items-center gap-1">
-                <MapPin size={12} />
-                {output.district}
-              </span>
-              <span>{output.targetPeriod}</span>
+              {output.location && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={12} />
+                  {output.location}
+                </span>
+              )}
+              {output.targetPeriod && <span>{output.targetPeriod}</span>}
               {project && (
                 <span className="font-mono">
-                  {project.code} · {project.program}
+                  {project.code}
+                  {project.program ? ` · ${project.program}` : ''}
                 </span>
               )}
             </div>

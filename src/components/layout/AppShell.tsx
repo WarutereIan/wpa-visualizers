@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar'
-import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree, Plug, FileText, Shield, ClipboardCheck } from 'lucide-react'
+import { Map, LineChart, Database, Plus, PanelLeftClose, PanelLeft, Target, ListTree, Plug, FileText, Shield, ClipboardCheck, FolderKanban, Settings } from 'lucide-react'
 import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import ThemeToggle from '#/components/ThemeToggle'
 import { AuthGate } from '#/components/auth/AuthGate'
@@ -11,9 +10,10 @@ import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import { Button } from '#/components/ui/button'
 import { isPublicPath } from '#/types/auth'
+import { usePersistedSidebarCollapsed } from '#/hooks/usePersistedSidebarCollapsed'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const { collapsed, toggle: toggleCollapsed } = usePersistedSidebarCollapsed()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
   const { dashboards } = useWorkspaceDashboards()
@@ -36,6 +36,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isOutputsPage = pathname === '/outputs-and-indicators/outputs'
   const isIndicatorsPage = pathname === '/outputs-and-indicators/indicators'
   const isIndicatorViz = pathname === '/indicator-visualization'
+  const isProjectsRoot = pathname === '/projects' || pathname === '/projects/'
+  const isProjectDetail = /^\/projects\/[^/]+$/.test(pathname)
+  const isSettings = pathname === '/settings'
   const isReports = pathname === '/reports'
   const isDataQuality = pathname === '/data-quality'
   const isAudit = pathname === '/audit'
@@ -171,13 +174,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SubMenu>
 
           <MenuItem
+            icon={<FolderKanban size={18} />}
+            active={isProjectsRoot || isProjectDetail}
+            onClick={() => navigate({ to: '/projects' })}
+          >
+            Projects
+          </MenuItem>
+
+          <MenuItem
             icon={<LineChart size={18} />}
             active={isIndicatorViz}
             onClick={() => navigate({ to: '/indicator-visualization' })}
           >
             Indicator catalog
           </MenuItem>
-        
+
           <SubMenu
             label="Outputs and indicators"
             icon={<ListTree size={18} />}
@@ -188,14 +199,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               active={isOutputsPage}
               onClick={() => navigate({ to: '/outputs-and-indicators/outputs' })}
             >
-              Outputs
+              Outputs (portfolio)
             </MenuItem>
             <MenuItem
               icon={<LineChart size={16} />}
               active={isIndicatorsPage}
               onClick={() => navigate({ to: '/outputs-and-indicators/indicators' })}
             >
-              Indicators
+              Indicators (portfolio)
             </MenuItem>
           </SubMenu>
 
@@ -245,6 +256,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Audit log
             </MenuItem>
           </SubMenu>
+
+          <MenuItem
+            icon={<Settings size={18} />}
+            active={isSettings}
+            onClick={() => navigate({ to: '/settings' })}
+          >
+            Settings
+          </MenuItem>
         </Menu>
       </Sidebar>
 
@@ -255,7 +274,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             className="shrink-0"
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}

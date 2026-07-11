@@ -14,7 +14,7 @@ import {
   YAxis,
 } from 'recharts'
 import { indicatorProgressPercent } from '#/lib/outputIndicatorMath'
-import type { WpaIndicator } from '#/types/outputsIndicators'
+import type { Indicator } from '#/types/outputsIndicators'
 
 function progressColor(pct: number): string {
   if (pct >= 85) return 'var(--lagoon)'
@@ -22,21 +22,26 @@ function progressColor(pct: number): string {
   return '#f59e0b'
 }
 
-function shortLabel(ind: WpaIndicator): string {
-  const s = `${ind.name} (${ind.location})`
+function shortLabel(ind: Indicator): string {
+  const loc = ind.location ? ` (${ind.location})` : ''
+  const s = `${ind.name}${loc}`
   return s.length > 22 ? `${s.slice(0, 20)}…` : s
 }
 
-export function IndicatorsRadarChart({ indicators }: { indicators: WpaIndicator[] }) {
-  const data = indicators.map((ind) => ({
-    subject:
-      `${ind.name} (${ind.location})`.length > 24
-        ? `${ind.name.slice(0, 14)}…`
-        : `${ind.name} (${ind.location})`,
-    full: `${ind.name} · ${ind.location}`,
-    progress: indicatorProgressPercent(ind),
-    target: 100,
-  }))
+function fullLabel(ind: Indicator): string {
+  return ind.location ? `${ind.name} · ${ind.location}` : ind.name
+}
+
+export function IndicatorsRadarChart({ indicators }: { indicators: Indicator[] }) {
+  const data = indicators.map((ind) => {
+    const label = ind.location ? `${ind.name} (${ind.location})` : ind.name
+    return {
+      subject: label.length > 24 ? `${ind.name.slice(0, 14)}…` : label,
+      full: fullLabel(ind),
+      progress: indicatorProgressPercent(ind),
+      target: 100,
+    }
+  })
 
   if (data.length === 0) return null
 
@@ -78,10 +83,10 @@ export function IndicatorsRadarChart({ indicators }: { indicators: WpaIndicator[
 }
 
 /** Grouped bars: baseline, current, target (same axis — comparable only when units align). */
-export function IndicatorsValueComparisonChart({ indicators }: { indicators: WpaIndicator[] }) {
+export function IndicatorsValueComparisonChart({ indicators }: { indicators: Indicator[] }) {
   const data = indicators.map((ind) => ({
     name: shortLabel(ind),
-    full: `${ind.name} · ${ind.location}`,
+    full: fullLabel(ind),
     baseline: ind.baseline ?? 0,
     current: ind.current ?? 0,
     target: ind.target ?? 0,
@@ -128,7 +133,7 @@ export function IndicatorsValueComparisonChart({ indicators }: { indicators: Wpa
   )
 }
 
-export function IndicatorGauge({ ind }: { ind: WpaIndicator }) {
+export function IndicatorGauge({ ind }: { ind: Indicator }) {
   const pct = indicatorProgressPercent(ind)
   const c = progressColor(pct)
   return (

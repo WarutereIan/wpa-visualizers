@@ -21,9 +21,9 @@ import type {
   OutputIndicatorLink,
   OutputStatus,
   ProjectStatus,
-  WpaIndicator,
-  WpaOutput,
-  WpaProject,
+  Indicator,
+  Output,
+  Project,
 } from '#/types/outputsIndicators'
 
 export function useWorkspaceMeal() {
@@ -109,7 +109,7 @@ export function useWorkspaceMeal() {
         if (!workspaceReady) throw new Error('Sign in to create projects')
         return createProject.mutateAsync(input)
       },
-      updateProject: async (id: string, patch: Partial<WpaProject>) => {
+      updateProject: async (id: string, patch: Partial<Project>) => {
         if (!workspaceReady) throw new Error('Sign in to edit projects')
         return updateProject.mutateAsync({ id, patch })
       },
@@ -117,11 +117,11 @@ export function useWorkspaceMeal() {
         if (!workspaceReady) throw new Error('Sign in to delete projects')
         return deleteProject.mutateAsync(id)
       },
-      createOutput: async (input: Omit<WpaOutput, 'id'>) => {
+      createOutput: async (input: Omit<Output, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (!workspaceReady) throw new Error('Sign in to create outputs')
         return createOutput.mutateAsync(input)
       },
-      updateOutput: async (id: string, patch: Partial<WpaOutput>) => {
+      updateOutput: async (id: string, patch: Partial<Output>) => {
         if (!workspaceReady) throw new Error('Sign in to edit outputs')
         return updateOutput.mutateAsync({ id, patch })
       },
@@ -129,11 +129,11 @@ export function useWorkspaceMeal() {
         if (!workspaceReady) throw new Error('Sign in to delete outputs')
         return deleteOutput.mutateAsync(id)
       },
-      createIndicator: async (input: Omit<WpaIndicator, 'id'>) => {
+      createIndicator: async (input: Omit<Indicator, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>) => {
         if (!workspaceReady) throw new Error('Sign in to create indicators')
         return createIndicator.mutateAsync(input)
       },
-      updateIndicator: async (id: string, patch: Partial<WpaIndicator>) => {
+      updateIndicator: async (id: string, patch: Partial<Indicator>) => {
         if (!workspaceReady) throw new Error('Sign in to edit indicators')
         return updateIndicator.mutateAsync({ id, patch })
       },

@@ -13,9 +13,10 @@ import type {
   OutputIndicatorLink,
   OutputStatus,
   ProjectStatus,
-  WpaIndicator,
-  WpaOutput,
-  WpaProject,
+  Indicator,
+  IndicatorType,
+  Output,
+  Project,
 } from '#/types/outputsIndicators'
 import type { Layout } from 'react-grid-layout'
 
@@ -228,7 +229,7 @@ export interface DbOutput {
   title: string
   description: string
   status: OutputStatus
-  district: string | null
+  location: string | null
   target_period: string | null
   created_at: string
   updated_at: string
@@ -237,8 +238,9 @@ export interface DbOutput {
 export interface DbIndicator {
   id: string
   organization_id: string
-  project_id: string
+  project_id: string | null
   name: string
+  type: IndicatorType
   location: string | null
   unit: string | null
   baseline: number | null
@@ -246,6 +248,8 @@ export interface DbIndicator {
   current: number | null
   period: string | null
   source_query_id: string | null
+  formula: Record<string, unknown> | null
+  disaggregations: unknown
   created_at: string
   updated_at: string
 }
@@ -257,45 +261,57 @@ export interface DbOutputIndicatorLink {
   note: string | null
 }
 
-export function mapDbProject(row: DbProject): WpaProject {
+export function mapDbProject(row: DbProject): Project {
   return {
     id: row.id,
     organizationId: row.organization_id,
     name: row.name,
-    code: row.code ?? '',
-    program: row.program ?? '',
+    code: row.code,
+    program: row.program,
     description: row.description,
     status: row.status,
     startDate: row.start_date ?? null,
     endDate: row.end_date ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
-export function mapDbOutput(row: DbOutput): WpaOutput {
+export function mapDbOutput(row: DbOutput): Output {
   return {
     id: row.id,
     projectId: row.project_id,
     title: row.title,
     description: row.description,
     status: row.status,
-    district: row.district ?? '',
-    targetPeriod: row.target_period ?? '',
+    location: row.location,
+    targetPeriod: row.target_period,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
-export function mapDbIndicator(row: DbIndicator): WpaIndicator {
+export function mapDbIndicator(row: DbIndicator): Indicator {
+  const disaggregations = Array.isArray(row.disaggregations)
+    ? (row.disaggregations as unknown[]).filter((d): d is string => typeof d === 'string')
+    : []
   return {
     id: row.id,
     organizationId: row.organization_id,
     projectId: row.project_id,
     name: row.name,
-    location: row.location ?? '',
-    unit: row.unit ?? '',
+    type: row.type,
+    location: row.location,
+    unit: row.unit,
     baseline: row.baseline == null ? null : Number(row.baseline),
     target: row.target == null ? null : Number(row.target),
     current: row.current == null ? null : Number(row.current),
-    period: row.period ?? '',
+    period: row.period,
     sourceQueryId: row.source_query_id,
+    formula: row.formula ?? {},
+    disaggregations,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
@@ -304,6 +320,6 @@ export function mapDbLink(row: DbOutputIndicatorLink): OutputIndicatorLink {
     outputId: row.output_id,
     indicatorId: row.indicator_id,
     weight: Number(row.weight),
-    note: row.note ?? undefined,
+    note: row.note,
   }
 }

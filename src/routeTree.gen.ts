@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OutputsAndIndicatorsRouteImport } from './routes/outputs-and-indicators'
@@ -21,9 +22,11 @@ import { Route as ConnectionsRouteImport } from './routes/connections'
 import { Route as BaselineMappingRouteImport } from './routes/baseline-mapping'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as MappingsIndexRouteImport } from './routes/mappings.index'
 import { Route as DashboardsIndexRouteImport } from './routes/dashboards.index'
 import { Route as SharedTokenRouteImport } from './routes/shared.$token'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as OutputsAndIndicatorsOutputsRouteImport } from './routes/outputs-and-indicators.outputs'
 import { Route as OutputsAndIndicatorsIndicatorsRouteImport } from './routes/outputs-and-indicators.indicators'
 import { Route as MappingsAddRouteImport } from './routes/mappings.add'
@@ -38,6 +41,11 @@ import { Route as DashboardsDashboardIdEditRouteImport } from './routes/dashboar
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -95,6 +103,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MappingsIndexRoute = MappingsIndexRouteImport.update({
   id: '/mappings/',
   path: '/mappings/',
@@ -108,6 +121,11 @@ const DashboardsIndexRoute = DashboardsIndexRouteImport.update({
 const SharedTokenRoute = SharedTokenRouteImport.update({
   id: '/shared/$token',
   path: '/shared/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OutputsAndIndicatorsOutputsRoute =
@@ -177,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/connections/$connectionId': typeof ConnectionsConnectionIdRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
@@ -186,9 +205,11 @@ export interface FileRoutesByFullPath {
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/shared/$token': typeof SharedTokenRoute
   '/dashboards/': typeof DashboardsIndexRoute
   '/mappings/': typeof MappingsIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
 }
@@ -204,6 +225,7 @@ export interface FileRoutesByTo {
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/connections/$connectionId': typeof ConnectionsConnectionIdRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
@@ -213,9 +235,11 @@ export interface FileRoutesByTo {
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/shared/$token': typeof SharedTokenRoute
   '/dashboards': typeof DashboardsIndexRoute
   '/mappings': typeof MappingsIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
 }
@@ -232,6 +256,7 @@ export interface FileRoutesById {
   '/outputs-and-indicators': typeof OutputsAndIndicatorsRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/connections/$connectionId': typeof ConnectionsConnectionIdRoute
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
@@ -241,9 +266,11 @@ export interface FileRoutesById {
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
   '/outputs-and-indicators/outputs': typeof OutputsAndIndicatorsOutputsRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/shared/$token': typeof SharedTokenRoute
   '/dashboards/': typeof DashboardsIndexRoute
   '/mappings/': typeof MappingsIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
 }
@@ -261,6 +288,7 @@ export interface FileRouteTypes {
     | '/outputs-and-indicators'
     | '/pricing'
     | '/reports'
+    | '/settings'
     | '/signup'
     | '/connections/$connectionId'
     | '/dashboards/$dashboardId'
@@ -270,9 +298,11 @@ export interface FileRouteTypes {
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
+    | '/projects/$projectId'
     | '/shared/$token'
     | '/dashboards/'
     | '/mappings/'
+    | '/projects/'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
   fileRoutesByTo: FileRoutesByTo
@@ -288,6 +318,7 @@ export interface FileRouteTypes {
     | '/outputs-and-indicators'
     | '/pricing'
     | '/reports'
+    | '/settings'
     | '/signup'
     | '/connections/$connectionId'
     | '/dashboards/$dashboardId'
@@ -297,9 +328,11 @@ export interface FileRouteTypes {
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
+    | '/projects/$projectId'
     | '/shared/$token'
     | '/dashboards'
     | '/mappings'
+    | '/projects'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
   id:
@@ -315,6 +348,7 @@ export interface FileRouteTypes {
     | '/outputs-and-indicators'
     | '/pricing'
     | '/reports'
+    | '/settings'
     | '/signup'
     | '/connections/$connectionId'
     | '/dashboards/$dashboardId'
@@ -324,9 +358,11 @@ export interface FileRouteTypes {
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
     | '/outputs-and-indicators/outputs'
+    | '/projects/$projectId'
     | '/shared/$token'
     | '/dashboards/'
     | '/mappings/'
+    | '/projects/'
     | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
   fileRoutesById: FileRoutesById
@@ -343,14 +379,17 @@ export interface RootRouteChildren {
   OutputsAndIndicatorsRoute: typeof OutputsAndIndicatorsRouteWithChildren
   PricingRoute: typeof PricingRoute
   ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   DashboardsDashboardIdRoute: typeof DashboardsDashboardIdRouteWithChildren
   DashboardsAddRoute: typeof DashboardsAddRoute
   MappingsMappingIdRoute: typeof MappingsMappingIdRoute
   MappingsAddRoute: typeof MappingsAddRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   SharedTokenRoute: typeof SharedTokenRoute
   DashboardsIndexRoute: typeof DashboardsIndexRoute
   MappingsIndexRoute: typeof MappingsIndexRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -360,6 +399,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -439,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mappings/': {
       id: '/mappings/'
       path: '/mappings'
@@ -458,6 +511,13 @@ declare module '@tanstack/react-router' {
       path: '/shared/$token'
       fullPath: '/shared/$token'
       preLoaderRoute: typeof SharedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/outputs-and-indicators/outputs': {
@@ -597,14 +657,17 @@ const rootRouteChildren: RootRouteChildren = {
   OutputsAndIndicatorsRoute: OutputsAndIndicatorsRouteWithChildren,
   PricingRoute: PricingRoute,
   ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   DashboardsDashboardIdRoute: DashboardsDashboardIdRouteWithChildren,
   DashboardsAddRoute: DashboardsAddRoute,
   MappingsMappingIdRoute: MappingsMappingIdRoute,
   MappingsAddRoute: MappingsAddRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   SharedTokenRoute: SharedTokenRoute,
   DashboardsIndexRoute: DashboardsIndexRoute,
   MappingsIndexRoute: MappingsIndexRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
