@@ -1,26 +1,20 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { LocalStorageMigrationBanner } from '#/components/workspace/LocalStorageMigrationBanner'
+import { QueryEditor } from '#/components/data/QueryEditor'
 import { Button } from '#/components/ui/button'
 import { downloadTableCsv } from '#/lib/api/export'
 import { promoteTableBackend } from '#/lib/api/connections'
 import { useOrgId, useWorkspaceReady, workspaceKeys } from '#/lib/api/workspace'
 import { useQueryClient } from '@tanstack/react-query'
-import { QueryBuilder, type Field, type RuleGroupType } from 'react-querybuilder'
-import 'react-querybuilder/dist/query-builder.css'
+import { useWorkspaceData } from '#/hooks/useWorkspaceData'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import {
-  AGGREGATION_OPERATORS,
-  createDefaultAggregation,
-  useWorkspaceData,
-  useRunQueryResult,
-} from '#/hooks/useWorkspaceData'
-import type {
-  AggregationOperator,
-  DataFilter,
-  DataFilterOperator,
-  DataTable,
-  QueryAggregation,
-} from '#/types/data'
+  findQueryUsages,
+  formatQueryUsageLines,
+  formatQueryUsageSummary,
+} from '#/lib/queryUsage'
+import type { DataTable } from '#/types/data'
 
 export const Route = createFileRoute('/data-management')({
   component: DataManagementPage,
@@ -38,40 +32,19 @@ function DataManagementPage() {
 function QueryBuilderPage() {
   const workspaceReady = useWorkspaceReady()
   const orgId = useOrgId()
-  const { tables, queries, createQuery, updateQuery, removeQuery, removeTable, loading } =
+  const { tables, queries, createQuery, updateQuery, removeQuery, removeTable, updateColumnType, loading } =
     useWorkspaceData()
+  const { dashboards } = useWorkspaceDashboards()
   const [exporting, setExporting] = useState(false)
   const [promoting, setPromoting] = useState(false)
   const [deletingTableId, setDeletingTableId] = useState<string | null>(null)
+  const [showTables, setShowTables] = useState(false)
   const queryClient = useQueryClient()
 
   const [activeQueryId, setActiveQueryId] = useState<string>(queries[0]?.id ?? '')
   const activeQuery = queries.find((q) => q.id === activeQueryId) ?? queries[0] ?? null
-  const { rows: previewRows, isLoading: previewLoading } = useRunQueryResult(activeQuery)
-
-  // All hooks must run before any early return. These memos are null-safe so
-  // they can be called unconditionally, even when no activeQuery exists yet.
   const activeTable = tables.find((t) => t.id === activeQuery?.tableId)
-  const queryFields = useMemo<Field[]>(
-    () =>
-      (activeTable?.columns ?? []).map((c) => ({
-        name: c.name,
-        label: c.name,
-      })),
-    [activeTable],
-  )
-  const qbQuery = useMemo<RuleGroupType>(
-    () => ({
-      combinator: 'and',
-      rules: (activeQuery?.filters ?? []).map((f) => ({
-        id: f.id,
-        field: f.column,
-        operator: dataOperatorToQb(f.operator),
-        value: f.value,
-      })),
-    }),
-    [activeQuery],
-  )
+  const activeUsages = activeQuery ? findQueryUsages(dashboards, activeQuery.id) : []
 
   const handleNewQuery = () => {
     const tableId = tables[0]?.id
@@ -94,6 +67,7 @@ function QueryBuilderPage() {
       </div>
     )
   }
+
   if (!activeQuery) {
     return (
       <div className="space-y-6">
@@ -101,8 +75,8 @@ function QueryBuilderPage() {
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 shadow-sm">
           <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Query builder</h1>
           <p className="mt-2 max-w-3xl text-sm text-[var(--sea-ink-soft)]">
-            Configure reusable queries from source tables. Widgets can bind to these queries and map
-            their X/Y fields in the dashboard builder.
+            Manage reusable queries and source tables. You can also create or edit queries while
+            configuring widgets in the dashboard builder.
           </p>
         </div>
         <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface-strong)] p-8 text-center">
@@ -136,85 +110,124 @@ function QueryBuilderPage() {
             setDeletingTableId(tableId)
             void removeTable(tableId).finally(() => setDeletingTableId(null))
           }}
+          onColumnTypeChange={(tableId, columnName, type) => {
+            void updateColumnType(tableId, columnName, type)
+          }}
         />
       </div>
     )
   }
-  const selectedColumns = activeQuery.selectedColumns
-  const groupBy = activeQuery.groupBy
-  const aggregations = activeQuery.aggregations
-  const previewDisplayRows = previewRows.slice(0, 50)
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-[calc(100dvh-7rem)] min-h-[520px] flex-col gap-3">
       <LocalStorageMigrationBanner />
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Query builder</h1>
-        <p className="mt-2 max-w-3xl text-sm text-[var(--sea-ink-soft)]">
-          Configure reusable queries from source tables. Widgets can bind to these queries and map
-          their X/Y fields in the dashboard builder.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Query builder</h1>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--sea-ink-soft)]">
+            Reusable queries for dashboards. Preview stays visible while you shape the result.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => setShowTables((v) => !v)}>
+            {showTables ? 'Hide tables' : 'Tables & types'}
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/data-management/import">Import data</Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <aside className="space-y-3 rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-          <div className="flex items-center justify-between">
+      {showTables && (
+        <div className="shrink-0 overflow-y-auto max-h-56">
+          <TablesManager
+            tables={tables}
+            deletingTableId={deletingTableId}
+            onDelete={(tableId) => {
+              if (
+                !window.confirm(
+                  'Delete this table? All queries bound to it will also be removed.',
+                )
+              )
+                return
+              setDeletingTableId(tableId)
+              void removeTable(tableId).finally(() => setDeletingTableId(null))
+            }}
+            onColumnTypeChange={(tableId, columnName, type) => {
+              void updateColumnType(tableId, columnName, type)
+            }}
+          />
+        </div>
+      )}
+
+      <div className="grid min-h-0 flex-1 gap-3 overflow-hidden lg:grid-cols-[240px,minmax(0,1fr)]">
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)]">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
             <h2 className="text-sm font-semibold text-[var(--sea-ink)]">Queries</h2>
             <Button type="button" size="sm" onClick={handleNewQuery} disabled={tables.length === 0}>
-              New query
+              New
             </Button>
           </div>
-          <ul className="space-y-2">
-            {queries.map((q) => (
-              <li key={q.id}>
-                <button
-                  type="button"
-                  onClick={() => setActiveQueryId(q.id)}
-                  className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
-                    (activeQuery?.id ?? activeQueryId) === q.id
-                      ? 'border-[var(--lagoon)] bg-[rgba(79,184,178,0.12)]'
-                      : 'border-[var(--line)] bg-[var(--surface)]'
-                  }`}
-                >
-                  <p className="font-medium text-[var(--sea-ink)]">{q.name}</p>
-                  <p className="text-xs text-[var(--sea-ink-soft)]">{q.id}</p>
-                </button>
-              </li>
-            ))}
+          <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+            {queries.map((q) => {
+              const tableName = tables.find((t) => t.id === q.tableId)?.name
+              const usages = findQueryUsages(dashboards, q.id)
+              const active = (activeQuery?.id ?? activeQueryId) === q.id
+              return (
+                <li key={q.id}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveQueryId(q.id)}
+                    className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
+                      active
+                        ? 'border-[var(--lagoon)] bg-[rgba(79,184,178,0.12)]'
+                        : 'border-[var(--line)] bg-[var(--surface)]'
+                    }`}
+                  >
+                    <p className="truncate font-medium text-[var(--sea-ink)]">{q.name}</p>
+                    <p className="truncate text-[11px] text-[var(--sea-ink-soft)]">
+                      {tableName ?? 'Unknown table'}
+                      {usages.length > 0 ? ` · ${usages.length} widget${usages.length === 1 ? '' : 's'}` : ''}
+                    </p>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </aside>
 
-        {!activeTable ? (
-          <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 text-sm text-[var(--sea-ink-soft)]">
-            Create a query to get started.
-          </div>
-        ) : (
-          <section className="space-y-4 rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-[var(--sea-ink)]">Query name</label>
-                <input
-                  value={activeQuery.name}
-                  onChange={(e) => void updateQuery(activeQuery.id, { name: e.target.value })}
-                  className="mt-1 flex h-9 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-[var(--sea-ink)]">Source table</label>
-                <div className="mt-1 flex gap-2">
-                  <select
-                    value={activeQuery.tableId}
-                    onChange={(e) => void updateQuery(activeQuery.id, { tableId: e.target.value })}
-                    className="flex h-9 min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-2 text-sm"
-                  >
-                    {tables.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                        {t.storageBackend === 'parquet' ? ' (parquet)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  {workspaceReady && orgId && activeTable ? (
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 sm:p-4">
+          {activeUsages.length > 1 && (
+            <div className="mb-3 shrink-0 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <p>
+                {formatQueryUsageSummary(activeUsages)} Changes here update every widget that uses
+                this query.
+              </p>
+              <ul className="mt-1 list-inside list-disc">
+                {formatQueryUsageLines(activeUsages).map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <QueryEditor
+              query={activeQuery}
+              tables={tables}
+              splitPreview
+              onColumnTypeChange={(columnName, type) => {
+                void updateColumnType(activeQuery.tableId, columnName, type)
+              }}
+              onChange={(patch) => void updateQuery(activeQuery.id, patch)}
+              tableActions={
+                activeTable && workspaceReady && orgId ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-md bg-[var(--bg-base)] px-2 py-1 font-mono text-[var(--sea-ink-soft)]">
+                      {activeTable.storageBackend ?? 'jsonb'}
+                      {activeTable.rowCount != null
+                        ? ` · ${activeTable.rowCount.toLocaleString()} rows`
+                        : ''}
+                    </span>
                     <Button
                       type="button"
                       size="sm"
@@ -229,14 +242,6 @@ function QueryBuilderPage() {
                     >
                       {exporting ? 'Exporting…' : 'Export CSV'}
                     </Button>
-                  ) : null}
-                </div>
-                {activeTable && workspaceReady && orgId ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="rounded-md bg-[var(--bg-base)] px-2 py-1 font-mono text-[var(--sea-ink-soft)]">
-                      {activeTable.storageBackend ?? 'jsonb'}
-                      {activeTable.rowCount != null ? ` · ${activeTable.rowCount.toLocaleString()} rows` : ''}
-                    </span>
                     {activeTable.storageBackend !== 'parquet' ? (
                       <Button
                         type="button"
@@ -248,7 +253,9 @@ function QueryBuilderPage() {
                           void promoteTableBackend(orgId, activeTable.id)
                             .then(() => {
                               if (orgId) {
-                                void queryClient.invalidateQueries({ queryKey: workspaceKeys.tables(orgId) })
+                                void queryClient.invalidateQueries({
+                                  queryKey: workspaceKeys.tables(orgId),
+                                })
                               }
                             })
                             .finally(() => setPromoting(false))
@@ -258,185 +265,35 @@ function QueryBuilderPage() {
                       </Button>
                     ) : null}
                   </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-[var(--sea-ink)]">Columns</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {activeTable.columns.map((col) => {
-                  const checked = selectedColumns.includes(col.name)
-                  return (
-                    <label
-                      key={col.name}
-                      className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          const next = e.target.checked
-                            ? [...selectedColumns, col.name]
-                            : selectedColumns.filter((c) => c !== col.name)
-                          void updateQuery(activeQuery.id, { selectedColumns: next })
-                        }}
-                      />
-                      <span>{col.name}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--sea-ink)]">Filters (React Query Builder)</p>
-              <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-2">
-                <QueryBuilder
-                  fields={queryFields}
-                  query={qbQuery}
-                  onQueryChange={(next) => {
-                    void updateQuery(activeQuery.id, {
-                      filters: qbToDataFilters(next),
-                    })
-                  }}
-                  showCombinatorsBetweenRules
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-[var(--sea-ink)]">GROUP BY</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {selectedColumns.map((col) => {
-                  const checked = groupBy.includes(col)
-                  return (
-                    <label
-                      key={col}
-                      className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          const next = e.target.checked
-                            ? [...groupBy, col]
-                            : groupBy.filter((x) => x !== col)
-                          void updateQuery(activeQuery.id, { groupBy: next })
-                        }}
-                      />
-                      <span>{col}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-[var(--sea-ink)]">Aggregations</p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    void updateQuery(activeQuery.id, {
-                      aggregations: [
-                        ...aggregations,
-                        createDefaultAggregation(selectedColumns[0] ?? ''),
-                      ],
-                    })
-                  }
-                >
-                  Add aggregation
-                </Button>
-              </div>
-              {aggregations.length === 0 ? (
-                <p className="text-xs text-[var(--sea-ink-soft)]">
-                  No aggregations. Query returns row-level records.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {aggregations.map((agg) => (
-                    <AggregationRow
-                      key={agg.id}
-                      agg={agg}
-                      columns={activeTable.columns.map((c) => c.name)}
-                      onChange={(patch) =>
-                        void updateQuery(activeQuery.id, {
-                          aggregations: aggregations.map((a) =>
-                            a.id === agg.id ? { ...a, ...patch } : a,
-                          ),
-                        })
-                      }
-                      onRemove={() =>
-                        void updateQuery(activeQuery.id, {
-                          aggregations: aggregations.filter((a) => a.id !== agg.id),
-                        })
-                      }
-                    />
-                  ))}
+                ) : null
+              }
+              footer={
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-[var(--sea-ink-soft)]">
+                    {formatQueryUsageSummary(activeUsages)}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      const summary = formatQueryUsageSummary(activeUsages)
+                      const warn =
+                        activeUsages.length > 0
+                          ? `${summary} Bound widgets will lose their data source. Delete anyway?`
+                          : 'Delete this query?'
+                      if (!window.confirm(warn)) return
+                      void removeQuery(activeQuery.id)
+                    }}
+                  >
+                    Delete query
+                  </Button>
                 </div>
-              )}
-            </div>
-
-            <div className="flex justify-end">
-              <Button type="button" variant="destructive" size="sm" onClick={() => void removeQuery(activeQuery.id)}>
-                Delete query
-              </Button>
-            </div>
-
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3">
-              <p className="mb-2 text-sm font-medium text-[var(--sea-ink)]">
-                Preview ({previewDisplayRows.length} rows{previewLoading ? ', loading…' : ''})
-              </p>
-              <div className="max-h-[280px] overflow-auto">
-                {previewDisplayRows.length === 0 ? (
-                  <p className="text-xs text-[var(--sea-ink-soft)]">No rows returned.</p>
-                ) : (
-                  <table className="w-full text-left text-sm">
-                    <thead className="sticky top-0 bg-[var(--sand)] text-xs uppercase text-[var(--sea-ink-soft)]">
-                      <tr>
-                        {Object.keys(previewDisplayRows[0] ?? {}).map((k) => (
-                          <th key={k} className="px-2 py-1.5">
-                            {k}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewDisplayRows.map((row, idx) => (
-                        <tr key={idx} className="border-t border-[var(--line)]">
-                          {Object.keys(previewDisplayRows[0] ?? {}).map((k) => (
-                            <td key={`${idx}-${k}`} className="px-2 py-1.5">
-                              {String(row[k] ?? '')}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
+              }
+            />
+          </div>
+        </section>
       </div>
-
-      <TablesManager
-        tables={tables}
-        deletingTableId={deletingTableId}
-        onDelete={(tableId) => {
-          if (
-            !window.confirm(
-              'Delete this table? All queries bound to it will also be removed.',
-            )
-          )
-            return
-          setDeletingTableId(tableId)
-          void removeTable(tableId).finally(() => setDeletingTableId(null))
-        }}
-      />
     </div>
   )
 }
@@ -445,23 +302,28 @@ function TablesManager({
   tables,
   deletingTableId,
   onDelete,
+  onColumnTypeChange,
 }: {
   tables: DataTable[]
   deletingTableId: string | null
   onDelete: (tableId: string) => void
+  onColumnTypeChange: (
+    tableId: string,
+    columnName: string,
+    type: 'string' | 'number' | 'boolean' | 'date',
+  ) => void
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
   return (
     <section className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-[var(--sea-ink)]">Tables</h2>
           <p className="text-xs text-[var(--sea-ink-soft)]">
-            Source datasets for queries. Deleting a table removes its bound queries too.
+            Source datasets. Fix column types so SUM/AVG only apply to numbers.
           </p>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link to="/data-management/import">Import data</Link>
-        </Button>
       </div>
       {tables.length === 0 ? (
         <p className="mt-3 text-xs text-[var(--sea-ink-soft)]">
@@ -470,28 +332,63 @@ function TablesManager({
       ) : (
         <ul className="mt-3 divide-y divide-[var(--line)]">
           {tables.map((t) => {
+            const open = expandedId === t.id
             return (
-              <li
-                key={t.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-[var(--sea-ink)]">{t.name}</p>
-                  <p className="text-xs text-[var(--sea-ink-soft)]">
-                    {t.storageBackend ?? 'jsonb'}
-                    {t.rowCount != null ? ` · ${t.rowCount.toLocaleString()} rows` : ''}
-                    {` · ${t.columns.length} columns`}
-                  </p>
+              <li key={t.id} className="py-2 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    className="min-w-0 text-left"
+                    onClick={() => setExpandedId(open ? null : t.id)}
+                  >
+                    <p className="font-medium text-[var(--sea-ink)]">{t.name}</p>
+                    <p className="text-xs text-[var(--sea-ink-soft)]">
+                      {t.storageBackend ?? 'jsonb'}
+                      {t.rowCount != null ? ` · ${t.rowCount.toLocaleString()} rows` : ''}
+                      {` · ${t.columns.length} columns`}
+                      <span className="ml-2 text-[var(--lagoon-deep)]">
+                        {open ? 'Hide types' : 'Edit types'}
+                      </span>
+                    </p>
+                  </button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    disabled={deletingTableId === t.id}
+                    onClick={() => onDelete(t.id)}
+                  >
+                    {deletingTableId === t.id ? 'Deleting…' : 'Delete'}
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="destructive"
-                  disabled={deletingTableId === t.id}
-                  onClick={() => onDelete(t.id)}
-                >
-                  {deletingTableId === t.id ? 'Deleting…' : 'Delete'}
-                </Button>
+                {open && (
+                  <ul className="mt-2 space-y-1 rounded-md border border-[var(--line)] bg-[var(--surface)] p-2">
+                    {t.columns.map((c) => (
+                      <li
+                        key={c.name}
+                        className="flex flex-wrap items-center justify-between gap-2 text-xs"
+                      >
+                        <span className="font-mono text-[var(--sea-ink)]">{c.name}</span>
+                        <select
+                          value={c.type}
+                          onChange={(e) =>
+                            onColumnTypeChange(
+                              t.id,
+                              c.name,
+                              e.target.value as 'string' | 'number' | 'boolean' | 'date',
+                            )
+                          }
+                          className="h-7 rounded border border-[var(--line)] bg-[var(--surface-strong)] px-2"
+                        >
+                          <option value="string">string</option>
+                          <option value="number">number</option>
+                          <option value="boolean">boolean</option>
+                          <option value="date">date</option>
+                        </select>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             )
           })}
@@ -499,107 +396,4 @@ function TablesManager({
       )}
     </section>
   )
-}
-
-function AggregationRow({
-  agg,
-  columns,
-  onChange,
-  onRemove,
-}: {
-  agg: QueryAggregation
-  columns: string[]
-  onChange: (patch: Partial<QueryAggregation>) => void
-  onRemove: () => void
-}) {
-  return (
-    <div className="grid gap-2 rounded border border-[var(--line)] bg-[var(--surface)] p-2 md:grid-cols-[110px,1fr,1fr,auto]">
-      <select
-        value={agg.operator}
-        onChange={(e) => onChange({ operator: e.target.value as AggregationOperator })}
-        className="h-8 rounded border border-[var(--line)] bg-[var(--surface)] px-2 text-sm"
-      >
-        {AGGREGATION_OPERATORS.map((op) => (
-          <option key={op.value} value={op.value}>
-            {op.label}
-          </option>
-        ))}
-      </select>
-      <select
-        value={agg.column}
-        onChange={(e) => onChange({ column: e.target.value })}
-        className="h-8 rounded border border-[var(--line)] bg-[var(--surface)] px-2 text-sm"
-      >
-        {columns.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
-      <input
-        value={agg.alias}
-        onChange={(e) => onChange({ alias: e.target.value })}
-        className="h-8 rounded border border-[var(--line)] bg-[var(--surface)] px-2 text-sm"
-        placeholder="alias"
-      />
-      <Button type="button" size="sm" variant="destructive" onClick={onRemove}>
-        Remove
-      </Button>
-    </div>
-  )
-}
-
-function dataOperatorToQb(op: DataFilterOperator): string {
-  switch (op) {
-    case 'eq':
-      return '='
-    case 'neq':
-      return '!='
-    case 'contains':
-      return 'contains'
-    case 'gt':
-      return '>'
-    case 'gte':
-      return '>='
-    case 'lt':
-      return '<'
-    case 'lte':
-      return '<='
-    default:
-      return '='
-  }
-}
-
-function qbOperatorToData(op: string): DataFilterOperator {
-  switch (op) {
-    case '=':
-      return 'eq'
-    case '!=':
-      return 'neq'
-    case 'contains':
-      return 'contains'
-    case '>':
-      return 'gt'
-    case '>=':
-      return 'gte'
-    case '<':
-      return 'lt'
-    case '<=':
-      return 'lte'
-    default:
-      return 'eq'
-  }
-}
-
-function qbToDataFilters(query: RuleGroupType): DataFilter[] {
-  return query.rules
-    .filter((r): r is { id?: string; field: string; operator: string; value: string } =>
-      typeof r === 'object' && 'field' in r,
-    )
-    .map((rule, idx) => ({
-      id: rule.id ?? `flt-${idx}`,
-      column: rule.field,
-      operator: qbOperatorToData(rule.operator),
-      value: String(rule.value ?? ''),
-    }))
 }

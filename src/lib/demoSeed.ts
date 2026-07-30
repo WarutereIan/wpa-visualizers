@@ -1,4 +1,7 @@
 import type { DataRow, DataTable, QueryDefinition } from '#/types/data'
+import { inferColumnsFromRows } from '#/lib/columnTypes'
+
+export { inferColumnsFromRows }
 
 function nowIso() {
   return new Date().toISOString()
@@ -180,16 +183,3 @@ export function demoQueries(): QueryDefinition[] {
   ]
 }
 
-export function inferColumnsFromRows(rows: DataRow[]): DataTable['columns'] {
-  const first = rows[0] ?? {}
-  const keys = Object.keys(first)
-  return keys.map((k) => {
-    const sample = rows.find((r) => r[k] !== null && r[k] !== undefined)?.[k]
-    const type = typeof sample
-    return {
-      name: k,
-      type:
-        type === 'number' ? 'number' : type === 'boolean' ? 'boolean' : ('string' as const),
-    }
-  })
-}

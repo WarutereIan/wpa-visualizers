@@ -23,7 +23,7 @@ This document expands the five phases in `supabase-backend-plan.md` §12 into a 
 | Phase | Name | Status | Migrations | Notes |
 |-------|------|--------|------------|-------|
 | **A** | Foundation (auth, orgs, RLS) | 🟡 In progress | `0001`–`0009`, `0022` applied remotely | Signup/org flow works; profile provisioning self-heals (`0022`); `/settings` page + theme/sidebar prefs sync; AuthGate blocks silent demo fallback; RLS cross-org test + vitest + invites flow pending |
-| **B** | Core workspace data | 🟡 In progress | `0002`–`0010` applied | API + edge functions deployed; delete-table UI + `dashboard_view_states` done; RLS/perf tests pending |
+| **B** | Core workspace data | 🟡 In progress | `0002`–`0010` applied | API + edge functions deployed; delete-table UI + `dashboard_view_states` done; dashboard create-or-pick + shared-query warnings + KPI measure picker shipped; RLS/perf tests pending |
 | **C** | MEAL layer | 🟡 In progress | `0004`, `0011`, `0015`, `0020`, `0021` applied | Consolidated onto `indicator_definitions`; `outputs.district`→`location`; `/projects` CRUD + detail tabs shipped; portfolio Outputs/Indicators routes retained; edge fns updated (redeploy pending); RLS/perf tests pending |
 | **D** | BYOD + analytical engine | ✅ Complete | `0005`, `0012`, `0016` applied | Parquet path + scheduled refresh fixed; perf validation pending |
 | **E** | Product extras | ✅ Complete | `0006`–`0019` applied | Export worker + cron helpers shipped; ops: deploy worker, insert `edge_cron_config`, run E.7 smoke tests in staging |
@@ -225,6 +225,12 @@ Migrate the four persisted Zustand stores (`dataStore`, `dashboardStore`, `mappi
 
 ### B.9 Risks / notes
 - **Query builder empty state**: when no queries exist, the builder now shows a "New query" CTA (or an "Import data" link when there are no tables) instead of a dead-end message.
+- **Query pipeline rebuild (2026-07)**: phased plan in `docs/superpowers/plans/2026-07-30-query-pipeline-rebuild.md`. Phases 0–7 shipped client-side; **edge `run-query` / `runQueryForTable` parity** for joins, date grains, computed fields, sort/limit (jsonb JS engine + parquet SQL compiler + multi-table signed URLs).
+- **Result-column bindings**: X/Y pickers use `queryResultColumns()` (group-by ∪ aggregation aliases), not `selectedColumns` alone — matches the query engine result shape.
+- **Shared-query lifecycle**: edit/delete surfaces “used by N widgets” via `findQueryUsages` / `formatQueryUsageSummary` (canvas drawer + Data Management).
+- **Widget query naming**: create-from-widget uses `suggestWidgetQueryName` (`{title} · {table}`).
+- **KPI measure source**: canvas can bind a KPI to a query aggregate **or** a MEAL `indicatorId`.
+- **Mobile query drawer**: full-viewport overlay on narrow screens; constrained drawer on `sm+`.
 - **ID format** (Open Decision #4): the app uses `tbl-*` / `qry-*` string ids. Supabase tables use uuid PKs. Simplest path: switch to uuid everywhere and migrate demo seed ids to uuids at import time. Keep string ids only if you add a `legacy_id text` column.
 - **Large imports through Edge Functions**: Deno has memory/time limits. For > ~25k rows, write in batches and/or stream; full Parquet path arrives in Phase D.
 - **Query result caching**: add a `cacheKey` on `run-query` results via TanStack Query's normal caching; an explicit refresh button invalidates.

@@ -9,6 +9,7 @@ import type {
 } from '#/types/data'
 import type { DashboardDefinition } from '#/types/dashboard'
 import type { MappingDefinition } from '#/types/mapping'
+import { normalizeDashboardTheme } from '#/lib/chartPalettes'
 import type {
   OutputIndicatorLink,
   OutputStatus,
@@ -36,7 +37,7 @@ export interface DbDataTableColumn {
   data_table_id: string
   name: string
   display_name: string | null
-  data_type: 'string' | 'number' | 'boolean'
+  data_type: 'string' | 'number' | 'boolean' | 'date'
   ordinal: number
 }
 
@@ -49,6 +50,11 @@ export interface DbQueryDefinition {
   filters: unknown
   group_by: string[]
   aggregations: unknown
+  sort?: unknown
+  row_limit?: number | null
+  group_by_grains?: unknown
+  computed_fields?: unknown
+  joins?: unknown
   created_at: string
   updated_at: string
 }
@@ -60,6 +66,7 @@ export interface DbDashboard {
   description: string | null
   layout: unknown
   widgets: unknown
+  theme?: unknown
   status: 'draft' | 'published' | 'archived'
   created_at: string
   updated_at: string
@@ -114,6 +121,11 @@ export function mapDbQuery(row: DbQueryDefinition): QueryDefinition {
     filters: (row.filters as DataFilter[]) ?? [],
     groupBy: row.group_by ?? [],
     aggregations: (row.aggregations as QueryAggregation[]) ?? [],
+    sort: (row.sort as QueryDefinition['sort']) ?? [],
+    limit: row.row_limit ?? null,
+    groupByGrains: (row.group_by_grains as QueryDefinition['groupByGrains']) ?? {},
+    computedFields: (row.computed_fields as QueryDefinition['computedFields']) ?? [],
+    joins: (row.joins as QueryDefinition['joins']) ?? [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -132,6 +144,11 @@ export function mapQueryToDb(
     filters: query.filters,
     group_by: query.groupBy,
     aggregations: query.aggregations,
+    sort: query.sort ?? [],
+    row_limit: query.limit ?? null,
+    group_by_grains: query.groupByGrains ?? {},
+    computed_fields: query.computedFields ?? [],
+    joins: query.joins ?? [],
   }
 }
 
@@ -144,6 +161,7 @@ export function mapDbDashboard(row: DbDashboard): DashboardDefinition {
     updatedAt: row.updated_at,
     layout: (row.layout as Layout) ?? [],
     widgets: (row.widgets as DashboardDefinition['widgets']) ?? {},
+    theme: normalizeDashboardTheme(row.theme),
     status: row.status,
   }
 }
@@ -159,6 +177,7 @@ export function mapDashboardToDb(
     description: dashboard.description ?? null,
     layout: dashboard.layout,
     widgets: dashboard.widgets,
+    theme: normalizeDashboardTheme(dashboard.theme),
     status: dashboard.status ?? 'draft',
   }
 }

@@ -85,11 +85,42 @@ describe('compileQuery (jsonb)', () => {
     )
     expect(sql).toContain('count(*) as row_count')
   })
+
+  it('compiles date grain, computed field, sort and limit', () => {
+    const meta = {
+      ...tableMeta,
+      columns: [
+        ...tableMeta.columns,
+        { name: 'created_at', type: 'date' as const },
+      ],
+    }
+    const { sql } = compileQuery(
+      meta,
+      baseQuery({
+        selectedColumns: [],
+        groupBy: ['created_at'],
+        groupByGrains: { created_at: 'month' },
+        aggregations: [
+          { id: 'a1', operator: 'sum', column: 'beneficiaries', alias: 'sum_beneficiaries' },
+        ],
+        computedFields: [
+          { id: 'c1', alias: 'double_ben', expression: 'sum_beneficiaries * 2' },
+        ],
+        sort: [{ column: 'created_at_month', direction: 'asc' }],
+        limit: 10,
+      }),
+    )
+    expect(sql).toContain('created_at_month')
+    expect(sql).toContain('strftime(')
+    expect(sql).toContain('double_ben')
+    expect(sql).toContain('order by')
+    expect(sql).toContain('limit 10')
+  })
 })
 
 describe('compileQuery (parquet)', () => {
   it('uses read_parquet from clause', () => {
-    const { sql, params } = compileQuery(
+    const { sql, params, parquetTableIds } = compileQuery(
       { ...tableMeta, storageBackend: 'parquet', parquetPathPattern: 's3://bucket/{org}/{id}/*.parquet' },
       baseQuery({
         filters: [{ id: 'f1', column: 'district', operator: 'eq', value: 'South' }],
@@ -97,5 +128,53 @@ describe('compileQuery (parquet)', () => {
     )
     expect(sql).toContain('from read_parquet($')
     expect(params.some((p) => String(p).includes(tableMeta.organizationId))).toBe(true)
+    expect(parquetTableIds).toEqual([tableMeta.id])
+  })
+
+  it('compiles left join across parquet tables', () => {
+    const visits = {
+      id: '00000000-0000-4000-8000-000000000002',
+      organizationId: tableMeta.organizationId,
+      storageBackend: 'parquet' as const,
+      name: 'Visits',
+      columns: [
+        { name: 'hh_id', type: 'string' as const },
+        { name: 'score', type: 'number' as const },
+      ],
+    }
+    const households = {
+      ...tableMeta,
+      storageBackend: 'parquet' as const,
+      name: 'Households',
+      columns: [
+        { name: 'hh_id', type: 'string' as const },
+        { name: 'district', type: 'string' as const },
+      ],
+    }
+    const { sql, parquetTableIds } = compileQuery(
+      households,
+      baseQuery({
+        selectedColumns: [],
+        groupBy: ['district'],
+        aggregations: [
+          { id: 'a1', operator: 'sum', column: 'visits__score', alias: 'sum_score' },
+        ],
+        joins: [
+          {
+            id: 'j1',
+            tableId: visits.id,
+            type: 'left',
+            leftColumn: 'hh_id',
+            rightColumn: 'hh_id',
+            alias: 'visits',
+          },
+        ],
+      }),
+      [visits],
+    )
+    expect(sql).toContain('left join read_parquet')
+    expect(sql).toContain('as visits')
+    expect(sql).toContain('sum_score')
+    expect(parquetTableIds).toEqual([households.id, visits.id])
   })
 })

@@ -23,15 +23,14 @@ function DashboardAddPage() {
       mode="create"
       initialDraft={initialDraft}
       title="Create dashboard"
-      subtitle="Step through basics, pick a template, build your layout, then review."
+      subtitle="Drafts stay in this browser until you publish live."
       onCancel={() => navigate({ to: '/dashboards' })}
-      onComplete={(next) => {
-        void upsertDashboard(next).then(() =>
-          navigate({
-            to: '/dashboards/$dashboardId',
-            params: { dashboardId: next.id },
-          }),
-        )
+      onPublish={async (next) => {
+        await upsertDashboard({ ...next, status: 'published' })
+        navigate({
+          to: '/dashboards/$dashboardId',
+          params: { dashboardId: next.id },
+        })
       }}
     />
   )

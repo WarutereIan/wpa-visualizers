@@ -182,6 +182,24 @@ export async function deleteTableFromOrg(orgId: string, tableId: string): Promis
   throwIfSupabaseError(error, 'api.deleteTable', { orgId, tableId })
 }
 
+export async function updateTableColumnType(
+  orgId: string,
+  tableId: string,
+  columnName: string,
+  dataType: 'string' | 'number' | 'boolean' | 'date',
+): Promise<void> {
+  const supabase = getSupabase()
+  if (!supabase) throw new Error('Supabase is not configured')
+
+  const { error } = await supabase
+    .from('data_table_columns')
+    .update({ data_type: dataType })
+    .eq('data_table_id', tableId)
+    .eq('name', columnName)
+
+  throwIfSupabaseError(error, 'api.updateTableColumnType', { orgId, tableId, columnName, dataType })
+}
+
 export function useTables(orgId: string | null) {
   return useQuery({
     queryKey: orgId ? workspaceKeys.tables(orgId) : ['workspace', 'tables', 'none'],
@@ -224,6 +242,23 @@ export function useDeleteTable(orgId: string | null) {
     mutationFn: (tableId: string) => {
       if (!orgId) throw new Error('No organization')
       return deleteTableFromOrg(orgId, tableId)
+    },
+    onSuccess: () => {
+      if (orgId) void queryClient.invalidateQueries({ queryKey: workspaceKeys.tables(orgId) })
+    },
+  })
+}
+
+export function useUpdateTableColumnType(orgId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      tableId: string
+      columnName: string
+      dataType: 'string' | 'number' | 'boolean' | 'date'
+    }) => {
+      if (!orgId) throw new Error('No organization')
+      return updateTableColumnType(orgId, input.tableId, input.columnName, input.dataType)
     },
     onSuccess: () => {
       if (orgId) void queryClient.invalidateQueries({ queryKey: workspaceKeys.tables(orgId) })

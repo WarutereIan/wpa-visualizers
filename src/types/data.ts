@@ -2,7 +2,9 @@ export type DataPrimitive = string | number | boolean | null
 
 export type DataRow = Record<string, DataPrimitive>
 
-export type DataColumnType = 'string' | 'number' | 'boolean'
+export type DataColumnType = 'string' | 'number' | 'boolean' | 'date'
+
+export type DateGrain = 'day' | 'week' | 'month' | 'quarter' | 'year'
 
 export interface DataColumnDef {
   name: string
@@ -44,6 +46,11 @@ export interface QueryAggregation {
   alias: string
 }
 
+export interface QuerySort {
+  column: string
+  direction: 'asc' | 'desc'
+}
+
 export interface QueryDefinition {
   id: string
   name: string
@@ -52,6 +59,30 @@ export interface QueryDefinition {
   filters: DataFilter[]
   groupBy: string[]
   aggregations: QueryAggregation[]
+  /** Optional joins onto other imported tables (right columns prefixed alias__). */
+  joins?: {
+    id: string
+    tableId: string
+    type: 'inner' | 'left'
+    leftColumn: string
+    rightColumn: string
+    alias?: string
+  }[]
+  /**
+   * Optional date bucketing for group-by columns that are dates.
+   * Result column becomes `{column}_{grain}` (e.g. created_at_month).
+   */
+  groupByGrains?: Partial<Record<string, DateGrain>>
+  /** Post-aggregation formulas exposed as named result columns. */
+  computedFields?: {
+    id: string
+    alias: string
+    expression: string
+  }[]
+  /** Optional post-result ordering (result column names). */
+  sort?: QuerySort[]
+  /** Optional max rows after aggregation/sort. */
+  limit?: number | null
   createdAt: string
   updatedAt: string
 }

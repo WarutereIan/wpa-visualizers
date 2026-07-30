@@ -10,8 +10,21 @@ import {
   YAxis,
 } from 'recharts'
 import type { DemoRow } from '#/hooks/useDemoDataset'
+import { chartPaletteById, DEFAULT_CHART_PALETTE_ID } from '#/lib/chartPalettes'
 
-export function ComposedChartWidget({ title, rows }: { title: string; rows: DemoRow[] }) {
+export function ComposedChartWidget({
+  title,
+  rows,
+  paletteId,
+}: {
+  title: string
+  rows: DemoRow[]
+  paletteId?: string
+}) {
+  const palette = chartPaletteById(paletteId ?? DEFAULT_CHART_PALETTE_ID)
+  const barColor = palette.colors[0]
+  const lineColor = palette.colors[1] ?? palette.colors[0]
+
   return (
     <div className="flex h-full min-h-[200px] flex-col rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 shadow-sm">
       <p className="mb-2 text-sm font-semibold text-[var(--sea-ink)]">{title}</p>
@@ -23,11 +36,11 @@ export function ComposedChartWidget({ title, rows }: { title: string; rows: Demo
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="value" fill="var(--lagoon)" radius={[4, 4, 0, 0]} barSize={28} />
+            <Bar dataKey="value" fill={barColor} radius={[4, 4, 0, 0]} barSize={28} />
             <Line
               type="monotone"
               dataKey="value"
-              stroke="var(--palm)"
+              stroke={lineColor}
               strokeWidth={2}
               dot={{ r: 3 }}
             />

@@ -2,9 +2,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { runQueryDefinition } from '#/lib/queryEngine'
 import { demoQueries, demoTables, inferColumnsFromRows } from '#/lib/demoSeed'
+import { defaultAggregationAlias } from '#/lib/aggregationRules'
 import { isSupabaseConfigured } from '#/lib/env'
 import type {
   AggregationOperator,
+  DataColumnType,
   DataFilter,
   DataFilterOperator,
   DataRow,
@@ -42,6 +44,7 @@ interface DataState {
     preferredId?: string
   }) => DataTable
   removeTable: (tableId: string) => void
+  updateColumnType: (tableId: string, columnName: string, type: DataColumnType) => void
 }
 
 export const useDataStore = create<DataState>()(
@@ -58,7 +61,7 @@ export const useDataStore = create<DataState>()(
         if (!query) return []
         const table = get().tables.find((t) => t.id === query.tableId)
         if (!table) return []
-        return runQueryDefinition(table, query)
+        return runQueryDefinition(table, query, get().tables)
       },
 
       createQuery: (input) => {
@@ -161,6 +164,22 @@ export const useDataStore = create<DataState>()(
           version: s.version + 1,
         }))
       },
+
+      updateColumnType: (tableId, columnName, type) => {
+        set((s) => ({
+          tables: s.tables.map((t) =>
+            t.id !== tableId
+              ? t
+              : {
+                  ...t,
+                  columns: t.columns.map((c) =>
+                    c.name === columnName ? { ...c, type } : c,
+                  ),
+                },
+          ),
+          version: s.version + 1,
+        }))
+      },
     }),
     {
       name: STORAGE_KEY,
@@ -187,12 +206,17 @@ export const AGGREGATION_OPERATORS: { value: AggregationOperator; label: string 
   { value: 'avg', label: 'AVG' },
 ]
 
-export function createDefaultAggregation(column = ''): QueryAggregation {
+export function createDefaultAggregation(
+  column = '',
+  columnType?: DataColumnType,
+): QueryAggregation {
+  const operator: AggregationOperator =
+    columnType && columnType !== 'number' ? 'count' : 'sum'
   return {
     id: id('agg'),
-    operator: 'sum',
+    operator,
     column,
-    alias: column ? `sum_${column}` : 'sum_value',
+    alias: defaultAggregationAlias(operator, column || 'value'),
   }
 }
 

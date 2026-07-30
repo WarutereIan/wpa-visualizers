@@ -26,21 +26,42 @@ export async function callDuckdbWorker<T>(
   return data as T
 }
 
+/**
+ * Execute a compiled parquet query. Signs all tables listed on
+ * `compiled.parquetTableIds` (primary + joins) and passes URLs to the worker.
+ */
 export async function runParquetCompiledQuery(
-  admin: { storage: { from: (b: string) => { createSignedUrl: (p: string, s: number) => Promise<{ data: { signedUrl: string } | null }> } } },
+  admin: {
+    storage: {
+      from: (b: string) => {
+        createSignedUrl: (
+          p: string,
+          s: number,
+        ) => Promise<{ data: { signedUrl: string } | null }>
+      }
+    }
+  },
   orgId: string,
   tableId: string,
   compiled: CompiledQuery,
   bucket = 'dimes-data',
 ): Promise<Record<string, unknown>[]> {
-  const path = parquetStoragePath(orgId, tableId)
-  const { data: signed } = await admin.storage.from(bucket).createSignedUrl(path, 3600)
-  if (!signed?.signedUrl) throw new Error('Parquet file not found in storage')
+  const tableIds =
+    compiled.parquetTableIds?.length > 0 ? compiled.parquetTableIds : [tableId]
+
+  const signedUrls: string[] = []
+  for (const id of tableIds) {
+    const path = parquetStoragePath(orgId, id)
+    const { data: signed } = await admin.storage.from(bucket).createSignedUrl(path, 3600)
+    if (!signed?.signedUrl) throw new Error(`Parquet file not found for table ${id}`)
+    signedUrls.push(signed.signedUrl)
+  }
 
   const result = await callDuckdbWorker<{ rows: Record<string, unknown>[] }>('/run-query', {
     sql: compiled.sql,
     params: compiled.params,
-    parquetSignedUrl: signed.signedUrl,
+    parquetSignedUrl: signedUrls[0],
+    parquetSignedUrls: signedUrls,
   })
   return result.rows ?? []
 }

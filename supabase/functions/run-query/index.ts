@@ -1,15 +1,73 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
-import { compileQuery } from '../_shared/queryCompiler.ts'
+import { compileQuery, type CompiledTableMeta } from '../_shared/queryCompiler.ts'
 import { runParquetCompiledQuery } from '../_shared/duckdbWorker.ts'
-import { assertOrgMember } from '../_shared/ingestCore.ts'
+import { assertOrgMember } from '../_shared/orgAuth.ts'
 import { runQueryDefinition } from '../_shared/queryEngine.ts'
-
-import type { QueryDefinition } from '../_shared/types.ts'
+import { mapQueryDefinitionFromDb, type DataColumnDef, type QueryDefinition } from '../_shared/types.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+async function loadTableBundle(
+  admin: ReturnType<typeof createClient>,
+  organizationId: string,
+  tableId: string,
+): Promise<{
+  id: string
+  name: string
+  storage_backend: string
+  columns: DataColumnDef[]
+  rows: Record<string, string | number | boolean | null>[]
+}> {
+  const { data: table, error: tableError } = await admin
+    .from('data_tables')
+    .select('id, name, organization_id, storage_backend')
+    .eq('id', tableId)
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
+  if (tableError || !table) throw new Error('Table not found')
+
+  const { data: columns } = await admin
+    .from('data_table_columns')
+    .select('name, data_type, ordinal')
+    .eq('data_table_id', tableId)
+    .order('ordinal')
+
+  const columnDefs: DataColumnDef[] = (columns ?? []).map((c) => ({
+    name: c.name,
+    type: c.data_type as DataColumnDef['type'],
+  }))
+
+  if (table.storage_backend === 'parquet') {
+    return {
+      id: table.id,
+      name: table.name,
+      storage_backend: table.storage_backend,
+      columns: columnDefs,
+      rows: [],
+    }
+  }
+
+  const { data: rawRows, error: rawError } = await admin
+    .from('data_table_rows')
+    .select('row_data')
+    .eq('organization_id', organizationId)
+    .eq('data_table_id', tableId)
+    .limit(50_000)
+
+  if (rawError) throw rawError
+
+  return {
+    id: table.id,
+    name: table.name,
+    storage_backend: table.storage_backend ?? 'jsonb',
+    columns: columnDefs,
+    rows: (rawRows ?? []).map((r) => r.row_data as Record<string, string | number | boolean | null>),
+  }
 }
 
 Deno.serve(async (req) => {
@@ -53,20 +111,6 @@ Deno.serve(async (req) => {
 
     await assertOrgMember(admin, organizationId, user.id)
 
-    const { data: table, error: tableError } = await admin
-      .from('data_tables')
-      .select('id, name, organization_id, storage_backend')
-      .eq('id', tableId)
-      .eq('organization_id', organizationId)
-      .maybeSingle()
-
-    if (tableError || !table) {
-      return new Response(JSON.stringify({ error: 'Table not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
     let queryDef = body.queryDef as QueryDefinition | undefined
     if (!queryDef && queryId) {
       const { data: qrow, error: qerr } = await admin
@@ -76,17 +120,7 @@ Deno.serve(async (req) => {
         .eq('organization_id', organizationId)
         .maybeSingle()
       if (qerr || !qrow) throw qerr ?? new Error('Query not found')
-      queryDef = {
-        id: qrow.id,
-        name: qrow.name,
-        tableId: qrow.table_id,
-        selectedColumns: qrow.selected_columns ?? [],
-        filters: qrow.filters ?? [],
-        groupBy: qrow.group_by ?? [],
-        aggregations: qrow.aggregations ?? [],
-        createdAt: qrow.created_at,
-        updatedAt: qrow.updated_at,
-      }
+      queryDef = mapQueryDefinitionFromDb(qrow as Record<string, unknown>)
     }
 
     if (!queryDef) {
@@ -96,50 +130,54 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { data: columns } = await admin
-      .from('data_table_columns')
-      .select('name, data_type, ordinal')
-      .eq('data_table_id', tableId)
-      .order('ordinal')
+    const primary = await loadTableBundle(admin, organizationId, tableId)
 
-    const columnDefs = (columns ?? []).map((c) => ({
-      name: c.name,
-      type: c.data_type as 'string' | 'number' | 'boolean',
-    }))
+    // Load joined tables (metadata + rows for jsonb; metadata for parquet)
+    const catalog = [primary]
+    for (const join of queryDef.joins ?? []) {
+      if (catalog.some((t) => t.id === join.tableId)) continue
+      catalog.push(await loadTableBundle(admin, organizationId, join.tableId))
+    }
 
-    if (table.storage_backend === 'parquet') {
-      const compiled = compileQuery(
-        {
-          id: table.id,
+    if (primary.storage_backend === 'parquet') {
+      const primaryMeta: CompiledTableMeta = {
+        id: primary.id,
+        name: primary.name,
+        organizationId,
+        storageBackend: 'parquet',
+        columns: primary.columns,
+      }
+      const joinedMeta: CompiledTableMeta[] = catalog
+        .filter((t) => t.id !== primary.id)
+        .map((t) => ({
+          id: t.id,
+          name: t.name,
           organizationId,
-          storageBackend: 'parquet',
-          columns: columnDefs,
-        },
-        queryDef,
-      )
+          storageBackend: 'parquet' as const,
+          columns: t.columns,
+        }))
+
+      const compiled = compileQuery(primaryMeta, queryDef, joinedMeta)
       const rows = await runParquetCompiledQuery(admin, organizationId, tableId, compiled)
       return new Response(JSON.stringify({ rows }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const { data: rawRows, error: rawError } = await admin
-      .from('data_table_rows')
-      .select('row_data')
-      .eq('organization_id', organizationId)
-      .eq('data_table_id', tableId)
-      .limit(50_000)
-
-    if (rawError) throw rawError
-
     const rows = runQueryDefinition(
       {
-        id: table.id,
-        name: table.name,
-        columns: columnDefs,
-        rows: (rawRows ?? []).map((r) => r.row_data as Record<string, string | number | boolean | null>),
+        id: primary.id,
+        name: primary.name,
+        columns: primary.columns,
+        rows: primary.rows,
       },
       queryDef,
+      catalog.map((t) => ({
+        id: t.id,
+        name: t.name,
+        columns: t.columns,
+        rows: t.rows,
+      })),
     )
 
     return new Response(JSON.stringify({ rows }), {

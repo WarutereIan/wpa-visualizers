@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import type { DataRow, QueryDefinition } from '#/types/data'
+import type { DataColumnType, DataRow, QueryDefinition } from '#/types/data'
 import {
   useCreateQuery,
   useDeleteQuery,
@@ -7,7 +7,7 @@ import {
   useRunQuery,
   useUpdateQuery,
 } from '#/lib/api/queries'
-import { useImportTable, useTables, useDeleteTable } from '#/lib/api/tables'
+import { useImportTable, useTables, useDeleteTable, useUpdateTableColumnType } from '#/lib/api/tables'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import {
   createDefaultAggregation,
@@ -30,6 +30,7 @@ export function useWorkspaceData() {
   const demoRemoveQuery = useDataStore((s) => s.removeQuery)
   const demoImportTable = useDataStore((s) => s.importTable)
   const demoRemoveTable = useDataStore((s) => s.removeTable)
+  const demoUpdateColumnType = useDataStore((s) => s.updateColumnType)
 
   const tablesQuery = useTables(workspaceReady ? orgId : null)
   const queriesQuery = useQueries(workspaceReady ? orgId : null)
@@ -38,6 +39,7 @@ export function useWorkspaceData() {
   const deleteQueryMutation = useDeleteQuery(workspaceReady ? orgId : null)
   const importTableMutation = useImportTable(workspaceReady ? orgId : null)
   const deleteTableMutation = useDeleteTable(workspaceReady ? orgId : null)
+  const updateColumnTypeMutation = useUpdateTableColumnType(workspaceReady ? orgId : null)
 
   const tables = workspaceReady ? (tablesQuery.data ?? []) : demoTablesList
   const queries = workspaceReady ? (queriesQuery.data ?? []) : demoQueriesList
@@ -92,6 +94,17 @@ export function useWorkspaceData() {
     [workspaceReady, deleteTableMutation, demoRemoveTable],
   )
 
+  const updateColumnType = useCallback(
+    async (tableId: string, columnName: string, type: DataColumnType) => {
+      if (workspaceReady) {
+        await updateColumnTypeMutation.mutateAsync({ tableId, columnName, dataType: type })
+        return
+      }
+      demoUpdateColumnType(tableId, columnName, type)
+    },
+    [workspaceReady, updateColumnTypeMutation, demoUpdateColumnType],
+  )
+
   return {
     workspaceReady,
     orgId,
@@ -103,6 +116,7 @@ export function useWorkspaceData() {
     removeQuery,
     importTable,
     removeTable,
+    updateColumnType,
     isImporting: importTableMutation.isPending,
     isSavingQuery: createQueryMutation.isPending || updateQueryMutation.isPending,
     isDeletingTable: deleteTableMutation.isPending,

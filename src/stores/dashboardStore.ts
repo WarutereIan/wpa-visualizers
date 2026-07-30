@@ -6,6 +6,7 @@ import {
   getLayoutWidgetsForTemplate,
   type DashboardTemplateId,
 } from '#/lib/dashboardTemplates'
+import { DEFAULT_DASHBOARD_THEME } from '#/lib/chartPalettes'
 
 const STORAGE_KEY = 'wpa-dashboards-v1'
 
@@ -32,6 +33,8 @@ export function createNewDashboardDraft(opts?: {
     updatedAt: nowIso(),
     layout,
     widgets,
+    theme: { ...DEFAULT_DASHBOARD_THEME },
+    status: 'draft',
   }
 }
 
@@ -40,7 +43,7 @@ interface DashboardState {
   addDashboard: (name: string, description?: string) => DashboardDefinition
   /** Create or replace by id (used by dashboard builder save) */
   upsertDashboard: (d: DashboardDefinition) => void
-  updateDashboard: (id: string, patch: Partial<Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets'>>) => void
+  updateDashboard: (id: string, patch: Partial<Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme'>>) => void
   removeDashboard: (id: string) => void
   getById: (id: string) => DashboardDefinition | undefined
 }
@@ -59,6 +62,8 @@ export const useDashboardStore = create<DashboardState>()(
           description,
           createdAt: nowIso(),
           updatedAt: nowIso(),
+          theme: { ...DEFAULT_DASHBOARD_THEME },
+          status: 'draft',
           ...base,
         }
         set((s) => ({ dashboards: [...s.dashboards, d] }))

@@ -42,7 +42,7 @@ export function useWorkspaceDashboards() {
 
   const updateDashboard = async (
     id: string,
-    patch: Partial<Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets'>>,
+    patch: Partial<Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme'>>,
   ) => {
     if (workspaceReady) {
       const existing = dashboards.find((d) => d.id === id)

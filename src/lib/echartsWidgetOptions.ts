@@ -1,23 +1,27 @@
 import type { EChartsOption } from 'echarts'
 import type { DemoRow } from '#/hooks/useDemoDataset'
+import { chartPaletteById, DEFAULT_CHART_PALETTE_ID } from '#/lib/chartPalettes'
 
-/* ── palette ─────────────────────────────────────── */
-const LAGOON = '#4fb8b2'
-const LAGOON_D = '#328f97'
-const PALM = '#6b9f7a'
-const SAND = '#c4a574'
-const CORAL = '#e07b63'
-const SLATE = '#7b8fa3'
-const SERIES_COLORS = [LAGOON, PALM, SAND, CORAL, SLATE, LAGOON_D, '#a070c0', '#5aa0d0']
-
-function names(rows: DemoRow[]) { return rows.map((r) => r.name) }
-function vals(rows: DemoRow[])  { return rows.map((r) => r.value) }
-function peak(rows: DemoRow[])  { return Math.max(1, ...rows.map((r) => r.value)) }
+/* ── palette helpers ─────────────────────────────────────── */
+function resolveColors(paletteId?: string) {
+  const colors = chartPaletteById(paletteId ?? DEFAULT_CHART_PALETTE_ID).colors
+  return {
+    primary: colors[0] ?? '#4fb8b2',
+    secondary: colors[1] ?? '#6b9f7a',
+    accent: colors[2] ?? '#c4a574',
+    warn: colors[3] ?? '#e07b63',
+    series: colors,
+  }
+}
 
 function baseTitle(title: string) {
   return { text: title, left: 'center' as const, top: 4, textStyle: { fontSize: 13, color: '#1e3a3a' } }
 }
 const cartGrid = { left: '8%', right: '4%', bottom: '8%', top: 44, containLabel: true }
+
+function names(rows: DemoRow[]) { return rows.map((r) => r.name) }
+function vals(rows: DemoRow[])  { return rows.map((r) => r.value) }
+function peak(rows: DemoRow[])  { return Math.max(1, ...rows.map((r) => r.value)) }
 
 /* ── every chart type the widget palette can reference ── */
 export type EChartsWidgetKind =
@@ -35,9 +39,17 @@ export function buildEChartsOption(
   kind: EChartsWidgetKind,
   title: string,
   rows: DemoRow[],
+  paletteId?: string,
 ): EChartsOption {
   const ns = names(rows)
   const vs = vals(rows)
+  const { primary, secondary, accent, warn, series } = resolveColors(paletteId)
+  const LAGOON = primary
+  const PALM = secondary
+  const SAND = accent
+  const CORAL = warn
+  const LAGOON_D = series[5] ?? primary
+  const SERIES_COLORS = series
   const mx = peak(rows)
 
   switch (kind) {

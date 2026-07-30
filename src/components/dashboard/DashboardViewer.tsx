@@ -9,6 +9,10 @@ import { useWorkspaceReady } from '#/lib/api/workspace'
 import { useAuthStore } from '#/stores/authStore'
 import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
 import { Button } from '#/components/ui/button'
+import {
+  dashboardThemeStyle,
+  normalizeDashboardTheme,
+} from '#/lib/chartPalettes'
 
 const GridWithWidth = WidthProvider(GridLayout)
 
@@ -75,6 +79,8 @@ export function DashboardViewer({
 }) {
   const { filters, setDateRange, reset } = usePersistedDashboardFilters(dashboard.id)
   const layout: Layout = dashboard.layout
+  const theme = normalizeDashboardTheme(dashboard.theme)
+  const paletteId = theme.paletteId
 
   return (
     <div className="space-y-4">
@@ -129,6 +135,10 @@ export function DashboardViewer({
         signed in. Other widgets use saved queries.
       </p>
 
+      <div
+        className="rounded-xl border border-[var(--line)] p-2"
+        style={dashboardThemeStyle(paletteId)}
+      >
       <GridWithWidth
         className="min-h-[280px]"
         cols={12}
@@ -145,11 +155,12 @@ export function DashboardViewer({
           if (!cfg) return null
           return (
             <div key={item.i} className="rounded-lg bg-[var(--surface)] p-1">
-              <WidgetRenderer config={cfg} readOnly />
+              <WidgetRenderer config={cfg} readOnly paletteId={paletteId} />
             </div>
           )
         })}
       </GridWithWidth>
+      </div>
     </div>
   )
 }

@@ -7,13 +7,18 @@ import type {
   QueryAggregation,
   QueryDefinition,
 } from '#/types/data'
+import { assertAggregationAllowed } from '#/lib/aggregationRules'
+import { applyComputedFields } from '#/lib/queryComputed'
+import { bucketDateValue, groupByResultColumn, type DateGrain } from '#/lib/dateGrain'
+import { materializeJoinedTable } from '#/lib/queryJoins'
+import { slugAlias } from '#/lib/slugAlias'
 
 function parseMaybeNumber(v: string): number | null {
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 }
 
-function matchesFilter(row: DataRow, filter: DataFilter, column?: DataColumnDef): boolean {
+function matchesFilter(row: DataRow, filter: DataFilter, _column?: DataColumnDef): boolean {
   const raw = row[filter.column]
   if (raw === undefined) return false
 
@@ -50,48 +55,116 @@ function projectRow(row: DataRow, selected: string[]): DataRow {
   return out
 }
 
-export function runQueryDefinition(table: DataTable, query: QueryDefinition): DataRow[] {
-  const columnsByName = new Map(table.columns.map((c) => [c.name, c]))
+/**
+ * Run a query. Pass `catalog` (all workspace tables) when the query has joins.
+ */
+export function runQueryDefinition(
+  table: DataTable,
+  query: QueryDefinition,
+  catalog: DataTable[] = [],
+): DataRow[] {
+  const source =
+    query.joins && query.joins.length > 0
+      ? materializeJoinedTable(table, query.joins, catalog.length ? catalog : [table])
+      : table
+
+  const columnsByName = new Map(source.columns.map((c) => [c.name, c]))
   const filters = query.filters ?? []
   const groupBy = query.groupBy ?? []
   const aggregations = query.aggregations ?? []
   const selectedColumns = query.selectedColumns ?? []
-  const filtered = table.rows.filter((row) =>
+
+  for (const agg of aggregations) {
+    assertAggregationAllowed(agg.operator, agg.column, source.columns)
+  }
+
+  const filtered = source.rows.filter((row) =>
     filters.every((f) => matchesFilter(row, f, columnsByName.get(f.column))),
   )
 
   if (aggregations.length === 0) {
-    return filtered.map((r) => projectRow(r, selectedColumns))
+    return finalizeResult(
+      filtered.map((r) => projectRow(r, selectedColumns)),
+      query,
+    )
   }
 
   if (groupBy.length === 0) {
-    return [computeAggRow(filtered, aggregations)]
+    return finalizeResult([computeAggRow(filtered, aggregations)], query)
   }
 
   const grouped = new Map<string, DataRow[]>()
+  const grains = query.groupByGrains ?? {}
   filtered.forEach((row) => {
-    const key = groupBy.map((k) => String(row[k] ?? '')).join('||')
+    const key = groupBy
+      .map((k) => {
+        const grain = grains[k] as DateGrain | undefined
+        if (grain) return String(bucketDateValue(row[k], grain) ?? '')
+        return String(row[k] ?? '')
+      })
+      .join('||')
     const list = grouped.get(key)
     if (list) list.push(row)
     else grouped.set(key, [row])
   })
 
-  return Array.from(grouped.entries()).map(([_, rows]) => {
+  const groupedRows = Array.from(grouped.entries()).map(([_, rows]) => {
     const out: DataRow = {}
     const first = rows[0] ?? {}
     groupBy.forEach((k) => {
-      out[k] = (first[k] ?? null) as DataPrimitive
+      const grain = grains[k] as DateGrain | undefined
+      const outKey = groupByResultColumn(k, grain)
+      if (grain) {
+        out[outKey] = bucketDateValue(first[k], grain)
+      } else {
+        out[outKey] = (first[k] ?? null) as DataPrimitive
+      }
     })
     const aggRow = computeAggRow(rows, aggregations)
     Object.assign(out, aggRow)
     return out
   })
+
+  return finalizeResult(groupedRows, query)
+}
+
+/** Sort then limit result rows (exported for unit tests). */
+export function applySortAndLimit(
+  rows: DataRow[],
+  sort: { column: string; direction: 'asc' | 'desc' }[] | undefined,
+  limit: number | null | undefined,
+): DataRow[] {
+  let out = rows
+  if (sort && sort.length > 0) {
+    out = [...out].sort((a, b) => {
+      for (const s of sort) {
+        const av = a[s.column]
+        const bv = b[s.column]
+        let cmp = 0
+        if (typeof av === 'number' && typeof bv === 'number') cmp = av - bv
+        else cmp = String(av ?? '').localeCompare(String(bv ?? ''))
+        if (cmp !== 0) return s.direction === 'desc' ? -cmp : cmp
+      }
+      return 0
+    })
+  }
+  if (limit != null && limit >= 0) {
+    out = out.slice(0, limit)
+  }
+  return out
+}
+
+function finalizeResult(rows: DataRow[], query: QueryDefinition): DataRow[] {
+  const withComputed = applyComputedFields(rows, query.computedFields)
+  return applySortAndLimit(withComputed, query.sort, query.limit)
 }
 
 function computeAggRow(rows: DataRow[], aggregations: QueryAggregation[]): DataRow {
   const out: DataRow = {}
   aggregations.forEach((agg) => {
-    const alias = agg.alias?.trim() || `${agg.operator}_${agg.column || 'all'}`
+    const alias =
+      slugAlias(agg.alias?.trim() || `${agg.operator}_${agg.column || 'all'}`) ||
+      `${agg.operator}_all`
     if (agg.operator === 'count') {
       out[alias] = rows.length
       return

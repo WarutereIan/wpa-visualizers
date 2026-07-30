@@ -1,4 +1,7 @@
 import type { Layout } from 'react-grid-layout'
+import type { DashboardTheme } from '#/lib/chartPalettes'
+
+export type { DashboardTheme }
 
 /**
  * Visualization types available in the dashboard builder.
@@ -11,6 +14,7 @@ export type WidgetType =
   /* ── General ─────────────────────────────────────── */
   | 'kpi'
   | 'table'
+  | 'text'
 
   /* ── Comparison ──────────────────────────────────── */
   | 'bar'
@@ -56,11 +60,17 @@ export interface WidgetConfig {
   id: string
   type: WidgetType
   title: string
-  /** Query id from the data management query builder */
+  /**
+   * Saved query id (`query_definitions`). Authored from Data Management or
+   * create/edit in the dashboard widget config panel (create-or-pick).
+   */
   dataSourceId?: string
-  /** Field bindings (e.g. xKey, yKey) — extensible */
+  /**
+   * Field bindings into query *result* columns (group-by keys + aggregation
+   * aliases), e.g. xKey / yKey for charts.
+   */
   bindings?: Record<string, string>
-  /** Widget-specific options (colors, showLegend, etc.) */
+  /** Widget-specific options (body text, indicatorId, etc.) */
   options?: Record<string, unknown>
 }
 
@@ -76,4 +86,6 @@ export interface DashboardDefinition {
   widgets: Record<string, WidgetConfig>
   /** Lifecycle status; defaults to 'draft' for new dashboards. */
   status?: 'draft' | 'published' | 'archived'
+  /** Visual theme for the whole canvas and all widgets. */
+  theme?: DashboardTheme
 }

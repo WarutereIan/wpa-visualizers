@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { assertOrgMember } from '../_shared/ingestCore.ts'
+import { assertOrgMember } from '../_shared/orgAuth.ts'
 import { runQueryForTable } from '../_shared/indicatorQuery.ts'
-import type { QueryDefinition } from '../_shared/types.ts'
+import { mapQueryDefinitionFromDb, type QueryDefinition } from '../_shared/types.ts'
+import { slugAlias } from '../_shared/slugAlias.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +13,10 @@ function extractScalar(rows: Record<string, unknown>[], query: QueryDefinition):
   if (rows.length === 0) return null
   const aggregations = query.aggregations ?? []
   if (aggregations.length > 0) {
-    const alias = (aggregations[0].alias?.trim() || `${aggregations[0].operator}_${aggregations[0].column || 'all'}`).trim()
+    const alias = slugAlias(
+      aggregations[0].alias?.trim() ||
+        `${aggregations[0].operator}_${aggregations[0].column || 'all'}`,
+    )
     const val = rows[0]?.[alias]
     return typeof val === 'number' ? val : val != null ? Number(val) : null
   }
@@ -95,17 +99,7 @@ Deno.serve(async (req) => {
         .maybeSingle()
       if (!qrow) continue
 
-      const queryDef: QueryDefinition = {
-        id: qrow.id,
-        name: qrow.name,
-        tableId: qrow.table_id,
-        selectedColumns: qrow.selected_columns ?? [],
-        filters: qrow.filters ?? [],
-        groupBy: qrow.group_by ?? [],
-        aggregations: qrow.aggregations ?? [],
-        createdAt: qrow.created_at,
-        updatedAt: qrow.updated_at,
-      }
+      const queryDef = mapQueryDefinitionFromDb(qrow as Record<string, unknown>)
 
       // Routes through the Parquet worker for promoted tables, the in-JS
       // engine for jsonb tables — fixes the silent fast-path death for large
@@ -154,3 +148,4 @@ Deno.serve(async (req) => {
     })
   }
 })
+

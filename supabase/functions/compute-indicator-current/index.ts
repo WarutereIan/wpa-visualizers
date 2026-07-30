@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { runQueryDefinition } from '../_shared/queryEngine.ts'
-import { assertOrgMember } from '../_shared/ingestCore.ts'
-import type { QueryDefinition } from '../_shared/types.ts'
+import { runQueryForTable } from '../_shared/indicatorQuery.ts'
+import { assertOrgMember } from '../_shared/orgAuth.ts'
+import { mapQueryDefinitionFromDb, type QueryDefinition } from '../_shared/types.ts'
+import { slugAlias } from '../_shared/slugAlias.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,10 @@ function extractScalar(rows: Record<string, unknown>[], query: QueryDefinition):
 
   const aggregations = query.aggregations ?? []
   if (aggregations.length > 0) {
-    const alias = (aggregations[0].alias?.trim() || `${aggregations[0].operator}_${aggregations[0].column || 'all'}`).trim()
+    const alias = slugAlias(
+      aggregations[0].alias?.trim() ||
+        `${aggregations[0].operator}_${aggregations[0].column || 'all'}`,
+    )
     const val = rows[0]?.[alias]
     return typeof val === 'number' ? val : val != null ? Number(val) : null
   }
@@ -107,52 +111,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    const queryDef: QueryDefinition = {
-      id: qrow.id,
-      name: qrow.name,
-      tableId: qrow.table_id,
-      selectedColumns: qrow.selected_columns ?? [],
-      filters: qrow.filters ?? [],
-      groupBy: qrow.group_by ?? [],
-      aggregations: qrow.aggregations ?? [],
-      createdAt: qrow.created_at,
-      updatedAt: qrow.updated_at,
-    }
+    const queryDef = mapQueryDefinitionFromDb(qrow as Record<string, unknown>)
 
-    const { data: table } = await admin
-      .from('data_tables')
-      .select('id, name')
-      .eq('id', qrow.table_id)
-      .eq('organization_id', organizationId)
-      .maybeSingle()
-
-    const { data: columns } = await admin
-      .from('data_table_columns')
-      .select('name, data_type, ordinal')
-      .eq('data_table_id', qrow.table_id)
-      .order('ordinal')
-
-    const { data: rawRows, error: rawError } = await admin
-      .from('data_table_rows')
-      .select('row_data')
-      .eq('organization_id', organizationId)
-      .eq('data_table_id', qrow.table_id)
-      .limit(50_000)
-
-    if (rawError) throw rawError
-
-    const rows = runQueryDefinition(
-      {
-        id: table?.id ?? qrow.table_id,
-        name: table?.name ?? 'Table',
-        columns: (columns ?? []).map((c) => ({
-          name: c.name,
-          type: c.data_type as 'string' | 'number' | 'boolean',
-        })),
-        rows: (rawRows ?? []).map((r) => r.row_data as Record<string, string | number | boolean | null>),
-      },
-      queryDef,
-    )
+    const rows = await runQueryForTable(admin, organizationId, qrow.table_id, queryDef)
 
     const scalar = extractScalar(rows, queryDef)
     if (scalar === null || !Number.isFinite(scalar)) {
@@ -202,3 +163,4 @@ Deno.serve(async (req) => {
     })
   }
 })
+

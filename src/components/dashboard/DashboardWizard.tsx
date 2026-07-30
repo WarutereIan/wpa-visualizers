@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DashboardDefinition } from '#/types/dashboard'
 import {
   DASHBOARD_TEMPLATE_LIST,
@@ -7,6 +7,7 @@ import {
 } from '#/lib/dashboardTemplates'
 import { DashboardCanvas } from '#/components/dashboard/DashboardCanvas'
 import { Button } from '#/components/ui/button'
+import { useDashboardDraftStore } from '#/stores/dashboardDraftStore'
 
 export type DashboardWizardMode = 'create' | 'manage'
 
@@ -18,7 +19,10 @@ export interface DashboardWizardProps {
   initialDraft: DashboardDefinition
   /** 0-based step within the flow for this mode */
   initialStepIndex?: number
-  onComplete: (next: DashboardDefinition) => void
+  /** Persist to local draft storage (debounced). */
+  onAutosave?: (next: DashboardDefinition) => void
+  /** Push live (server / published catalog). */
+  onPublish: (next: DashboardDefinition) => void | Promise<void>
   onCancel: () => void
   title: string
   subtitle?: string
@@ -28,28 +32,35 @@ export function DashboardWizard({
   mode,
   initialDraft,
   initialStepIndex = 0,
-  onComplete,
+  onAutosave,
+  onPublish,
   onCancel,
   title,
   subtitle,
 }: DashboardWizardProps) {
   const labels = mode === 'create' ? CREATE_LABELS : MANAGE_LABELS
   const maxStep = labels.length - 1
+  const saveDraft = useDashboardDraftStore((s) => s.saveDraft)
 
   const [stepIndex, setStepIndex] = useState(() =>
     Math.min(Math.max(0, initialStepIndex), maxStep),
   )
-  const [draft, setDraft] = useState<DashboardDefinition>(initialDraft)
+  const [draft, setDraft] = useState<DashboardDefinition>(() => ({
+    ...initialDraft,
+    status: 'draft',
+  }))
   const [selectedTemplateId, setSelectedTemplateId] =
     useState<DashboardTemplateId>(() =>
       initialDraft.layout.length === 0 ? 'blank' : 'sample',
     )
   const [canvasKey, setCanvasKey] = useState(0)
+  const [autosaveLabel, setAutosaveLabel] = useState<string | null>(null)
+  const [publishing, setPublishing] = useState(false)
 
   const applyTemplate = useCallback((id: DashboardTemplateId) => {
     setSelectedTemplateId(id)
     const { layout, widgets } = getLayoutWidgetsForTemplate(id)
-    setDraft((d) => ({ ...d, layout, widgets }))
+    setDraft((d) => ({ ...d, layout, widgets, status: 'draft' }))
     setCanvasKey((k) => k + 1)
   }, [])
 
@@ -76,6 +87,18 @@ export function DashboardWizard({
     return true
   }, [currentKind, draft.name])
 
+  // Local autosave (browser only)
+  useEffect(() => {
+    if (!draft.name.trim()) return
+    const handle = window.setTimeout(() => {
+      const next = { ...draft, status: 'draft' as const, updatedAt: new Date().toISOString() }
+      saveDraft(next)
+      onAutosave?.(next)
+      setAutosaveLabel(`Draft saved locally · ${new Date().toLocaleTimeString()}`)
+    }, 500)
+    return () => window.clearTimeout(handle)
+  }, [draft, saveDraft, onAutosave])
+
   const goNext = () => {
     if (!canGoNext) return
     if (stepIndex < maxStep) setStepIndex((s) => s + 1)
@@ -85,20 +108,59 @@ export function DashboardWizard({
     if (stepIndex > 0) setStepIndex((s) => s - 1)
   }
 
-  const finish = () => {
-    onComplete({
-      ...draft,
-      updatedAt: new Date().toISOString(),
-    })
+  const openPreview = () => {
+    const next = { ...draft, status: 'draft' as const, updatedAt: new Date().toISOString() }
+    saveDraft(next)
+    window.open(`/dashboards/${draft.id}/preview`, '_blank', 'noopener,noreferrer')
+  }
+
+  const publish = async () => {
+    setPublishing(true)
+    try {
+      const next: DashboardDefinition = {
+        ...draft,
+        status: 'published',
+        updatedAt: new Date().toISOString(),
+      }
+      // Keep a local mirror so Preview still works offline after publish.
+      saveDraft({ ...next, status: 'draft' })
+      await onPublish(next)
+    } finally {
+      setPublishing(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--sea-ink)]">{title}</h1>
-        {subtitle && (
-          <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">{subtitle}</p>
-        )}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--sea-ink)]">{title}</h1>
+          {subtitle && (
+            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">{subtitle}</p>
+          )}
+          {autosaveLabel && (
+            <p className="mt-1 text-[11px] text-[var(--sea-ink-soft)]">{autosaveLabel}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!draft.name.trim()}
+            onClick={openPreview}
+          >
+            Preview
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!draft.name.trim() || publishing}
+            onClick={() => void publish()}
+          >
+            {publishing ? 'Publishing…' : 'Publish live'}
+          </Button>
+        </div>
       </div>
 
       {/* Step indicator */}
@@ -137,8 +199,7 @@ export function DashboardWizard({
               Dashboard details
             </h2>
             <p className="text-sm text-[var(--sea-ink-soft)]">
-              Name and describe this dashboard. You can change these later from the management
-              wizard.
+              Drafts autosave in this browser. Publish when you want the live version updated.
             </p>
             <div>
               <label htmlFor="wiz-name" className="text-sm font-medium text-[var(--sea-ink)]">
@@ -167,6 +228,19 @@ export function DashboardWizard({
                 placeholder="Optional context for your team"
               />
             </div>
+            {mode === 'create' && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!canGoNext}
+                onClick={() => {
+                  applyTemplate('blank')
+                  setStepIndex(labels.indexOf('Build'))
+                }}
+              >
+                Skip to blank canvas
+              </Button>
+            )}
           </div>
         )}
 
@@ -203,22 +277,30 @@ export function DashboardWizard({
         )}
 
         {currentKind === 'build' && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-[var(--sea-ink)]">
-              Build the layout
-            </h2>
-            <p className="text-sm text-[var(--sea-ink-soft)]">
-              Drag widgets, resize, and configure titles. Changes apply to your draft until you
-              finish.
-            </p>
-            <DashboardCanvas
-              layout={draft.layout}
-              widgets={draft.widgets}
-              onChange={({ layout, widgets }) =>
-                setDraft((d) => ({ ...d, layout, widgets }))
-              }
-              layoutKey={`${draft.id}-${canvasKey}`}
-            />
+          <div className="-m-4 space-y-2 sm:-m-6 sm:space-y-3">
+            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+              <h2 className="text-lg font-semibold text-[var(--sea-ink)]">Build the layout</h2>
+              <p className="text-sm text-[var(--sea-ink-soft)]">
+                Add widgets, configure queries, drag to arrange. Changes autosave locally — use
+                Preview or Publish when ready.
+              </p>
+            </div>
+            <div className="px-2 pb-2 sm:px-3 sm:pb-3">
+              <DashboardCanvas
+                layout={draft.layout}
+                widgets={draft.widgets}
+                theme={draft.theme}
+                onChange={({ layout, widgets, theme }) =>
+                  setDraft((d) => ({
+                    ...d,
+                    layout,
+                    widgets,
+                    ...(theme ? { theme } : {}),
+                  }))
+                }
+                layoutKey={`${draft.id}-${canvasKey}`}
+              />
+            </div>
           </div>
         )}
 
@@ -240,19 +322,32 @@ export function DashboardWizard({
                 <dt className="font-medium text-[var(--sea-ink-soft)]">Widgets</dt>
                 <dd className="text-[var(--sea-ink)]">{draft.layout.length} on canvas</dd>
               </div>
+              <div>
+                <dt className="font-medium text-[var(--sea-ink-soft)]">Theme</dt>
+                <dd className="capitalize text-[var(--sea-ink)]">
+                  {draft.theme?.paletteId ?? 'lagoon'}
+                </dd>
+              </div>
             </dl>
             <p className="text-xs text-[var(--sea-ink-soft)]">
-              {mode === 'create'
-                ? 'Saving will add this dashboard to your list (browser storage until an API is connected).'
-                : 'Saving will update this dashboard in your list.'}
+              Draft is autosaved in this browser. Publish live to update what others see (and the
+              Open / share view).
             </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={openPreview}>
+                Open preview tab
+              </Button>
+              <Button type="button" disabled={publishing} onClick={() => void publish()}>
+                {publishing ? 'Publishing…' : 'Publish live'}
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
+          Close
         </Button>
         <div className="flex gap-2">
           {stepIndex > 0 && (
@@ -265,8 +360,8 @@ export function DashboardWizard({
               Next
             </Button>
           ) : (
-            <Button type="button" onClick={finish}>
-              {mode === 'create' ? 'Create dashboard' : 'Save changes'}
+            <Button type="button" disabled={publishing} onClick={() => void publish()}>
+              {publishing ? 'Publishing…' : 'Publish live'}
             </Button>
           )}
         </div>

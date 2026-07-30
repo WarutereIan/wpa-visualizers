@@ -1,17 +1,27 @@
-import type { DemoRow } from '#/hooks/useDemoDataset'
+import type { DataRow } from '#/types/data'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useIndicatorValue } from '#/lib/api/indicatorValues'
+import { resolveKpiMeasure } from '#/lib/kpiMeasure'
 
 export function KpiWidget({
   title,
   rows,
+  measureKey,
   indicatorId,
   readOnly: _readOnly,
+  queryName,
+  grainHint,
 }: {
   title: string
-  rows: DemoRow[]
+  /** Raw query result rows (not chart-derived DemoRows). */
+  rows: DataRow[]
+  /** Result column to display (bindings.yKey / measureKey). */
+  measureKey?: string
   indicatorId?: string
   readOnly?: boolean
+  /** Optional “how calculated” tooltip pieces. */
+  queryName?: string
+  grainHint?: string
 }) {
   const workspaceReady = useWorkspaceReady()
   const orgId = useOrgId()
@@ -19,6 +29,17 @@ export function KpiWidget({
     workspaceReady ? orgId : null,
     indicatorId,
   )
+
+  const howCalculated = indicatorId
+    ? `MEAL indicator · pre-computed value${indicatorValue?.period ? ` · ${indicatorValue.period}` : ''}`
+    : [
+        queryName ? `Query: ${queryName}` : null,
+        measureKey ? `Field: ${measureKey}` : null,
+        grainHint ? `Grain: ${grainHint}` : null,
+        'Shown as produced by the query (no extra average)',
+      ]
+        .filter(Boolean)
+        .join(' · ')
 
   if (indicatorId && workspaceReady) {
     if (isLoading) {
@@ -31,9 +52,12 @@ export function KpiWidget({
     }
     if (indicatorValue?.value != null) {
       return (
-        <div className="flex h-full flex-col justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm">
+        <div
+          className="flex h-full flex-col justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm"
+          title={howCalculated}
+        >
           <p className="text-xs font-medium uppercase tracking-wide text-[var(--sea-ink-soft)]">{title}</p>
-          <p className="mt-1 text-3xl font-bold tabular-nums text-[var(--lagoon-deep)]">
+          <p className="mt-1 text-3xl font-bold tabular-nums text-[var(--dash-accent,var(--lagoon-deep))]">
             {indicatorValue.value}
           </p>
           <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">
@@ -42,8 +66,6 @@ export function KpiWidget({
         </div>
       )
     }
-    // Indicator bound but no pre-computed value yet — don't fall back to demo
-    // rows (which would show a misleading "Average from current query").
     return (
       <div className="flex h-full flex-col justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm">
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--sea-ink-soft)]">{title}</p>
@@ -53,14 +75,23 @@ export function KpiWidget({
     )
   }
 
-  const sum = rows.reduce((a, r) => a + r.value, 0)
-  const avg = rows.length ? Math.round(sum / rows.length) : 0
+  const measure = resolveKpiMeasure(rows, measureKey)
 
   return (
-    <div className="flex h-full flex-col justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm">
+    <div
+      className="group relative flex h-full flex-col justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm"
+      title={howCalculated}
+    >
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--sea-ink-soft)]">{title}</p>
-      <p className="mt-1 text-3xl font-bold tabular-nums text-[var(--lagoon-deep)]">{avg}</p>
-      <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Average from current query</p>
+      <p className="mt-1 text-3xl font-bold tabular-nums text-[var(--dash-accent,var(--lagoon-deep))]">
+        {measure.empty || measure.value == null ? '—' : measure.value}
+      </p>
+      <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">{measure.caption}</p>
+      <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-10 hidden rounded-md border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-[10px] leading-snug text-[var(--sea-ink-soft)] shadow-sm group-hover:block">
+        <span className="font-medium text-[var(--sea-ink)]">How this number is calculated</span>
+        <br />
+        {howCalculated}
+      </div>
     </div>
   )
 }

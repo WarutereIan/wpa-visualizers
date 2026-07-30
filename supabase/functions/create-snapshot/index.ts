@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { assertOrgRole } from '../_shared/ingestCore.ts'
+import { assertOrgRole } from '../_shared/orgAuth.ts'
 import { runQueryForTable } from '../_shared/indicatorQuery.ts'
-import type { QueryDefinition } from '../_shared/types.ts'
+import { mapQueryDefinitionFromDb, type QueryDefinition } from '../_shared/types.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -79,17 +79,7 @@ Deno.serve(async (req) => {
           .eq('organization_id', organizationId)
           .maybeSingle()
         if (qrow) {
-          const queryDef: QueryDefinition = {
-            id: qrow.id,
-            name: qrow.name,
-            tableId: qrow.table_id,
-            selectedColumns: qrow.selected_columns ?? [],
-            filters: qrow.filters ?? [],
-            groupBy: qrow.group_by ?? [],
-            aggregations: qrow.aggregations ?? [],
-            createdAt: qrow.created_at,
-            updatedAt: qrow.updated_at,
-          }
+          const queryDef = mapQueryDefinitionFromDb(qrow as Record<string, unknown>)
           try {
             const rows = await runQueryForTable(admin, organizationId, qrow.table_id, queryDef)
             frozenData.widgets[widgetId] = { queryId: qrow.id, rows }
@@ -145,3 +135,4 @@ Deno.serve(async (req) => {
     })
   }
 })
+

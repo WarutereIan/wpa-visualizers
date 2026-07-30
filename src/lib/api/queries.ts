@@ -78,18 +78,43 @@ async function runQueryOnServer(orgId: string, query: QueryDefinition): Promise<
     .eq('id', query.tableId)
     .maybeSingle()
 
-  return runQueryDefinition(
-    {
-      id: query.tableId,
-      name: tableNameRow?.name ?? 'Table',
-      columns: (columns ?? []).map((c) => ({
+  const primary = {
+    id: query.tableId,
+    name: tableNameRow?.name ?? 'Table',
+    columns: (columns ?? []).map((c) => ({
+      name: c.name,
+      type: c.data_type as 'string' | 'number' | 'boolean' | 'date',
+    })),
+    rows,
+  }
+
+  const catalog = [primary]
+  for (const join of query.joins ?? []) {
+    if (catalog.some((t) => t.id === join.tableId)) continue
+    const { data: jcols, error: jcolErr } = await supabase
+      .from('data_table_columns')
+      .select('name, data_type, ordinal')
+      .eq('data_table_id', join.tableId)
+      .order('ordinal')
+    throwIfSupabaseError(jcolErr, 'api.runQuery.loadJoinColumns', { tableId: join.tableId })
+    const { data: jname } = await supabase
+      .from('data_tables')
+      .select('name')
+      .eq('id', join.tableId)
+      .maybeSingle()
+    const jrows = await fetchTableRows(join.tableId, orgId)
+    catalog.push({
+      id: join.tableId,
+      name: jname?.name ?? 'Joined',
+      columns: (jcols ?? []).map((c) => ({
         name: c.name,
-        type: c.data_type as 'string' | 'number' | 'boolean',
+        type: c.data_type as 'string' | 'number' | 'boolean' | 'date',
       })),
-      rows,
-    },
-    query,
-  )
+      rows: jrows,
+    })
+  }
+
+  return runQueryDefinition(primary, query, catalog)
 }
 
 export function useQueries(orgId: string | null) {
@@ -101,10 +126,22 @@ export function useQueries(orgId: string | null) {
 }
 
 export function useRunQuery(orgId: string | null, query: QueryDefinition | null) {
+  const fingerprint = query
+    ? JSON.stringify({
+        tableId: query.tableId,
+        selectedColumns: query.selectedColumns,
+        filters: query.filters,
+        groupBy: query.groupBy,
+        aggregations: query.aggregations,
+        sort: query.sort,
+        limit: query.limit,
+        groupByGrains: query.groupByGrains,
+      })
+    : ''
   return useQuery({
     queryKey:
       orgId && query
-        ? workspaceKeys.queryResult(orgId, query.id)
+        ? [...workspaceKeys.queryResult(orgId, query.id), fingerprint]
         : ['workspace', 'query-result', 'none'],
     queryFn: () => runQueryOnServer(orgId!, query!),
     enabled: Boolean(orgId && query),
@@ -159,6 +196,11 @@ export function useUpdateQuery(orgId: string | null) {
       if (patch.filters !== undefined) update.filters = patch.filters
       if (patch.groupBy !== undefined) update.group_by = patch.groupBy
       if (patch.aggregations !== undefined) update.aggregations = patch.aggregations
+      if (patch.sort !== undefined) update.sort = patch.sort
+      if (patch.limit !== undefined) update.row_limit = patch.limit
+      if (patch.groupByGrains !== undefined) update.group_by_grains = patch.groupByGrains
+      if (patch.computedFields !== undefined) update.computed_fields = patch.computedFields
+      if (patch.joins !== undefined) update.joins = patch.joins
 
       const { data, error } = await supabase
         .from('query_definitions')

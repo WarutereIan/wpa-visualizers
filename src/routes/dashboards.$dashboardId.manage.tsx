@@ -1,6 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { DashboardWizard } from '#/components/dashboard/DashboardWizard'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
+import {
+  resolveEditableDashboard,
+  useDashboardDraftStore,
+} from '#/stores/dashboardDraftStore'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/dashboards/$dashboardId/manage')({
@@ -23,7 +27,9 @@ function DashboardManagePage() {
   const { dashboardId } = Route.useParams()
   const { step } = Route.useSearch()
   const { getById, upsertDashboard } = useWorkspaceDashboards()
-  const dashboard = getById(dashboardId)
+  const draft = useDashboardDraftStore((s) => s.drafts[dashboardId])
+  const published = getById(dashboardId)
+  const dashboard = resolveEditableDashboard(published, draft)
   const navigate = useNavigate()
 
   if (!dashboard) {
@@ -46,20 +52,22 @@ function DashboardManagePage() {
       initialDraft={dashboard}
       initialStepIndex={initialStepIndex}
       title="Manage dashboard"
-      subtitle={dashboard.name}
+      subtitle={
+        draft && published
+          ? `${dashboard.name} · local draft may differ from live`
+          : dashboard.name
+      }
       onCancel={() =>
         navigate({
-          to: '/dashboards/$dashboardId',
-          params: { dashboardId },
+          to: '/dashboards',
         })
       }
-      onComplete={(next) => {
-        void upsertDashboard(next).then(() =>
-          navigate({
-            to: '/dashboards/$dashboardId',
-            params: { dashboardId: next.id },
-          }),
-        )
+      onPublish={async (next) => {
+        await upsertDashboard({ ...next, status: 'published' })
+        navigate({
+          to: '/dashboards/$dashboardId',
+          params: { dashboardId: next.id },
+        })
       }}
     />
   )
