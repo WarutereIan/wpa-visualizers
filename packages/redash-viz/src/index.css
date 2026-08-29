@@ -1,0 +1,2 @@
+/* Component-level .less files are imported by viz-lib renderers.
+   This stub exists so `import '@redash/viz/lib/index.css'` resolves. */

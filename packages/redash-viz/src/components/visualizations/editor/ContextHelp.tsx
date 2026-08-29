@@ -1,0 +1,80 @@
+import React from "react";
+import { Popover } from "antd";
+import type { PopoverProps } from "antd";
+import QuestionCircleFilledIcon from "@ant-design/icons/QuestionCircleFilled";
+import { visualizationsSettings } from "@/visualizations/visualizationsSettings";
+
+import "./context-help.less";
+
+type ContextHelpProps = PopoverProps & {
+  icon?: React.ReactNode;
+  children?: React.ReactNode;
+  arrowPointAtCenter?: boolean;
+};
+
+const contextHelpDefaultProps = {
+  icon: null,
+  children: null,
+  arrowPointAtCenter: false,
+};
+
+export default function ContextHelp({
+  icon = contextHelpDefaultProps.icon,
+  children = contextHelpDefaultProps.children,
+  arrow,
+  arrowPointAtCenter = contextHelpDefaultProps.arrowPointAtCenter,
+  ...props
+}: ContextHelpProps) {
+  return (
+    <Popover {...props} arrow={arrowPointAtCenter ? { pointAtCenter: true } : arrow} content={children}>
+      {(icon || ContextHelp.defaultIcon) as React.ReactElement}
+    </Popover>
+  );
+}
+
+ContextHelp.defaultIcon = <QuestionCircleFilledIcon className="context-help-default-icon" />;
+
+function NumberFormatSpecs() {
+  const { HelpTriggerComponent } = visualizationsSettings;
+  return (
+    <HelpTriggerComponent
+      // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: Element; type: string; title: st... Remove this comment to see the full error message
+      type="NUMBER_FORMAT_SPECS"
+      title="Formatting Numbers"
+      href="https://redash.io/help/user-guide/visualizations/formatting-numbers"
+      className="visualization-editor-context-help"
+    >
+      {ContextHelp.defaultIcon}
+    </HelpTriggerComponent>
+  );
+}
+
+function DateTimeFormatSpecs() {
+  const { HelpTriggerComponent } = visualizationsSettings;
+  return (
+    <HelpTriggerComponent
+      title="Formatting Dates and Times"
+      href="https://momentjs.com/docs/#/displaying/format/"
+      className="visualization-editor-context-help"
+    >
+      {ContextHelp.defaultIcon}
+    </HelpTriggerComponent>
+  );
+}
+
+function TickFormatSpecs() {
+  const { HelpTriggerComponent } = visualizationsSettings;
+  return (
+    <HelpTriggerComponent
+      title="Tick Formatting"
+      href="https://redash.io/help/user-guide/visualizations/formatting-axis"
+      className="visualization-editor-context-help"
+    >
+      {ContextHelp.defaultIcon}
+    </HelpTriggerComponent>
+  );
+}
+
+ContextHelp.NumberFormatSpecs = NumberFormatSpecs;
+ContextHelp.DateTimeFormatSpecs = DateTimeFormatSpecs;
+ContextHelp.TickFormatSpecs = TickFormatSpecs;
