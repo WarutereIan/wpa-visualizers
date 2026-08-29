@@ -88,4 +88,5 @@ export interface DashboardDefinition {
   status?: 'draft' | 'published' | 'archived'
   /** Visual theme for the whole canvas and all widgets. */
   theme?: DashboardTheme
+  tags?: string[]
 }

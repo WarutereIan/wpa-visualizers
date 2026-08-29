@@ -1,3 +1,5 @@
+import type { QueryParameter } from '#/types/visualization'
+
 export type DataPrimitive = string | number | boolean | null
 
 export type DataRow = Record<string, DataPrimitive>
@@ -35,6 +37,8 @@ export interface DataFilter {
   column: string
   operator: DataFilterOperator
   value: string
+  /** When set, value is supplied at runtime from this parameter instead of `value`. */
+  param?: string
 }
 
 export type AggregationOperator = 'sum' | 'count' | 'avg'
@@ -83,6 +87,7 @@ export interface QueryDefinition {
   sort?: QuerySort[]
   /** Optional max rows after aggregation/sort. */
   limit?: number | null
+  parameters?: QueryParameter[]
   createdAt: string
   updatedAt: string
 }
