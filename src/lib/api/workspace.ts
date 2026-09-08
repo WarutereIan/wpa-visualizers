@@ -32,6 +32,7 @@ export const workspaceKeys = {
       : ([...workspaceKeys.all, 'visualizations', orgId] as const),
   widgets: (orgId: string, dashboardId: string) =>
     [...workspaceKeys.all, 'widgets', orgId, dashboardId] as const,
+  widgetsAll: (orgId: string) => [...workspaceKeys.all, 'widgets', orgId] as const,
   widgetsByVisualization: (orgId: string, visualizationId: string) =>
     [...workspaceKeys.all, 'widgets-by-viz', orgId, visualizationId] as const,
   favorites: (orgId: string) => [...workspaceKeys.all, 'favorites', orgId] as const,

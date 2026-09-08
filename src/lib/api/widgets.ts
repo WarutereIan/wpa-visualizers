@@ -9,6 +9,28 @@ import {
 } from '#/lib/api/mappers'
 import { workspaceKeys } from '#/lib/api/workspace'
 
+export async function fetchAllWidgets(orgId: string): Promise<DashboardWidget[]> {
+  const supabase = getSupabase()
+  if (!supabase) return []
+
+  const { data, error } = await supabase
+    .from('dashboard_widgets')
+    .select('*')
+    .eq('organization_id', orgId)
+    .order('created_at', { ascending: true })
+
+  throwIfSupabaseError(error, 'api.fetchAllWidgets', { orgId })
+  return ((data ?? []) as DbDashboardWidget[]).map(mapDbDashboardWidget)
+}
+
+export function useAllWidgets(orgId: string | null) {
+  return useQuery({
+    queryKey: orgId ? workspaceKeys.widgetsAll(orgId) : ['workspace', 'widgets', 'none'],
+    queryFn: () => fetchAllWidgets(orgId!),
+    enabled: Boolean(orgId),
+  })
+}
+
 export async function fetchWidgetsForDashboard(
   orgId: string,
   dashboardId: string,
@@ -89,6 +111,7 @@ export function useCreateWidget(orgId: string | null) {
     onSuccess: (data) => {
       if (!orgId) return
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.widgets(orgId, data.dashboardId) })
+      void queryClient.invalidateQueries({ queryKey: workspaceKeys.widgetsAll(orgId) })
     },
   })
 }
@@ -126,6 +149,7 @@ export function useUpdateWidget(orgId: string | null) {
     onSuccess: (data) => {
       if (!orgId) return
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.widgets(orgId, data.dashboardId) })
+      void queryClient.invalidateQueries({ queryKey: workspaceKeys.widgetsAll(orgId) })
     },
   })
 }
@@ -151,6 +175,9 @@ export function useDeleteWidget(orgId: string | null, dashboardId: string | null
         void queryClient.invalidateQueries({ queryKey: workspaceKeys.widgets(orgId, dashboardId) })
       } else if (orgId) {
         void queryClient.invalidateQueries({ queryKey: [...workspaceKeys.all, 'widgets', orgId] })
+      }
+      if (orgId) {
+        void queryClient.invalidateQueries({ queryKey: workspaceKeys.widgetsAll(orgId) })
       }
     },
   })

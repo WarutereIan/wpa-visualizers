@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import {
+  useAllWidgets,
   useCreateWidget,
   useDeleteWidget,
   useUpdateWidget,
@@ -69,6 +70,19 @@ export function useDashboardWidgets(dashboardId: string | null) {
     createWidget,
     updateWidget,
     removeWidget,
+    isLoading: workspaceReady ? serverQuery.isLoading : false,
+  }
+}
+
+/** All dashboard_widgets in the workspace (for query usage scans). */
+export function useAllDashboardWidgets() {
+  const workspaceReady = useWorkspaceReady()
+  const orgId = useOrgId()
+  const demoWidgets = useDashboardStore((s) => s.widgets)
+  const serverQuery = useAllWidgets(workspaceReady ? orgId : null)
+
+  return {
+    widgets: workspaceReady ? (serverQuery.data ?? []) : demoWidgets,
     isLoading: workspaceReady ? serverQuery.isLoading : false,
   }
 }

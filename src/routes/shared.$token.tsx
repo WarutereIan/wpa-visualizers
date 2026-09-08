@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import GridLayout, { WidthProvider } from 'react-grid-layout/legacy'
-import type { Layout } from 'react-grid-layout'
 import { PublicDashboardView } from '#/components/dashboard/redash/PublicDashboardView'
 import { Button } from '#/components/ui/button'
 import {
@@ -12,6 +11,39 @@ import {
 import type { WidgetConfig } from '#/types/dashboard'
 
 const GridWithWidth = WidthProvider(GridLayout)
+
+/** Legacy react-grid-layout items (jsonb snapshots / un-migrated dashboards). */
+type LegacyLayoutItem = {
+  i: string
+  x: number
+  y: number
+  w: number
+  h: number
+  minW?: number
+  minH?: number
+  static?: boolean
+}
+
+function asLegacyLayout(raw: unknown): LegacyLayoutItem[] {
+  if (!Array.isArray(raw)) return []
+  const out: LegacyLayoutItem[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const rec = item as Record<string, unknown>
+    if (typeof rec.i !== 'string') continue
+    out.push({
+      i: rec.i,
+      x: typeof rec.x === 'number' ? rec.x : 0,
+      y: typeof rec.y === 'number' ? rec.y : 0,
+      w: typeof rec.w === 'number' ? rec.w : 1,
+      h: typeof rec.h === 'number' ? rec.h : 1,
+      minW: typeof rec.minW === 'number' ? rec.minW : undefined,
+      minH: typeof rec.minH === 'number' ? rec.minH : undefined,
+      static: typeof rec.static === 'boolean' ? rec.static : undefined,
+    })
+  }
+  return out
+}
 
 export const Route = createFileRoute('/shared/$token')({
   component: SharedPage,
@@ -84,7 +116,7 @@ function SharedPage() {
   }
 
   if (payload.type === 'snapshot') {
-    const layout = (payload.snapshot.layout ?? []) as Layout[]
+    const layout = asLegacyLayout(payload.snapshot.layout)
     const frozen = (payload.snapshot.data ?? {}) as {
       widgets?: Record<string, { rows?: unknown[]; error?: string }>
       indicators?: Record<string, { value: number; period: string }>
@@ -125,7 +157,7 @@ function SharedPage() {
 
   const dashboard = payload.dashboard
   const widgets = (dashboard.widgets ?? {}) as Record<string, WidgetConfig>
-  const layout = (dashboard.layout ?? []) as Layout[]
+  const layout = asLegacyLayout(dashboard.layout)
 
   return (
     <div className="space-y-4">

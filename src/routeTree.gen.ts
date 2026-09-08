@@ -31,7 +31,6 @@ import { Route as OutputsAndIndicatorsOutputsRouteImport } from './routes/output
 import { Route as OutputsAndIndicatorsIndicatorsRouteImport } from './routes/outputs-and-indicators.indicators'
 import { Route as MappingsAddRouteImport } from './routes/mappings.add'
 import { Route as MappingsMappingIdRouteImport } from './routes/mappings.$mappingId'
-import { Route as DevVizSmokeRouteImport } from './routes/dev.viz-smoke'
 import { Route as DataManagementImportRouteImport } from './routes/data-management.import'
 import { Route as DashboardsAddRouteImport } from './routes/dashboards.add'
 import { Route as DashboardsDashboardIdRouteImport } from './routes/dashboards.$dashboardId'
@@ -150,11 +149,6 @@ const MappingsMappingIdRoute = MappingsMappingIdRouteImport.update({
   path: '/mappings/$mappingId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevVizSmokeRoute = DevVizSmokeRouteImport.update({
-  id: '/dev/viz-smoke',
-  path: '/dev/viz-smoke',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DataManagementImportRoute = DataManagementImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -200,7 +194,6 @@ export interface FileRoutesByFullPath {
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
-  '/dev/viz-smoke': typeof DevVizSmokeRoute
   '/mappings/$mappingId': typeof MappingsMappingIdRoute
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
@@ -230,7 +223,6 @@ export interface FileRoutesByTo {
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
-  '/dev/viz-smoke': typeof DevVizSmokeRoute
   '/mappings/$mappingId': typeof MappingsMappingIdRoute
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
@@ -261,7 +253,6 @@ export interface FileRoutesById {
   '/dashboards/$dashboardId': typeof DashboardsDashboardIdRouteWithChildren
   '/dashboards/add': typeof DashboardsAddRoute
   '/data-management/import': typeof DataManagementImportRoute
-  '/dev/viz-smoke': typeof DevVizSmokeRoute
   '/mappings/$mappingId': typeof MappingsMappingIdRoute
   '/mappings/add': typeof MappingsAddRoute
   '/outputs-and-indicators/indicators': typeof OutputsAndIndicatorsIndicatorsRoute
@@ -293,7 +284,6 @@ export interface FileRouteTypes {
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
-    | '/dev/viz-smoke'
     | '/mappings/$mappingId'
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
@@ -323,7 +313,6 @@ export interface FileRouteTypes {
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
-    | '/dev/viz-smoke'
     | '/mappings/$mappingId'
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
@@ -353,7 +342,6 @@ export interface FileRouteTypes {
     | '/dashboards/$dashboardId'
     | '/dashboards/add'
     | '/data-management/import'
-    | '/dev/viz-smoke'
     | '/mappings/$mappingId'
     | '/mappings/add'
     | '/outputs-and-indicators/indicators'
@@ -382,7 +370,6 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   DashboardsDashboardIdRoute: typeof DashboardsDashboardIdRouteWithChildren
   DashboardsAddRoute: typeof DashboardsAddRoute
-  DevVizSmokeRoute: typeof DevVizSmokeRoute
   MappingsMappingIdRoute: typeof MappingsMappingIdRoute
   MappingsAddRoute: typeof MappingsAddRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
@@ -548,13 +535,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MappingsMappingIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev/viz-smoke': {
-      id: '/dev/viz-smoke'
-      path: '/dev/viz-smoke'
-      fullPath: '/dev/viz-smoke'
-      preLoaderRoute: typeof DevVizSmokeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/data-management/import': {
       id: '/data-management/import'
       path: '/import'
@@ -659,7 +639,6 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   DashboardsDashboardIdRoute: DashboardsDashboardIdRouteWithChildren,
   DashboardsAddRoute: DashboardsAddRoute,
-  DevVizSmokeRoute: DevVizSmokeRoute,
   MappingsMappingIdRoute: MappingsMappingIdRoute,
   MappingsAddRoute: MappingsAddRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,

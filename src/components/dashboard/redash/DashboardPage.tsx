@@ -18,7 +18,7 @@ import { useAuthStore } from '#/stores/authStore'
 import type { DashboardWidget } from '#/types/visualization'
 
 const ARCHIVE_CONFIRM =
-  'Archive Dashboard? This dashboard will be removed from the dashboards list...'
+  'Archive Dashboard? This dashboard will be removed from the dashboards list.'
 
 export function DashboardPage({ dashboardId }: { dashboardId: string }) {
   const navigate = useNavigate()

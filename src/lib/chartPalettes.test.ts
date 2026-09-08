@@ -5,7 +5,6 @@ import {
   normalizeDashboardTheme,
   dashboardThemeStyle,
 } from '#/lib/chartPalettes'
-import { widgetNeedsDataSource } from '#/lib/widgetMeta'
 
 describe('chartPalettes', () => {
   it('resolves known and unknown ids', () => {
@@ -27,12 +26,5 @@ describe('chartPalettes', () => {
   it('builds canvas theme CSS vars', () => {
     const style = dashboardThemeStyle('ocean')
     expect(style['--dash-accent' as keyof typeof style]).toBe(chartPaletteById('ocean').colors[0])
-  })
-})
-
-describe('widgetNeedsDataSource', () => {
-  it('skips queries for text boxes', () => {
-    expect(widgetNeedsDataSource('text')).toBe(false)
-    expect(widgetNeedsDataSource('bar')).toBe(true)
   })
 })

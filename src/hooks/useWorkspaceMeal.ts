@@ -19,7 +19,6 @@ import { useSelectedProject } from '#/hooks/useSelectedProject'
 import { useOutputsIndicatorsStore } from '#/stores/outputsIndicatorsStore'
 import type {
   OutputIndicatorLink,
-  OutputStatus,
   ProjectStatus,
   Indicator,
   Output,

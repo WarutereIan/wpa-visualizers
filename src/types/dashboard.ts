@@ -9,6 +9,9 @@ export type { DashboardTheme }
  * Naming is by *what the user sees*, not by library.
  * ECharts is the primary renderer; Recharts is used for
  * "composed" (bar+line overlay) which it handles especially well.
+ *
+ * @deprecated Remains for un-migrated legacy dashboards (jsonb `widgets` /
+ * `layout`). New dashboards use `dashboard_widgets` + visualizations.
  */
 export type WidgetType =
   /* ── General ─────────────────────────────────────── */
@@ -55,7 +58,12 @@ export type WidgetType =
   /* ── Mixed (Recharts) ────────────────────────────── */
   | 'composed'
 
-/** Per-widget configuration (drives the config panel + queries) */
+/**
+ * Per-widget configuration (drives the config panel + queries)
+ *
+ * @deprecated Remains for un-migrated legacy dashboards (jsonb `widgets`).
+ * New dashboards use `DashboardWidget` in `#/types/visualization`.
+ */
 export interface WidgetConfig {
   id: string
   type: WidgetType
@@ -81,8 +89,16 @@ export interface DashboardDefinition {
   description?: string
   createdAt: string
   updatedAt: string
-  /** React Grid Layout items (legacy Layout type) */
+  /**
+   * React Grid Layout items (legacy Layout type).
+   * @deprecated Remains for un-migrated legacy dashboards. New dashboards
+   * store widget positions on `dashboard_widgets.options.position`.
+   */
   layout: Layout
+  /**
+   * @deprecated Remains for un-migrated legacy dashboards. New dashboards
+   * use the `dashboard_widgets` table / store.
+   */
   widgets: Record<string, WidgetConfig>
   /** Lifecycle status; defaults to 'draft' for new dashboards. */
   status?: 'draft' | 'published' | 'archived'

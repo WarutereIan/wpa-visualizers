@@ -185,7 +185,8 @@ export function PublicDashboardView({
         </div>
       )}
 
-      <footer className="mt-8 flex justify-center border-t border-[rgba(0,0,0,0.06)] py-6">
+      <footer className="rd-public-footer">
+        <span className="rd-public-footer-label">Powered by</span>
         <DimesBiLogo size="sm" linkToHome={false} />
       </footer>
     </div>

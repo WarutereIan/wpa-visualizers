@@ -7,8 +7,10 @@ import { downloadTableCsv } from '#/lib/api/export'
 import { promoteTableBackend } from '#/lib/api/connections'
 import { useOrgId, useWorkspaceReady, workspaceKeys } from '#/lib/api/workspace'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAllDashboardWidgets } from '#/hooks/useDashboardWidgets'
 import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
+import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
 import {
   findQueryUsages,
   formatQueryUsageLines,
@@ -35,6 +37,8 @@ function QueryBuilderPage() {
   const { tables, queries, createQuery, updateQuery, removeQuery, removeTable, updateColumnType, loading } =
     useWorkspaceData()
   const { dashboards } = useWorkspaceDashboards()
+  const { visualizations } = useWorkspaceVisualizations()
+  const { widgets } = useAllDashboardWidgets()
   const [exporting, setExporting] = useState(false)
   const [promoting, setPromoting] = useState(false)
   const [deletingTableId, setDeletingTableId] = useState<string | null>(null)
@@ -44,7 +48,8 @@ function QueryBuilderPage() {
   const [activeQueryId, setActiveQueryId] = useState<string>(queries[0]?.id ?? '')
   const activeQuery = queries.find((q) => q.id === activeQueryId) ?? queries[0] ?? null
   const activeTable = tables.find((t) => t.id === activeQuery?.tableId)
-  const activeUsages = activeQuery ? findQueryUsages(dashboards, activeQuery.id) : []
+  const usageScan = { visualizations, widgets }
+  const activeUsages = activeQuery ? findQueryUsages(dashboards, activeQuery.id, usageScan) : []
 
   const handleNewQuery = () => {
     const tableId = tables[0]?.id
@@ -171,7 +176,7 @@ function QueryBuilderPage() {
           <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
             {queries.map((q) => {
               const tableName = tables.find((t) => t.id === q.tableId)?.name
-              const usages = findQueryUsages(dashboards, q.id)
+              const usages = findQueryUsages(dashboards, q.id, usageScan)
               const active = (activeQuery?.id ?? activeQueryId) === q.id
               return (
                 <li key={q.id}>

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { Button } from '#/components/ui/button'
 import { useTriggerIngest } from '#/lib/api/connections'
-import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
+import { useOrgId } from '#/lib/api/workspace'
 import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import type { DataRow } from '#/types/data'
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute('/data-management/import')({
 })
 
 function DataImportPage() {
-  const { importTable, isImporting, workspaceReady } = useWorkspaceData()
+  const { importTable, workspaceReady } = useWorkspaceData()
   const orgId = useOrgId()
   const serverIngest = useTriggerIngest(workspaceReady ? orgId : null)
   const useServerPath = workspaceReady && Boolean(orgId)

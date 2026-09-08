@@ -4,10 +4,10 @@
   DataPrimitive,
   QueryAggregation,
   QueryDefinition,
-  QueryJoin,
 } from '#/types/data'
 import { groupByResultColumn, sqlDateGrainExpr } from '#/lib/dateGrain'
 import { formulaToSql } from '#/lib/queryComputed'
+import type { QueryJoin } from '#/lib/queryJoins'
 import { slugAlias } from '#/lib/slugAlias'
 
 /**

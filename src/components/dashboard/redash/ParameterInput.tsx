@@ -58,7 +58,7 @@ function QueryParameterSelect({
       onValueChange={onChange}
       disabled={disabled || isLoading || !parameter.queryId}
     >
-      <SelectTrigger aria-label={parameter.title} className="h-8 min-w-[10rem]">
+      <SelectTrigger aria-label={parameter.title} className="rd-filter-control h-8 min-w-[10rem]">
         <SelectValue placeholder={isLoading ? 'Loading…' : 'Select value'} />
       </SelectTrigger>
       <SelectContent>
@@ -79,7 +79,7 @@ export function ParameterInput({ parameter, value, onChange, disabled }: Paramet
     const options = parameter.enumOptions ?? []
     return (
       <Select value={toInputString(value) || undefined} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger aria-label={label} className="h-8 min-w-[10rem]">
+        <SelectTrigger aria-label={label} className="rd-filter-control h-8 min-w-[10rem]">
           <SelectValue placeholder="Select value" />
         </SelectTrigger>
         <SelectContent>
@@ -109,7 +109,7 @@ export function ParameterInput({ parameter, value, onChange, disabled }: Paramet
       <Input
         type="date"
         aria-label={label}
-        className="h-8"
+        className="rd-filter-control h-8"
         value={toInputString(value)}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value || null)}
@@ -131,7 +131,7 @@ export function ParameterInput({ parameter, value, onChange, disabled }: Paramet
         <Input
           type="date"
           aria-label={`${label} start`}
-          className="h-8"
+          className="rd-filter-control h-8"
           value={start}
           disabled={disabled}
           onChange={(event) => emit(event.target.value, end)}
@@ -140,7 +140,7 @@ export function ParameterInput({ parameter, value, onChange, disabled }: Paramet
         <Input
           type="date"
           aria-label={`${label} end`}
-          className="h-8"
+          className="rd-filter-control h-8"
           value={end}
           disabled={disabled}
           onChange={(event) => emit(start, event.target.value)}
@@ -154,7 +154,7 @@ export function ParameterInput({ parameter, value, onChange, disabled }: Paramet
       <Input
         type="number"
         aria-label={label}
-        className="h-8"
+        className="rd-filter-control h-8"
         value={value == null ? '' : String(value)}
         disabled={disabled}
         onChange={(event) => {
@@ -169,7 +169,7 @@ export function ParameterInput({ parameter, value, onChange, disabled }: Paramet
     <Input
       type="text"
       aria-label={label}
-      className="h-8"
+      className="rd-filter-control h-8"
       value={toInputString(value)}
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
