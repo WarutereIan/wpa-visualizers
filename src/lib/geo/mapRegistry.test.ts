@@ -3,6 +3,7 @@ import {
   BUILTIN_CHOROPLETH_MAPS,
   buildChoroplethAvailableMaps,
   customChoroplethMapKey,
+  getDefaultChoroplethOptions,
 } from '#/lib/geo/mapRegistry'
 
 describe('mapRegistry', () => {
@@ -56,5 +57,32 @@ describe('mapRegistry', () => {
     expect(maps['world-countries'].name).toBe('World Countries')
     expect(maps[customChoroplethMapKey('world-countries')].name).toBe('Evil Override')
     expect(maps[customChoroplethMapKey('org-dataset-1')].name).toBe('Custom Region')
+  })
+
+  it('getDefaultChoroplethOptions prefers kenya-counties', () => {
+    const maps = buildChoroplethAvailableMaps()
+    expect(getDefaultChoroplethOptions(maps)).toEqual({
+      mapType: 'kenya-counties',
+      keyColumn: null,
+      targetField: null,
+      valueColumn: null,
+    })
+  })
+
+  it('getDefaultChoroplethOptions falls back to first map when kenya-counties absent', () => {
+    const maps = buildChoroplethAvailableMaps([
+      {
+        id: 'only-custom',
+        name: 'Only Custom',
+        url: 'https://example.com/custom.geojson',
+        fieldNames: { code: 'Code' },
+      },
+    ])
+    delete maps['kenya-counties']
+
+    const defaults = getDefaultChoroplethOptions(maps)
+    expect(defaults.mapType).toBeTruthy()
+    expect(defaults.keyColumn).toBeNull()
+    expect(defaults.valueColumn).toBeNull()
   })
 })

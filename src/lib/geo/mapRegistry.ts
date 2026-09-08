@@ -67,6 +67,21 @@ export function customChoroplethMapKey(id: string): string {
   return `custom:${id}`
 }
 
+/** Sensible defaults when authoring a new choropleth visualization. */
+export function getDefaultChoroplethOptions(
+  maps: ChoroplethAvailableMaps,
+): Record<string, unknown> {
+  const mapType =
+    'kenya-counties' in maps ? 'kenya-counties' : Object.keys(maps)[0]
+  if (!mapType) return {}
+  return {
+    mapType,
+    keyColumn: null,
+    targetField: null,
+    valueColumn: null,
+  }
+}
+
 export function buildChoroplethAvailableMaps(
   custom?: CustomChoroplethMapInput[],
 ): ChoroplethAvailableMaps {

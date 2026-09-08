@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import type { EditorProps, RendererProps } from '@redash/viz/lib'
 import { useChoroplethMaps } from '#/hooks/useChoroplethMaps'
 import type { ChoroplethAvailableMaps } from '#/lib/geo/mapRegistry'
@@ -16,19 +16,23 @@ export function useVizLib(choroplethAvailableMaps?: ChoroplethAvailableMaps): {
 } {
   const defaultMaps = useChoroplethMaps()
   const maps = choroplethAvailableMaps ?? defaultMaps
+  const mapsRef = useRef(maps)
+  mapsRef.current = maps
+  const vizModRef = useRef<typeof import('@redash/viz/lib') | null>(null)
 
   const [libs, setLibs] = useState<VizLibComponents | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [vizMod, setVizMod] = useState<typeof import('@redash/viz/lib') | null>(null)
+  const [settingsReady, setSettingsReady] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     void Promise.all([import('@redash/viz/lib'), import('@redash/viz/lib/index.css')])
       .then(([mod]) => {
-        if (!cancelled) {
-          setLibs({ Renderer: mod.Renderer, Editor: mod.Editor })
-          setVizMod(mod)
-        }
+        if (cancelled) return
+        mod.updateVisualizationsSettings({ choroplethAvailableMaps: mapsRef.current })
+        vizModRef.current = mod
+        setLibs({ Renderer: mod.Renderer, Editor: mod.Editor })
+        setSettingsReady(true)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err))
@@ -39,13 +43,13 @@ export function useVizLib(choroplethAvailableMaps?: ChoroplethAvailableMaps): {
   }, [])
 
   useEffect(() => {
-    if (!vizMod) return
-    vizMod.updateVisualizationsSettings({ choroplethAvailableMaps: maps })
-  }, [vizMod, maps])
+    if (!vizModRef.current) return
+    vizModRef.current.updateVisualizationsSettings({ choroplethAvailableMaps: maps })
+  }, [maps])
 
   return {
-    Renderer: libs?.Renderer ?? null,
-    Editor: libs?.Editor ?? null,
+    Renderer: settingsReady ? (libs?.Renderer ?? null) : null,
+    Editor: settingsReady ? (libs?.Editor ?? null) : null,
     error,
   }
 }

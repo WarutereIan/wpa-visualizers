@@ -15,7 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#/components/ui/select'
+import { ChoroplethAuthoringHint } from '#/components/data/ChoroplethAuthoringHint'
 import { useVizLib } from '#/components/data/vizLibClient'
+import { useChoroplethMaps } from '#/hooks/useChoroplethMaps'
+import { getDefaultChoroplethOptions } from '#/lib/geo/mapRegistry'
 import { useVisualizationWidgetRefs } from '#/hooks/useDashboardWidgets'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
@@ -46,6 +49,7 @@ export function VisualizationEditorModal({
   visualization,
   onClose,
 }: VisualizationEditorModalProps) {
+  const choroplethMaps = useChoroplethMaps()
   const { Editor, Renderer, error: vizError } = useVizLib()
   const { listByQuery, createVisualization, updateVisualization, removeVisualization } =
     useWorkspaceVisualizations()
@@ -83,7 +87,7 @@ export function VisualizationEditorModal({
   const handleTypeChange = (next: RedashVisualizationType) => {
     const prevLabel = REDASH_VIZ_TYPE_LABELS[type]
     setType(next)
-    setOptions({})
+    setOptions(next === 'CHOROPLETH' ? getDefaultChoroplethOptions(choroplethMaps) : {})
     if (!name.trim() || name === prevLabel) {
       setName(REDASH_VIZ_TYPE_LABELS[next])
     }
@@ -174,6 +178,7 @@ export function VisualizationEditorModal({
                 className="mt-1 flex h-9 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm"
               />
             </div>
+            {type === 'CHOROPLETH' ? <ChoroplethAuthoringHint /> : null}
             <div className="min-h-[200px]">
               {vizError ? (
                 <p className="text-xs text-red-700">{vizError}</p>
