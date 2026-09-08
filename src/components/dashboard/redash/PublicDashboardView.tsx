@@ -11,6 +11,7 @@ import {
   mapDbVisualization,
 } from '#/lib/api/mappers'
 import type { SharedRedashDashboardPayload } from '#/lib/api/sharedLinks'
+import { buildChoroplethAvailableMaps, type ChoroplethAvailableMaps } from '#/lib/geo/mapRegistry'
 import { toRedashResult } from '#/lib/redashResult'
 import {
   GRID_COLS,
@@ -47,14 +48,16 @@ function PublicVisualizationWidget({
   query,
   rows,
   error,
+  choroplethAvailableMaps,
 }: {
   widget: DashboardWidget
   visualization: VisualizationDefinition | null
   query: QueryDefinition | null
   rows: DataRow[]
   error: string | null
+  choroplethAvailableMaps: ChoroplethAvailableMaps
 }) {
-  const { Renderer, error: vizError } = useVizLib()
+  const { Renderer, error: vizError } = useVizLib(choroplethAvailableMaps)
   const result = useMemo(
     () => toRedashResult(rows, query ?? EMPTY_QUERY, []),
     [rows, query],
@@ -116,6 +119,10 @@ export function PublicDashboardView({
   const layout = widgets.map(positionToLayoutItem)
   const dashboardParams = collectDashboardParameters(widgets, visualizations, queries)
   const dashboardParamValues = defaultParameterValues(dashboardParams)
+  const choroplethAvailableMaps = useMemo(
+    () => payload.choroplethAvailableMaps ?? buildChoroplethAvailableMaps(),
+    [payload.choroplethAvailableMaps],
+  )
 
   return (
     <div className="rd-page min-h-screen px-4 py-4 md:px-6">
@@ -174,6 +181,7 @@ export function PublicDashboardView({
                       query={query}
                       rows={rows}
                       error={error}
+                      choroplethAvailableMaps={choroplethAvailableMaps}
                     />
                   ) : (
                     <TextboxWidget widget={widget} editing={false} onEdit={() => undefined} onRemove={() => undefined} />

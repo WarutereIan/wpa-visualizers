@@ -6,6 +6,10 @@ import {
   resolvePublicDefaultValues,
 } from '../_shared/params.ts'
 import { executeQueryForOrg } from '../_shared/runQueryEngine.ts'
+import {
+  buildPublicChoroplethMaps,
+  collectChoroplethMapTypes,
+} from '../_shared/choroplethMaps.ts'
 import { mapQueryDefinitionFromDb } from '../_shared/types.ts'
 
 const corsHeaders = {
@@ -234,6 +238,13 @@ Deno.serve(async (req) => {
         }
       }
 
+      const choroplethMapTypes = collectChoroplethMapTypes(visualizations)
+      const choroplethAvailableMaps = await buildPublicChoroplethMaps(
+        admin,
+        link.organization_id,
+        choroplethMapTypes,
+      )
+
       return json({
         type: 'dashboard',
         embedAllowed: link.embed_allowed,
@@ -243,6 +254,7 @@ Deno.serve(async (req) => {
         queries,
         queryResults,
         queryErrors,
+        choroplethAvailableMaps,
       })
     }
 

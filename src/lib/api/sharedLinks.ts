@@ -8,6 +8,7 @@ import {
 import { getSupabase } from '#/lib/supabaseClient'
 import { throwIfSupabaseError } from '#/lib/supabaseErrors'
 import { workspaceKeys } from '#/lib/api/workspace'
+import type { ChoroplethAvailableMaps } from '#/lib/geo/mapRegistry'
 import type { DataRow } from '#/types/data'
 
 export interface SharedLink {
@@ -135,6 +136,7 @@ export type SharedRedashDashboardPayload = SharedLegacyDashboardPayload & {
   queries: DbQueryDefinition[]
   queryResults: Record<string, DataRow[]>
   queryErrors?: Record<string, string>
+  choroplethAvailableMaps?: ChoroplethAvailableMaps
 }
 
 export type SharedLinkPayload =
