@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { isSupabaseConfigured } from '#/lib/env'
 import type { DashboardDefinition } from '#/types/dashboard'
+import type { DashboardWidget } from '#/types/visualization'
 import {
   getLayoutWidgetsForTemplate,
   type DashboardTemplateId,
@@ -40,18 +41,28 @@ export function createNewDashboardDraft(opts?: {
 
 interface DashboardState {
   dashboards: DashboardDefinition[]
+  widgets: DashboardWidget[]
   addDashboard: (name: string, description?: string) => DashboardDefinition
   /** Create or replace by id (used by dashboard builder save) */
   upsertDashboard: (d: DashboardDefinition) => void
   updateDashboard: (id: string, patch: Partial<Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme'>>) => void
   removeDashboard: (id: string) => void
   getById: (id: string) => DashboardDefinition | undefined
+  listWidgets: (dashboardId: string) => DashboardWidget[]
+  listByDashboard: (dashboardId: string) => DashboardWidget[]
+  createWidget: (input: Omit<DashboardWidget, 'id' | 'createdAt' | 'updatedAt'>) => DashboardWidget
+  updateWidget: (
+    id: string,
+    patch: Partial<Pick<DashboardWidget, 'text' | 'options' | 'visualizationId'>>,
+  ) => void
+  removeWidget: (id: string) => void
 }
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set, get) => ({
       dashboards: [],
+      widgets: [],
 
       addDashboard: (name, description) => {
         const id = crypto.randomUUID()
@@ -93,14 +104,53 @@ export const useDashboardStore = create<DashboardState>()(
       },
 
       removeDashboard: (id) => {
-        set((s) => ({ dashboards: s.dashboards.filter((d) => d.id !== id) }))
+        set((s) => ({
+          dashboards: s.dashboards.filter((d) => d.id !== id),
+          widgets: s.widgets.filter((w) => w.dashboardId !== id),
+        }))
       },
 
       getById: (id) => get().dashboards.find((d) => d.id === id),
+
+      listWidgets: (dashboardId) => get().widgets.filter((w) => w.dashboardId === dashboardId),
+      listByDashboard: (dashboardId) => get().widgets.filter((w) => w.dashboardId === dashboardId),
+
+      createWidget: (input) => {
+        const now = nowIso()
+        const widget: DashboardWidget = {
+          id: crypto.randomUUID(),
+          ...input,
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((s) => ({ widgets: [...s.widgets, widget] }))
+        return widget
+      },
+
+      updateWidget: (id, patch) => {
+        set((s) => ({
+          widgets: s.widgets.map((w) =>
+            w.id === id ? { ...w, ...patch, updatedAt: nowIso() } : w,
+          ),
+        }))
+      },
+
+      removeWidget: (id) => {
+        set((s) => ({ widgets: s.widgets.filter((w) => w.id !== id) }))
+      },
     }),
     {
       name: STORAGE_KEY,
       skipHydration: isSupabaseConfigured(),
+      merge: (persisted, current) => {
+        const p = persisted as Partial<DashboardState> | undefined
+        return {
+          ...current,
+          ...p,
+          dashboards: p?.dashboards ?? current.dashboards,
+          widgets: p?.widgets ?? [],
+        }
+      },
     },
   ),
 )

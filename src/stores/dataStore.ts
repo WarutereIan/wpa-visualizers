@@ -14,6 +14,7 @@ import type {
   QueryAggregation,
   QueryDefinition,
 } from '#/types/data'
+import type { VisualizationDefinition } from '#/types/visualization'
 
 const STORAGE_KEY = 'wpa-data-layer-v3'
 
@@ -29,12 +30,22 @@ interface DataState {
   version: number
   tables: DataTable[]
   queries: QueryDefinition[]
+  visualizations: VisualizationDefinition[]
   getTableById: (id: string) => DataTable | undefined
   getQueryById: (id: string) => QueryDefinition | undefined
   runQuery: (queryId: string) => DataRow[]
   createQuery: (input: Omit<QueryDefinition, 'id' | 'createdAt' | 'updatedAt'>) => QueryDefinition
   updateQuery: (id: string, patch: Partial<Omit<QueryDefinition, 'id' | 'createdAt'>>) => void
   removeQuery: (id: string) => void
+  listByQuery: (queryId: string) => VisualizationDefinition[]
+  createVisualization: (
+    input: Omit<VisualizationDefinition, 'id' | 'createdAt' | 'updatedAt'>,
+  ) => VisualizationDefinition
+  updateVisualization: (
+    id: string,
+    patch: Partial<Pick<VisualizationDefinition, 'name' | 'description' | 'type' | 'options'>>,
+  ) => void
+  removeVisualization: (id: string) => void
   addFilter: (queryId: string) => void
   updateFilter: (queryId: string, filterId: string, patch: Partial<DataFilter>) => void
   removeFilter: (queryId: string, filterId: string) => void
@@ -53,6 +64,7 @@ export const useDataStore = create<DataState>()(
       version: 1,
       tables: demoTables(),
       queries: demoQueries(),
+      visualizations: [],
 
       getTableById: (tableId) => get().tables.find((t) => t.id === tableId),
       getQueryById: (queryId) => get().queries.find((q) => q.id === queryId),
@@ -88,6 +100,40 @@ export const useDataStore = create<DataState>()(
       removeQuery: (queryId) => {
         set((s) => ({
           queries: s.queries.filter((q) => q.id !== queryId),
+          visualizations: s.visualizations.filter((v) => v.queryId !== queryId),
+          version: s.version + 1,
+        }))
+      },
+
+      listByQuery: (queryId) => get().visualizations.filter((v) => v.queryId === queryId),
+
+      createVisualization: (input) => {
+        const now = nowIso()
+        const visualization: VisualizationDefinition = {
+          id: id('viz'),
+          ...input,
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((s) => ({
+          visualizations: [...s.visualizations, visualization],
+          version: s.version + 1,
+        }))
+        return visualization
+      },
+
+      updateVisualization: (vizId, patch) => {
+        set((s) => ({
+          visualizations: s.visualizations.map((v) =>
+            v.id === vizId ? { ...v, ...patch, updatedAt: nowIso() } : v,
+          ),
+          version: s.version + 1,
+        }))
+      },
+
+      removeVisualization: (vizId) => {
+        set((s) => ({
+          visualizations: s.visualizations.filter((v) => v.id !== vizId),
           version: s.version + 1,
         }))
       },
@@ -184,6 +230,16 @@ export const useDataStore = create<DataState>()(
     {
       name: STORAGE_KEY,
       skipHydration: isSupabaseConfigured(),
+      merge: (persisted, current) => {
+        const p = persisted as Partial<DataState> | undefined
+        return {
+          ...current,
+          ...p,
+          tables: p?.tables ?? current.tables,
+          queries: p?.queries ?? current.queries,
+          visualizations: p?.visualizations ?? [],
+        }
+      },
     },
   ),
 )

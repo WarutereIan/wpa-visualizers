@@ -9,6 +9,7 @@ import type {
 } from '#/types/data'
 import type { DashboardDefinition } from '#/types/dashboard'
 import type { MappingDefinition } from '#/types/mapping'
+import type { DashboardWidget, RedashVisualizationType, VisualizationDefinition } from '#/types/visualization'
 import { normalizeDashboardTheme } from '#/lib/chartPalettes'
 import type {
   OutputIndicatorLink,
@@ -68,6 +69,29 @@ export interface DbDashboard {
   widgets: unknown
   theme?: unknown
   status: 'draft' | 'published' | 'archived'
+  created_at: string
+  updated_at: string
+}
+
+export interface DbVisualization {
+  id: string
+  organization_id: string
+  query_id: string
+  type: RedashVisualizationType
+  name: string
+  description: string | null
+  options: unknown
+  created_at: string
+  updated_at: string
+}
+
+export interface DbDashboardWidget {
+  id: string
+  organization_id: string
+  dashboard_id: string
+  visualization_id: string | null
+  text: string | null
+  options: unknown
   created_at: string
   updated_at: string
 }
@@ -179,6 +203,65 @@ export function mapDashboardToDb(
     widgets: dashboard.widgets,
     theme: normalizeDashboardTheme(dashboard.theme),
     status: dashboard.status ?? 'draft',
+  }
+}
+
+export function mapDbVisualization(row: DbVisualization): VisualizationDefinition {
+  return {
+    id: row.id,
+    queryId: row.query_id,
+    type: row.type,
+    name: row.name,
+    description: row.description ?? undefined,
+    options: (row.options as VisualizationDefinition['options']) ?? {},
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function mapVisualizationToDb(
+  viz: Omit<VisualizationDefinition, 'createdAt' | 'updatedAt'> &
+    Partial<Pick<VisualizationDefinition, 'createdAt' | 'updatedAt'>>,
+  organizationId: string,
+) {
+  return {
+    id: viz.id,
+    organization_id: organizationId,
+    query_id: viz.queryId,
+    type: viz.type,
+    name: viz.name,
+    description: viz.description ?? null,
+    options: viz.options ?? {},
+  }
+}
+
+export function mapDbDashboardWidget(row: DbDashboardWidget): DashboardWidget {
+  const options = (row.options as DashboardWidget['options']) ?? {
+    position: { col: 0, row: 0, sizeX: 3, sizeY: 3 },
+  }
+  return {
+    id: row.id,
+    dashboardId: row.dashboard_id,
+    visualizationId: row.visualization_id,
+    text: row.text,
+    options,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function mapWidgetToDb(
+  widget: Omit<DashboardWidget, 'createdAt' | 'updatedAt'> &
+    Partial<Pick<DashboardWidget, 'createdAt' | 'updatedAt'>>,
+  organizationId: string,
+) {
+  return {
+    id: widget.id,
+    organization_id: organizationId,
+    dashboard_id: widget.dashboardId,
+    visualization_id: widget.visualizationId,
+    text: widget.text,
+    options: widget.options,
   }
 }
 

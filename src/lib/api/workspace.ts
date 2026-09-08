@@ -26,6 +26,13 @@ export const workspaceKeys = {
   dashboards: (orgId: string) => [...workspaceKeys.all, 'dashboards', orgId] as const,
   dashboard: (orgId: string, dashboardId: string) =>
     [...workspaceKeys.dashboards(orgId), dashboardId] as const,
+  visualizations: (orgId: string, queryId?: string) =>
+    queryId
+      ? ([...workspaceKeys.all, 'visualizations', orgId, queryId] as const)
+      : ([...workspaceKeys.all, 'visualizations', orgId] as const),
+  widgets: (orgId: string, dashboardId: string) =>
+    [...workspaceKeys.all, 'widgets', orgId, dashboardId] as const,
+  favorites: (orgId: string) => [...workspaceKeys.all, 'favorites', orgId] as const,
   mappings: (orgId: string) => [...workspaceKeys.all, 'mappings', orgId] as const,
   mapping: (orgId: string, mappingId: string) =>
     [...workspaceKeys.mappings(orgId), mappingId] as const,
