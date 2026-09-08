@@ -196,15 +196,17 @@ export function DashboardHeader({
                 Edit
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                setMenu(null)
-                onDuplicate()
-              }}
-            >
-              Duplicate
-            </button>
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(null)
+                  onDuplicate()
+                }}
+              >
+                Duplicate
+              </button>
+            ) : null}
             {canEdit && canArchive(status) ? (
               <button
                 type="button"

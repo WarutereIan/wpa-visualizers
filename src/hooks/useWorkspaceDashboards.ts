@@ -74,20 +74,25 @@ export function useWorkspaceDashboards() {
       updatedAt: now,
     }
     await upsertMutation.mutateAsync(copy)
-    const widgets = await fetchWidgetsForDashboard(orgId, id)
-    for (const widget of widgets) {
-      await createWidgetMutation.mutateAsync({
-        dashboardId: copy.id,
-        visualizationId: widget.visualizationId,
-        text: widget.text,
-        options: {
-          ...widget.options,
-          position: { ...widget.options.position },
-          parameterMappings: widget.options.parameterMappings
-            ? { ...widget.options.parameterMappings }
-            : undefined,
-        },
-      })
+    try {
+      const widgets = await fetchWidgetsForDashboard(orgId, id)
+      for (const widget of widgets) {
+        await createWidgetMutation.mutateAsync({
+          dashboardId: copy.id,
+          visualizationId: widget.visualizationId,
+          text: widget.text,
+          options: {
+            ...widget.options,
+            position: { ...widget.options.position },
+            parameterMappings: widget.options.parameterMappings
+              ? { ...widget.options.parameterMappings }
+              : undefined,
+          },
+        })
+      }
+    } catch (err) {
+      await deleteMutation.mutateAsync(copy.id).catch(() => undefined)
+      throw err
     }
     return copy
   }
