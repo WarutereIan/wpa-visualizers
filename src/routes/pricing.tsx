@@ -192,28 +192,28 @@ function PricingPage() {
             Free plan — no credit card required · Paid plans billed annually
           </p>
 
-          {!currencyLoading && (isConverted || currencyError) && (
+          {currencyLoading ? (
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Detecting local currency…
+            </p>
+          ) : isConverted ? (
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              {isConverted ? (
-                <>
-                  <span>
-                    Prices in {currency} {country ? `(${country})` : ''} — converted from USD
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowInUsd(!showInUsd)}
-                    className="font-medium text-violet-600 hover:underline dark:text-violet-400"
-                  >
-                    {showInUsd ? `Show in ${currency}` : 'Show in USD'}
-                  </button>
-                </>
-              ) : (
-                currencyError && (
-                  <span className="text-slate-500">Showing USD (location unavailable)</span>
-                )
-              )}
+              <span>
+                {useLocalCurrency
+                  ? `Approximate prices in ${currency}${country ? ` (${country})` : ''} — converted from USD`
+                  : `Showing USD (your locale: ${currency}${country ? `, ${country}` : ''})`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowInUsd(!showInUsd)}
+                className="font-medium text-violet-600 hover:underline dark:text-violet-400"
+              >
+                {showInUsd ? `Show in ${currency}` : 'Show in USD'}
+              </button>
             </div>
-          )}
+          ) : currencyError ? (
+            <p className="mt-4 text-sm text-slate-500">Showing USD (location unavailable)</p>
+          ) : null}
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
@@ -264,24 +264,33 @@ function PricingPage() {
                       </div>
 
                       <div className="mb-4 min-w-0">
-                        {displayPrice === 0 ? (
+                        {currencyLoading ? (
+                          <div className="h-10 w-36 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700" />
+                        ) : displayPrice === 0 ? (
                           <div>
                             <span className="text-4xl font-bold text-[#141627] dark:text-slate-100">
                               {useLocalCurrency ? formatPrice(0) : '$0'}
                             </span>
-                            <span className="text-slate-600 dark:text-slate-400">/year</span>
+                            <span className="ml-1 text-slate-600 dark:text-slate-400">/year</span>
                           </div>
                         ) : (
-                          <div className="flex flex-wrap items-baseline gap-1">
-                            <span className="text-4xl font-bold text-[#141627] dark:text-slate-100">
-                              {useLocalCurrency
-                                ? formatPrice(displayPrice)
-                                : `$${displayPrice.toLocaleString('en-US', {
-                                    minimumFractionDigits: displayPrice % 1 !== 0 ? 2 : 0,
-                                    maximumFractionDigits: 2,
-                                  })}`}
-                            </span>
-                            <span className="text-slate-600 dark:text-slate-400">/year</span>
+                          <div>
+                            <div className="flex flex-wrap items-baseline gap-1">
+                              <span className="text-4xl font-bold text-[#141627] dark:text-slate-100">
+                                {useLocalCurrency
+                                  ? formatPrice(displayPrice)
+                                  : `$${displayPrice.toLocaleString('en-US', {
+                                      minimumFractionDigits: displayPrice % 1 !== 0 ? 2 : 0,
+                                      maximumFractionDigits: 2,
+                                    })}`}
+                              </span>
+                              <span className="text-slate-600 dark:text-slate-400">/year</span>
+                            </div>
+                            {useLocalCurrency ? (
+                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                ≈ ${displayPrice}/yr USD
+                              </p>
+                            ) : null}
                           </div>
                         )}
                       </div>

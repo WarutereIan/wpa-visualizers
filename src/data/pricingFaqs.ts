@@ -36,4 +36,9 @@ export const pricingFaqs: LandingFaq[] = [
     answer:
       'No setup fees. Paid plans are billed annually — you pay only for the plan you select.',
   },
+  {
+    question: 'Why do I see prices in my local currency?',
+    answer:
+      'We estimate your currency from your IP location and convert from USD using live exchange rates. Amounts are approximate — billing is in USD unless we agree otherwise. Use “Show in USD” anytime to switch.',
+  },
 ]

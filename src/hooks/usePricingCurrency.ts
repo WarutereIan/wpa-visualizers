@@ -37,11 +37,19 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   KES: 'KSh',
   NGN: '₦',
   GHS: '₵',
+  UGX: 'USh',
+  TZS: 'TSh',
+  RWF: 'FRw',
+  ETB: 'Br',
 }
 
 const GEO_API = 'https://ipapi.co/json/'
 const OPEN_EXCHANGE_RATES_URL = 'https://openexchangerates.org/api/latest.json'
 const FRANKFURTER_BASE = 'https://api.frankfurter.dev/v1'
+/** Broad coverage (KES, NGN, UGX, …) — Frankfurter only has ~30 currencies. */
+const OPEN_ER_API = 'https://open.er-api.com/v6/latest/USD'
+const FAWAZ_USD_RATES =
+  'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.min.json'
 
 export interface PricingCurrencyState {
   currency: string
@@ -63,7 +71,7 @@ const DEFAULT_STATE: PricingCurrencyState = {
   isConverted: false,
 }
 
-function getCurrencySymbol(code: string): string {
+export function getCurrencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[code] ?? code
 }
 
@@ -71,6 +79,67 @@ function getOpenExchangeRatesAppId(): string | undefined {
   return typeof import.meta !== 'undefined' && import.meta.env?.VITE_OPEN_EXCHANGE_RATES_APP_ID
     ? String(import.meta.env.VITE_OPEN_EXCHANGE_RATES_APP_ID).trim() || undefined
     : undefined
+}
+
+export async function fetchWithTimeout(url: string, ms = 5000): Promise<Response> {
+  return Promise.race([
+    fetch(url),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ])
+}
+
+/** USD → currency rate, trying sources that cover African currencies (KES, NGN, …). */
+export async function fetchUsdRate(currency: string, appId?: string): Promise<number> {
+  const code = currency.toUpperCase()
+  if (code === 'USD') return 1
+
+  if (appId) {
+    try {
+      const res = await fetchWithTimeout(
+        `${OPEN_EXCHANGE_RATES_URL}?app_id=${encodeURIComponent(appId)}&symbols=${encodeURIComponent(code)}`,
+      )
+      if (res.ok) {
+        const data = (await res.json()) as OpenExchangeRatesResponse
+        const rate = data.rates?.[code]
+        if (typeof rate === 'number' && Number.isFinite(rate) && rate > 0) return rate
+      }
+    } catch {
+      /* try next source */
+    }
+  }
+
+  try {
+    const res = await fetchWithTimeout(
+      `${FRANKFURTER_BASE}/latest?base=USD&symbols=${encodeURIComponent(code)}`,
+    )
+    if (res.ok) {
+      const data = (await res.json()) as FrankfurterLatestResponse
+      const rate = data.rates?.[code]
+      if (typeof rate === 'number' && Number.isFinite(rate) && rate > 0) return rate
+    }
+  } catch {
+    /* try next source */
+  }
+
+  try {
+    const res = await fetchWithTimeout(OPEN_ER_API)
+    if (res.ok) {
+      const data = (await res.json()) as { result?: string; rates?: Record<string, number> }
+      const rate = data.rates?.[code]
+      if (typeof rate === 'number' && Number.isFinite(rate) && rate > 0) return rate
+    }
+  } catch {
+    /* try next source */
+  }
+
+  const res = await fetchWithTimeout(FAWAZ_USD_RATES)
+  if (!res.ok) throw new Error('Rates fetch failed')
+  const data = (await res.json()) as { usd?: Record<string, number> }
+  const rate = data.usd?.[code.toLowerCase()]
+  if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
+    throw new Error(`No rate for ${code}`)
+  }
+  return rate
 }
 
 export function usePricingCurrency() {
@@ -82,12 +151,7 @@ export function usePricingCurrency() {
 
     async function detect() {
       try {
-        const geoRes = await Promise.race([
-          fetch(GEO_API),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Geo timeout')), 5000),
-          ),
-        ])
+        const geoRes = await fetchWithTimeout(GEO_API)
         if (cancelled) return
         if (!geoRes.ok) throw new Error('Geo fetch failed')
 
@@ -108,37 +172,8 @@ export function usePricingCurrency() {
           return
         }
 
-        let rate: number | undefined
-
-        if (appId) {
-          const url = `${OPEN_EXCHANGE_RATES_URL}?app_id=${encodeURIComponent(appId)}&symbols=${encodeURIComponent(currency)}`
-          const ratesRes = await Promise.race([
-            fetch(url),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Rates timeout')), 5000),
-            ),
-          ])
-          if (cancelled) return
-          if (!ratesRes.ok) throw new Error('Rates fetch failed')
-          const data = (await ratesRes.json()) as OpenExchangeRatesResponse
-          rate = data.rates?.[currency]
-        }
-
-        if (rate == null) {
-          const fallbackUrl = `${FRANKFURTER_BASE}/latest?base=USD&symbols=${encodeURIComponent(currency)}`
-          const ratesRes = await Promise.race([
-            fetch(fallbackUrl),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Rates timeout')), 5000),
-            ),
-          ])
-          if (cancelled) return
-          if (!ratesRes.ok) throw new Error('Rates fetch failed')
-          const data = (await ratesRes.json()) as FrankfurterLatestResponse
-          rate = data.rates?.[currency]
-        }
-
-        if (rate == null) throw new Error(`No rate for ${currency}`)
+        const rate = await fetchUsdRate(currency, appId)
+        if (cancelled) return
 
         setState({
           currency,
