@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import GridLayout, { WidthProvider, type Layout } from 'react-grid-layout/legacy'
+import GridLayout, { WidthProvider } from 'react-grid-layout/legacy'
+import type { Layout } from 'react-grid-layout'
 import { PublicDashboardView } from '#/components/dashboard/redash/PublicDashboardView'
 import { Button } from '#/components/ui/button'
 import {
