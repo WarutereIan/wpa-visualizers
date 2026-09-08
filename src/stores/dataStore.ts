@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { runQueryDefinition } from '#/lib/queryEngine'
-import { demoQueries, demoTables, inferColumnsFromRows } from '#/lib/demoSeed'
+import { demoQueries, demoTables, demoVisualizations, inferColumnsFromRows } from '#/lib/demoSeed'
 import { defaultAggregationAlias } from '#/lib/aggregationRules'
 import { isSupabaseConfigured } from '#/lib/env'
 import type {
@@ -65,7 +65,7 @@ export const useDataStore = create<DataState>()(
       version: 1,
       tables: demoTables(),
       queries: demoQueries(),
-      visualizations: [],
+      visualizations: demoVisualizations(),
 
       getTableById: (tableId) => get().tables.find((t) => t.id === tableId),
       getQueryById: (queryId) => get().queries.find((q) => q.id === queryId),
@@ -249,7 +249,10 @@ export const useDataStore = create<DataState>()(
           ...p,
           tables: p?.tables ?? current.tables,
           queries: p?.queries ?? current.queries,
-          visualizations: p?.visualizations ?? [],
+          visualizations:
+            p?.visualizations && p.visualizations.length > 0
+              ? p.visualizations
+              : demoVisualizations(),
         }
       },
     },

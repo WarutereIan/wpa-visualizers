@@ -1,5 +1,7 @@
-import type { DataRow, DataTable, QueryDefinition } from '#/types/data'
+import type { DataTable, QueryDefinition } from '#/types/data'
+import type { VisualizationDefinition } from '#/types/visualization'
 import { inferColumnsFromRows } from '#/lib/columnTypes'
+import { DEFAULT_TABLE_VISUALIZATION } from '#/lib/visualizationOrder'
 
 export { inferColumnsFromRows }
 
@@ -177,6 +179,26 @@ export function demoQueries(): QueryDefinition[] {
           alias: 'value',
         },
       ],
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]
+}
+
+export function demoVisualizations(): VisualizationDefinition[] {
+  const now = nowIso()
+  return [
+    {
+      id: 'viz-qry-households-beneficiaries',
+      queryId: 'qry-households-beneficiaries',
+      ...DEFAULT_TABLE_VISUALIZATION,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: 'viz-qry-indicator-values',
+      queryId: 'qry-indicator-values',
+      ...DEFAULT_TABLE_VISUALIZATION,
       createdAt: now,
       updatedAt: now,
     },

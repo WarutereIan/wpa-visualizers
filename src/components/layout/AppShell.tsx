@@ -161,7 +161,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <MenuItem
                 key={d.id}
                 active={pathname === `/dashboards/${d.id}`}
-                onClick={() => navigate({ to: '/dashboards/$dashboardId', params: { dashboardId: d.id } })}
+                onClick={() =>
+                  navigate({
+                    to: '/dashboards/$dashboardId',
+                    params: { dashboardId: d.id },
+                    search: { edit: false },
+                  })
+                }
               >
                 {d.name}
               </MenuItem>

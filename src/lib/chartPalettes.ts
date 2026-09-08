@@ -64,8 +64,8 @@ export function normalizeDashboardTheme(raw: unknown): DashboardTheme {
   return { ...DEFAULT_DASHBOARD_THEME }
 }
 
-/** CSS custom properties for the dashboard canvas shell. */
-export function dashboardThemeStyle(paletteId?: string | null): CSSProperties {
+/** Chart-palette CSS variables without a canvas background. */
+export function dashboardThemeVars(paletteId?: string | null): CSSProperties {
   const p = chartPaletteById(paletteId ?? DEFAULT_CHART_PALETTE_ID)
   const a = p.colors[0]
   const b = p.colors[1]
@@ -74,6 +74,16 @@ export function dashboardThemeStyle(paletteId?: string | null): CSSProperties {
     ['--dash-accent-2' as string]: b,
     ['--dash-accent-3' as string]: p.colors[2] ?? a,
     ['--dash-warn' as string]: p.colors[3] ?? a,
+  }
+}
+
+/** CSS custom properties for the dashboard canvas shell. */
+export function dashboardThemeStyle(paletteId?: string | null): CSSProperties {
+  const p = chartPaletteById(paletteId ?? DEFAULT_CHART_PALETTE_ID)
+  const a = p.colors[0]
+  const b = p.colors[1]
+  return {
+    ...dashboardThemeVars(paletteId),
     background: `linear-gradient(165deg, color-mix(in srgb, ${a} 14%, var(--bg-base)) 0%, color-mix(in srgb, ${b} 10%, var(--bg-base)) 55%, var(--bg-base) 100%)`,
   }
 }
