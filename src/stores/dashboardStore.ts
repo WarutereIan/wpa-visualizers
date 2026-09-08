@@ -43,9 +43,19 @@ type DashboardUpdatePatch = Partial<
   Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags'>
 >
 
+export type FavoriteObjectType = 'dashboard' | 'query'
+
+export type FavoriteItem = {
+  objectType: FavoriteObjectType
+  objectId: string
+}
+
 interface DashboardState {
   dashboards: DashboardDefinition[]
   widgets: DashboardWidget[]
+  favorites: FavoriteItem[]
+  isFavorite: (type: FavoriteObjectType, id: string) => boolean
+  toggleFavorite: (type: FavoriteObjectType, id: string) => void
   addDashboard: (name: string, description?: string) => DashboardDefinition
   /** Create or replace by id (used by dashboard builder save) */
   upsertDashboard: (d: DashboardDefinition) => void
@@ -69,6 +79,21 @@ export const useDashboardStore = create<DashboardState>()(
     (set, get) => ({
       dashboards: [],
       widgets: [],
+      favorites: [],
+
+      isFavorite: (type, id) =>
+        get().favorites.some((f) => f.objectType === type && f.objectId === id),
+
+      toggleFavorite: (type, id) => {
+        set((s) => {
+          const exists = s.favorites.some((f) => f.objectType === type && f.objectId === id)
+          return {
+            favorites: exists
+              ? s.favorites.filter((f) => !(f.objectType === type && f.objectId === id))
+              : [...s.favorites, { objectType: type, objectId: id }],
+          }
+        })
+      },
 
       addDashboard: (name, description) => {
         const id = crypto.randomUUID()
@@ -195,6 +220,7 @@ export const useDashboardStore = create<DashboardState>()(
           ...p,
           dashboards: p?.dashboards ?? current.dashboards,
           widgets: p?.widgets ?? [],
+          favorites: p?.favorites ?? current.favorites,
         }
       },
     },

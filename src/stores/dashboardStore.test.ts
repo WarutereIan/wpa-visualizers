@@ -41,3 +41,13 @@ describe('dashboardStore widgets', () => {
     expect(copied[0].options.position).toEqual({ col: 1, row: 2, sizeX: 3, sizeY: 4 })
   })
 })
+
+describe('dashboardStore favorites', () => {
+  it('toggles favorites', () => {
+    const s = useDashboardStore.getState()
+    s.toggleFavorite('dashboard', 'd1')
+    expect(s.isFavorite('dashboard', 'd1')).toBe(true)
+    s.toggleFavorite('dashboard', 'd1')
+    expect(s.isFavorite('dashboard', 'd1')).toBe(false)
+  })
+})

@@ -1,158 +1,194 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { FavoriteStar } from '#/components/dashboard/redash/FavoriteStar'
+import { useFavorites } from '#/hooks/useFavorites'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
-import { useDashboardDraftStore } from '#/stores/dashboardDraftStore'
 import type { DashboardDefinition } from '#/types/dashboard'
-import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
-import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/dashboards/')({
   component: DashboardsIndexPage,
 })
 
-type ListItem = {
-  id: string
-  name: string
-  description?: string
-  updatedAt: string
-  kind: 'draft-only' | 'published' | 'published-with-draft'
-  draft?: DashboardDefinition
-  published?: DashboardDefinition
+type ListTab = 'all' | 'favorites'
+
+function formatUpdatedAt(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  const delta = Date.now() - date.getTime()
+  const minutes = Math.floor(delta / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`
+  return date.toLocaleDateString()
+}
+
+function collectTagCounts(dashboards: DashboardDefinition[]) {
+  const counts = new Map<string, number>()
+  for (const dashboard of dashboards) {
+    for (const tag of dashboard.tags ?? []) {
+      if (!tag) continue
+      counts.set(tag, (counts.get(tag) ?? 0) + 1)
+    }
+  }
+  return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
 }
 
 function DashboardsIndexPage() {
-  const { dashboards } = useWorkspaceDashboards()
-  const draftMap = useDashboardDraftStore((s) => s.drafts)
-  const listDrafts = useDashboardDraftStore((s) => s.listDrafts)
+  const { dashboards, isLoading } = useWorkspaceDashboards()
+  const { isFavorite } = useFavorites()
+  const [tab, setTab] = useState<ListTab>('all')
+  const [query, setQuery] = useState('')
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
-  const items = useMemo(() => {
-    const byId = new Map<string, ListItem>()
-    for (const d of dashboards) {
-      const local = draftMap[d.id]
-      const hasUnpublished =
-        Boolean(local) &&
-        new Date(local!.updatedAt).getTime() > new Date(d.updatedAt).getTime()
-      byId.set(d.id, {
-        id: d.id,
-        name: local?.name ?? d.name,
-        description: local?.description ?? d.description,
-        updatedAt: hasUnpublished ? local!.updatedAt : d.updatedAt,
-        kind: hasUnpublished ? 'published-with-draft' : 'published',
-        published: d,
-        draft: local,
-      })
-    }
-    for (const d of listDrafts()) {
-      if (byId.has(d.id)) continue
-      byId.set(d.id, {
-        id: d.id,
-        name: d.name,
-        description: d.description,
-        updatedAt: d.updatedAt,
-        kind: 'draft-only',
-        draft: d,
-      })
-    }
-    return [...byId.values()].sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-    )
-  }, [dashboards, draftMap, listDrafts])
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <DimesBiLogo size="sm" linkToHome={false} className="mt-1 shrink-0" />
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Dashboards</h1>
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-              Drafts autosave in this browser. Publish to push live.
-            </p>
-          </div>
-        </div>
-        <Button asChild>
-          <Link to="/dashboards/add">Create dashboard</Link>
-        </Button>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface-strong)] p-10 text-center">
-          <p className="text-[var(--sea-ink-soft)]">No dashboards yet.</p>
-          <Button asChild className="mt-4">
-            <Link to="/dashboards/add">Create your first dashboard</Link>
-          </Button>
-        </div>
-      ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <li key={item.id}>
-              <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm transition hover:border-[var(--lagoon)]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-[var(--sea-ink)]">{item.name}</span>
-                  <StatusBadge kind={item.kind} />
-                </div>
-                {item.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-[var(--sea-ink-soft)]">
-                    {item.description}
-                  </p>
-                )}
-                <p className="mt-2 text-xs text-[var(--sea-ink-soft)]">
-                  Updated {new Date(item.updatedAt).toLocaleString()}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--line)] pt-3">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link
-                      to="/dashboards/$dashboardId"
-                      params={{ dashboardId: item.id }}
-                      search={{ edit: true }}
-                    >
-                      {item.kind === 'draft-only' ? 'Continue' : 'Edit'}
-                    </Link>
-                  </Button>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link
-                      to="/dashboards/$dashboardId"
-                      params={{ dashboardId: item.id }}
-                      search={{ edit: false }}
-                    >
-                      View
-                    </Link>
-                  </Button>
-                  {item.kind !== 'draft-only' && (
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to="/dashboards/$dashboardId" params={{ dashboardId: item.id }} search={{ edit: false }}>
-                        Open live
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+  const listed = useMemo(
+    () => dashboards.filter((d) => d.status !== 'archived'),
+    [dashboards],
   )
-}
 
-function StatusBadge({ kind }: { kind: ListItem['kind'] }) {
-  if (kind === 'draft-only') {
-    return (
-      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-900">
-        Local draft
-      </span>
-    )
-  }
-  if (kind === 'published-with-draft') {
-    return (
-      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-900">
-        Unpublished edits
-      </span>
-    )
-  }
+  const tagCounts = useMemo(() => collectTagCounts(listed), [listed])
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return listed
+      .filter((d) => (tab === 'favorites' ? isFavorite('dashboard', d.id) : true))
+      .filter((d) => (selectedTag ? (d.tags ?? []).includes(selectedTag) : true))
+      .filter((d) => (q ? d.name.toLowerCase().includes(q) : true))
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  }, [listed, tab, selectedTag, query, isFavorite])
+
   return (
-    <span className="rounded-full border border-[var(--line)] bg-[var(--surface)] px-2 py-0.5 text-[10px] font-medium text-[var(--sea-ink-soft)]">
-      Live
-    </span>
+    <div className="rd-page rd-list-wrap -m-4 min-h-[calc(100dvh-5.5rem)] px-4 pb-4 md:-m-6 md:px-6 md:pb-6">
+    <div className="rd-list-page">
+      <aside className="rd-list-tags" aria-label="Filter by tag">
+        <h2>Tags</h2>
+        {tagCounts.length === 0 ? (
+          <p className="rd-list-tags-empty">No tags yet</p>
+        ) : (
+          <ul>
+            {tagCounts.map(([tag, count]) => {
+              const active = selectedTag === tag
+              return (
+                <li key={tag}>
+                  <button
+                    type="button"
+                    className={active ? 'is-active' : undefined}
+                    aria-pressed={active}
+                    onClick={() => setSelectedTag(active ? null : tag)}
+                  >
+                    <span>{tag}</span>
+                    <span className="rd-list-tag-count">({count})</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </aside>
+
+      <div className="rd-list-main">
+        <div className="rd-list-header">
+          <h1>Dashboards</h1>
+          <Link to="/dashboards/add" className="rd-btn rd-btn-primary">
+            New Dashboard
+          </Link>
+        </div>
+
+        <input
+          className="rd-list-search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search Dashboards…"
+          aria-label="Search dashboards"
+        />
+
+        <div className="rd-list-tabs" role="tablist" aria-label="Dashboard filters">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'all'}
+            className={tab === 'all' ? 'is-active' : undefined}
+            onClick={() => setTab('all')}
+          >
+            All Dashboards
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'favorites'}
+            className={tab === 'favorites' ? 'is-active' : undefined}
+            onClick={() => setTab('favorites')}
+          >
+            Favorites
+          </button>
+        </div>
+
+        {isLoading && listed.length === 0 ? (
+          <p className="rd-muted">Loading dashboards…</p>
+        ) : rows.length === 0 ? (
+          <div className="rd-empty">
+            <p>
+              {tab === 'favorites'
+                ? 'No favorite dashboards yet.'
+                : selectedTag || query
+                  ? 'No dashboards match these filters.'
+                  : 'There are no dashboards yet.'}
+            </p>
+            {!query && !selectedTag && tab === 'all' ? (
+              <Link to="/dashboards/add" className="rd-btn rd-btn-primary">
+                New Dashboard
+              </Link>
+            ) : null}
+          </div>
+        ) : (
+          <table className="rd-list-table">
+            <thead>
+              <tr>
+                <th className="rd-list-star-col" aria-label="Favorite" />
+                <th>Name</th>
+                <th className="rd-list-updated-col">Last Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((dashboard) => {
+                const unpublished = (dashboard.status ?? 'draft') === 'draft'
+                const tags = dashboard.tags ?? []
+                return (
+                  <tr key={dashboard.id}>
+                    <td className="rd-list-star-col">
+                      <FavoriteStar objectType="dashboard" objectId={dashboard.id} />
+                    </td>
+                    <td>
+                      <Link
+                        className="rd-list-name"
+                        to="/dashboards/$dashboardId"
+                        params={{ dashboardId: dashboard.id }}
+                        search={{ edit: false }}
+                      >
+                        {dashboard.name}
+                      </Link>
+                      {unpublished ? <span className="rd-unpublished">Unpublished</span> : null}
+                      {tags.length > 0 ? (
+                        <span className="rd-list-row-tags">
+                          {tags.map((tag) => (
+                            <span key={tag} className="rd-tag">
+                              {tag}
+                            </span>
+                          ))}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="rd-list-updated-col">{formatUpdatedAt(dashboard.updatedAt)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+    </div>
   )
 }

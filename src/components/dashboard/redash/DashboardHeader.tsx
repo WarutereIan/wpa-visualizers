@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, MoreHorizontal, RefreshCw } from 'lucide-react'
+import { FavoriteStar } from '#/components/dashboard/redash/FavoriteStar'
+import { TagsEditor } from '#/components/dashboard/redash/TagsEditor'
+import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import {
   AUTO_REFRESH_INTERVALS,
   canArchive,
@@ -26,14 +29,35 @@ export type DashboardHeaderProps = {
   onRename: (name: string) => void
 }
 
-function FavoritesStar() {
-  // Task 11: favorites
-  return null
-}
+function HeaderTags({
+  dashboard,
+  canEdit,
+}: {
+  dashboard: DashboardDefinition
+  canEdit: boolean
+}) {
+  const { dashboards, updateDashboard } = useWorkspaceDashboards()
+  const allTags = useMemo(() => {
+    const seen = new Set<string>()
+    for (const item of dashboards) {
+      for (const tag of item.tags ?? []) {
+        if (tag) seen.add(tag)
+      }
+    }
+    return [...seen].sort((a, b) => a.localeCompare(b))
+  }, [dashboards])
 
-function DashboardTags() {
-  // Task 11: tags UI
-  return null
+  return (
+    <TagsEditor
+      tags={dashboard.tags ?? []}
+      allTags={allTags}
+      readOnly={!canEdit}
+      onChange={(tags) => {
+        if (!canEdit) return
+        void updateDashboard(dashboard.id, { tags })
+      }}
+    />
+  )
 }
 
 function statusOf(dashboard: DashboardDefinition): DashboardStatus {
@@ -82,7 +106,7 @@ export function DashboardHeader({
   return (
     <header className="rd-header">
       <div className="rd-header-title">
-        <FavoritesStar />
+        <FavoriteStar objectType="dashboard" objectId={dashboard.id} />
         {renaming && canEdit ? (
           <input
             className="rd-title-input"
@@ -113,7 +137,7 @@ export function DashboardHeader({
             {dashboard.name}
           </h1>
         )}
-        <DashboardTags />
+        <HeaderTags dashboard={dashboard} canEdit={canEdit} />
         {unpublished ? <span className="rd-unpublished">Unpublished</span> : null}
       </div>
 
