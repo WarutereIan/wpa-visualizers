@@ -39,6 +39,27 @@ declare module '@redash/viz/lib' {
     onOptionsChange: (opts: object) => void
   }
 
+  export interface ChoroplethMapConfig {
+    name: string
+    url: string
+    fieldNames?: Record<string, string>
+  }
+
+  export interface VisualizationsSettingsUpdate {
+    choroplethAvailableMaps?: Record<string, ChoroplethMapConfig>
+    dateFormat?: string
+    dateTimeFormat?: string
+    integerFormat?: string
+    floatFormat?: string
+    nullValue?: string
+    booleanValues?: [string, string]
+    tableCellMaxJSONSize?: number
+    allowCustomJSVisualizations?: boolean
+    hidePlotlyModeBar?: boolean
+  }
+
+  export function updateVisualizationsSettings(options: VisualizationsSettingsUpdate): void
+
   export const Renderer: ComponentType<RendererProps>
   export const Editor: ComponentType<EditorProps>
 }
