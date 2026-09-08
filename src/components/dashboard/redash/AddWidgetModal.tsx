@@ -113,7 +113,11 @@ export function AddWidgetModal({
                 value={search}
                 onValueChange={(value) => {
                   setSearch(value)
-                  if (selectedQuery && value !== selectedQuery.name) setSelectedQuery(null)
+                  if (selectedQuery && value !== selectedQuery.name) {
+                    setSelectedQuery(null)
+                    setVisualizationId(null)
+                    setParameterMappings({})
+                  }
                 }}
                 aria-label="Search queries"
               />
