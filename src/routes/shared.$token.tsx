@@ -1,9 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import GridLayout, { WidthProvider } from 'react-grid-layout/legacy'
-import type { Layout } from 'react-grid-layout'
+import GridLayout, { WidthProvider, type Layout } from 'react-grid-layout/legacy'
+import { PublicDashboardView } from '#/components/dashboard/redash/PublicDashboardView'
 import { Button } from '#/components/ui/button'
-import { fetchSharedLinkAccess, type SharedLinkPayload } from '#/lib/api/sharedLinks'
+import {
+  fetchSharedLinkAccess,
+  isRedashPublicDashboard,
+  type SharedLinkPayload,
+} from '#/lib/api/sharedLinks'
 import type { WidgetConfig } from '#/types/dashboard'
 
 const GridWithWidth = WidthProvider(GridLayout)
@@ -17,6 +21,7 @@ function SharedPage() {
   const [password, setPassword] = useState('')
   const [needsPassword, setNeedsPassword] = useState(false)
   const [payload, setPayload] = useState<SharedLinkPayload | null>(null)
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -24,12 +29,16 @@ function SharedPage() {
     setLoading(true)
     setError(null)
     void fetchSharedLinkAccess(token, pwd)
-      .then(setPayload)
+      .then((data) => {
+        setPayload(data)
+        setFetchedAt(new Date())
+        setNeedsPassword(false)
+      })
       .catch((e: unknown) => {
         const msg = e instanceof Error ? e.message : 'Access denied'
         if (msg.toLowerCase().includes('password')) {
           setNeedsPassword(true)
-          setError(null)
+          setError(msg.toLowerCase().includes('invalid') ? msg : null)
         } else {
           setError(msg)
         }
@@ -107,6 +116,10 @@ function SharedPage() {
         </GridWithWidth>
       </div>
     )
+  }
+
+  if (isRedashPublicDashboard(payload)) {
+    return <PublicDashboardView payload={payload} fetchedAt={fetchedAt ?? new Date()} />
   }
 
   const dashboard = payload.dashboard

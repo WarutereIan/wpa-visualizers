@@ -1,5 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
+import { executeQueryForOrg } from '../_shared/runQueryEngine.ts'
+import { mapQueryDefinitionFromDb } from '../_shared/types.ts'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -52,6 +55,13 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return hex === expected
 }
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -60,10 +70,7 @@ Deno.serve(async (req) => {
   try {
     const { token, password } = (await req.json()) as { token: string; password?: string }
     if (!token?.trim()) {
-      return new Response(JSON.stringify({ error: 'token required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ error: 'token required' }, 400)
     }
 
     const admin = createClient(
@@ -73,36 +80,33 @@ Deno.serve(async (req) => {
 
     const { data: link, error } = await admin
       .from('shared_links')
-      .select('id, dashboard_id, snapshot_id, password_hash, expires_at, embed_allowed')
+      .select(
+        'id, organization_id, dashboard_id, snapshot_id, password_hash, expires_at, embed_allowed, revoked',
+      )
       .eq('token', token.trim())
       .maybeSingle()
 
     if (error || !link) {
-      return new Response(JSON.stringify({ error: 'Link not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ error: 'Link not found' }, 404)
+    }
+
+    if (link.revoked) {
+      return json({ error: 'Link revoked' }, 410)
     }
 
     if (link.expires_at && new Date(link.expires_at) < new Date()) {
-      return new Response(JSON.stringify({ error: 'Link expired' }), {
-        status: 410,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ error: 'Link expired' }, 410)
     }
 
     if (link.password_hash) {
-      if (!password || !rateLimit(token.trim())) {
-        return new Response(JSON.stringify({ error: 'Too many attempts. Try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      if (!password) {
+        return json({ error: 'Password required' }, 401)
+      }
+      if (!rateLimit(token.trim())) {
+        return json({ error: 'Too many attempts. Try again later.' }, 429)
       }
       if (!(await verifyPassword(password, link.password_hash))) {
-        return new Response(JSON.stringify({ error: 'Invalid password' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return json({ error: 'Invalid password' }, 401)
       }
     }
 
@@ -114,53 +118,109 @@ Deno.serve(async (req) => {
         .eq('organization_id', link.organization_id)
         .maybeSingle()
       if (!snapshot) {
-        return new Response(JSON.stringify({ error: 'Snapshot not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return json({ error: 'Snapshot not found' }, 404)
       }
-      return new Response(
-        JSON.stringify({
-          type: 'snapshot',
-          embedAllowed: link.embed_allowed,
-          snapshot,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return json({
+        type: 'snapshot',
+        embedAllowed: link.embed_allowed,
+        snapshot,
+      })
     }
 
     if (link.dashboard_id) {
       const { data: dashboard } = await admin
         .from('dashboards')
-        .select('id, name, description, layout, widgets, organization_id')
+        .select('id, name, description, layout, widgets, organization_id, updated_at')
         .eq('id', link.dashboard_id)
         .eq('organization_id', link.organization_id)
         .maybeSingle()
       if (!dashboard) {
-        return new Response(JSON.stringify({ error: 'Dashboard not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return json({ error: 'Dashboard not found' }, 404)
       }
-      return new Response(
-        JSON.stringify({
+
+      const { data: widgetRows } = await admin
+        .from('dashboard_widgets')
+        .select('*')
+        .eq('dashboard_id', link.dashboard_id)
+        .eq('organization_id', link.organization_id)
+        .order('created_at')
+
+      const widgets = widgetRows ?? []
+      if (widgets.length === 0) {
+        return json({
           type: 'dashboard',
           embedAllowed: link.embed_allowed,
           dashboard,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+        })
+      }
+
+      const vizIds = [
+        ...new Set(
+          widgets
+            .map((w: { visualization_id: string | null }) => w.visualization_id)
+            .filter((id: string | null): id is string => Boolean(id)),
+        ),
+      ]
+
+      const { data: visualizationRows } = vizIds.length
+        ? await admin
+            .from('visualizations')
+            .select('*')
+            .in('id', vizIds)
+            .eq('organization_id', link.organization_id)
+        : { data: [] as Record<string, unknown>[] }
+
+      const visualizations = visualizationRows ?? []
+      const queryIds = [
+        ...new Set(
+          visualizations
+            .map((v: { query_id: string }) => v.query_id)
+            .filter((id: string | null | undefined): id is string => Boolean(id)),
+        ),
+      ]
+
+      const { data: queryRows } = queryIds.length
+        ? await admin
+            .from('query_definitions')
+            .select('*')
+            .in('id', queryIds)
+            .eq('organization_id', link.organization_id)
+        : { data: [] as Record<string, unknown>[] }
+
+      const queries = queryRows ?? []
+      const queryResults: Record<string, Record<string, unknown>[]> = {}
+      const queryErrors: Record<string, string> = {}
+
+      for (const qrow of queries) {
+        const queryDef = mapQueryDefinitionFromDb(qrow as Record<string, unknown>)
+        try {
+          queryResults[queryDef.id] = await executeQueryForOrg(
+            admin,
+            link.organization_id,
+            queryDef.tableId,
+            queryDef,
+          )
+        } catch (err) {
+          queryErrors[queryDef.id] = err instanceof Error ? err.message : 'Query failed'
+          queryResults[queryDef.id] = []
+        }
+      }
+
+      return json({
+        type: 'dashboard',
+        embedAllowed: link.embed_allowed,
+        dashboard,
+        widgets,
+        visualizations,
+        queries,
+        queryResults,
+        queryErrors,
+      })
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid link' }), {
-      status: 404,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'Invalid link' }, 404)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: message }, 500)
   }
 })

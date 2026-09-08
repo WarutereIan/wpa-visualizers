@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, MoreHorizontal, RefreshCw } from 'lucide-react'
 import { FavoriteStar } from '#/components/dashboard/redash/FavoriteStar'
+import { ShareDashboardDialog } from '#/components/dashboard/redash/ShareDashboardDialog'
 import { TagsEditor } from '#/components/dashboard/redash/TagsEditor'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import {
@@ -82,6 +83,7 @@ export function DashboardHeader({
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState(dashboard.name)
   const [menu, setMenu] = useState<'more' | 'refresh' | null>(null)
+  const [shareOpen, setShareOpen] = useState(false)
   const status = statusOf(dashboard)
   const unpublished = status === 'draft'
 
@@ -192,9 +194,21 @@ export function DashboardHeader({
           ) : null}
         </div>
 
-        <button type="button" className="rd-btn" disabled title="Sharing is not available yet">
+        <button
+          type="button"
+          className="rd-btn"
+          onClick={(event) => {
+            event.stopPropagation()
+            setShareOpen(true)
+          }}
+        >
           Share
         </button>
+        <ShareDashboardDialog
+          open={shareOpen}
+          dashboardId={dashboard.id}
+          onClose={() => setShareOpen(false)}
+        />
 
         <button
           type="button"
