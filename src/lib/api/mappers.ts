@@ -20,6 +20,7 @@ import type {
   Output,
   Project,
 } from '#/types/outputsIndicators'
+import type { GeoDataset } from '#/types/geo'
 import type { Layout } from 'react-grid-layout'
 
 export interface DbDataTable {
@@ -429,5 +430,59 @@ export function mapDbLink(row: DbOutputIndicatorLink): OutputIndicatorLink {
     indicatorId: row.indicator_id,
     weight: Number(row.weight),
     note: row.note,
+  }
+}
+
+export interface DbGeoDataset {
+  id: string
+  organization_id: string
+  name: string
+  storage_path: string
+  public_url: string
+  default_target_field: string
+  field_names: unknown
+  feature_count: number
+  byte_size: number
+  created_by?: string | null
+  created_at: string
+  updated_at: string
+}
+
+function asStringRecord(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === 'string') out[k] = v
+  }
+  return out
+}
+
+export function mapDbGeoDataset(row: DbGeoDataset): GeoDataset {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    name: row.name,
+    storagePath: row.storage_path,
+    publicUrl: row.public_url,
+    defaultTargetField: row.default_target_field,
+    fieldNames: asStringRecord(row.field_names),
+    featureCount: Number(row.feature_count) || 0,
+    byteSize: Number(row.byte_size) || 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function mapGeoDatasetToDb(dataset: GeoDataset, organizationId: string) {
+  return {
+    id: dataset.id,
+    organization_id: organizationId,
+    name: dataset.name,
+    storage_path: dataset.storagePath,
+    public_url: dataset.publicUrl,
+    default_target_field: dataset.defaultTargetField,
+    field_names: dataset.fieldNames,
+    feature_count: dataset.featureCount,
+    byte_size: dataset.byteSize,
   }
 }

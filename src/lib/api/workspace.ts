@@ -39,6 +39,7 @@ export const workspaceKeys = {
   mappings: (orgId: string) => [...workspaceKeys.all, 'mappings', orgId] as const,
   mapping: (orgId: string, mappingId: string) =>
     [...workspaceKeys.mappings(orgId), mappingId] as const,
+  geoDatasets: (orgId: string) => [...workspaceKeys.all, 'geo-datasets', orgId] as const,
   userPreferences: (userId: string) =>
     [...workspaceKeys.all, 'user-preferences', userId] as const,
   dashboardViewState: (userId: string, dashboardId: string) =>
