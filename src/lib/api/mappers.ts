@@ -9,6 +9,7 @@ import type {
 } from '#/types/data'
 import type { DashboardDefinition } from '#/types/dashboard'
 import type { MappingDefinition } from '#/types/mapping'
+import { mappingFieldsFromOptions, mappingOptionsFromDefinition } from '#/lib/geo/choroplethMapping'
 import type { DashboardWidget, QueryParameter, RedashVisualizationType, VisualizationDefinition } from '#/types/visualization'
 import { normalizeDashboardTheme } from '#/lib/chartPalettes'
 import type {
@@ -104,12 +105,13 @@ export interface DbMapping {
   organization_id: string
   name: string
   description: string
-  source: 'dataset_table' | 'external_url' | 'baseline_embed'
+  source: MappingDefinition['source']
   data_table_id: string | null
   latitude_column: string | null
   longitude_column: string | null
   label_column: string | null
   external_map_url: string | null
+  options?: unknown
   created_at: string
   updated_at: string
 }
@@ -285,6 +287,7 @@ export function mapDbMapping(row: DbMapping): MappingDefinition {
     longitudeColumn: row.longitude_column,
     labelColumn: row.label_column,
     externalMapUrl: row.external_map_url,
+    ...mappingFieldsFromOptions(row.options),
   }
 }
 
@@ -300,6 +303,7 @@ export function mapMappingToDb(mapping: MappingDefinition, organizationId: strin
     longitude_column: mapping.longitudeColumn ?? null,
     label_column: mapping.labelColumn ?? null,
     external_map_url: mapping.externalMapUrl ?? null,
+    options: mappingOptionsFromDefinition(mapping),
   }
 }
 

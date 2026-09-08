@@ -7,6 +7,7 @@ import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useTableWithRows } from '#/lib/api/tables'
 import { useDataStore } from '#/stores/dataStore'
 import { Button } from '#/components/ui/button'
+import { ChoroplethMappingView } from '#/components/mapping/ChoroplethMappingView'
 import { DatasetLeafletMap } from '#/components/mapping/DatasetLeafletMap'
 
 const MAX_MAP_ROWS = 500
@@ -49,6 +50,10 @@ export function MappingViewer({ mapping, onDelete }: MappingViewerProps) {
     }
     return null
   }, [mapping])
+
+  if (mapping.source === 'choropleth') {
+    return <ChoroplethMappingView mapping={mapping} onDelete={onDelete} />
+  }
 
   if (mapping.source === 'dataset_table') {
     if (tableLoading) {

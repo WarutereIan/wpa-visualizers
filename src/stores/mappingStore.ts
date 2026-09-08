@@ -22,6 +22,12 @@ export function createNewMappingDraft(): MappingDefinition {
     longitudeColumn: null,
     labelColumn: null,
     externalMapUrl: null,
+    queryId: null,
+    visualizationId: null,
+    mapType: null,
+    keyColumn: null,
+    valueColumn: null,
+    targetField: null,
   }
 }
 
