@@ -3,9 +3,14 @@ import { useCreateWidget, fetchWidgetsForDashboard } from '#/lib/api/widgets'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useDashboardStore } from '#/stores/dashboardStore'
 import type { DashboardDefinition } from '#/types/dashboard'
+import { useSelectedProject } from '#/hooks/useSelectedProject'
+import { matchesProjectScope } from '#/lib/projectScope'
 
 type DashboardUpdatePatch = Partial<
-  Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags'>
+  Pick<
+    DashboardDefinition,
+    'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags' | 'projectId'
+  >
 >
 
 export function useWorkspaceDashboards() {
@@ -26,7 +31,10 @@ export function useWorkspaceDashboards() {
   const createWidgetMutation = useCreateWidget(workspaceReady ? orgId : null)
 
   const allDashboards = workspaceReady ? (serverQuery.data ?? []) : localDashboards
-  const dashboards = allDashboards.filter((d) => d.status !== 'archived')
+  const { selectedProjectId } = useSelectedProject()
+  const dashboards = allDashboards.filter(
+    (d) => d.status !== 'archived' && matchesProjectScope(d.projectId, selectedProjectId),
+  )
 
   const upsertDashboard = async (d: DashboardDefinition) => {
     if (workspaceReady) return upsertMutation.mutateAsync(d)
@@ -39,13 +47,13 @@ export function useWorkspaceDashboards() {
     localRemove(id)
   }
 
-  const addDashboard = (name: string, description?: string) => {
+  const addDashboard = (name: string, description?: string, projectId?: string | null) => {
     if (workspaceReady) {
-      const draft = localAdd(name, description)
+      const draft = localAdd(name, description, projectId)
       void upsertMutation.mutateAsync(draft)
       return draft
     }
-    return localAdd(name, description)
+    return localAdd(name, description, projectId)
   }
 
   const updateDashboard = async (id: string, patch: DashboardUpdatePatch) => {

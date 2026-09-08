@@ -4,7 +4,6 @@ import {
   IndicatorEditorActions,
   IndicatorLinkManager,
   NewIndicatorForm,
-  ProjectSelect,
 } from '#/components/outputs/MealForms'
 import {
   IndicatorGauge,
@@ -14,6 +13,7 @@ import {
 import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import { useWorkspaceMeal } from '#/hooks/useWorkspaceMeal'
 import { indicatorProgressPercent } from '#/lib/outputIndicatorMath'
+import { filterByProjectScope, matchesProjectScope } from '#/lib/projectScope'
 
 export const Route = createFileRoute('/outputs-and-indicators/indicators')({
   component: IndicatorsPage,
@@ -32,10 +32,9 @@ function IndicatorsPage() {
     updateIndicator,
   } = meal
 
-  const filtered =
-    selectedProjectId === null || selectedProjectId === ''
-      ? indicators
-      : indicators.filter((i) => i.projectId === selectedProjectId)
+  const filtered = indicators.filter((i) => matchesProjectScope(i.projectId, selectedProjectId))
+  const scopedQueries = filterByProjectScope(queries, selectedProjectId)
+  const scopedOutputs = outputs.filter((o) => matchesProjectScope(o.projectId, selectedProjectId))
 
   if (loading) {
     return (
@@ -56,7 +55,6 @@ function IndicatorsPage() {
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
-          <ProjectSelect />
           <NewIndicatorForm projectId={selectedProjectId} />
         </div>
       </div>
@@ -139,7 +137,7 @@ function IndicatorsPage() {
               <IndicatorEditorActions
                 indicatorId={ind.id}
                 sourceQueryId={ind.sourceQueryId}
-                queries={queries.map((q) => ({ id: q.id, name: q.name }))}
+                queries={scopedQueries.map((q) => ({ id: q.id, name: q.name }))}
                 onSourceQueryChange={(queryId) => {
                   void updateIndicator(ind.id, { sourceQueryId: queryId })
                 }}
@@ -150,7 +148,7 @@ function IndicatorsPage() {
               <IndicatorLinkManager
                 indicatorId={ind.id}
                 linkedOutputs={outs}
-                outputs={selectedProjectId ? outputs.filter((o) => o.projectId === selectedProjectId) : outputs}
+                outputs={scopedOutputs}
               />
             </article>
           )

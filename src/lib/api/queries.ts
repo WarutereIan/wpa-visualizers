@@ -204,6 +204,7 @@ export function useUpdateQuery(orgId: string | null) {
       if (patch.computedFields !== undefined) update.computed_fields = patch.computedFields
       if (patch.joins !== undefined) update.joins = patch.joins
       if (patch.parameters !== undefined) update.parameters = patch.parameters
+      if (patch.projectId !== undefined) update.project_id = patch.projectId ?? null
 
       const { data, error } = await supabase
         .from('query_definitions')

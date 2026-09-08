@@ -50,7 +50,13 @@ export default function Renderer({
       {addonBefore}
       <ErrorBoundary
         ref={errorHandlerRef}
-        renderError={() => <ErrorMessage>Error while rendering visualization.</ErrorMessage>}
+        renderError={(error: any) => (
+          <ErrorMessage>
+            {error?.message
+              ? `Error while rendering visualization. ${error.message}`
+              : "Error while rendering visualization."}
+          </ErrorMessage>
+        )}
       >
         <div className="visualization-renderer-wrapper">
           <Renderer options={options} data={data} visualizationName={visualizationName} {...otherProps} />

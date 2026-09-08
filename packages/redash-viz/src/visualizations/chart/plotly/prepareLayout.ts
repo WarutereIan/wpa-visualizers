@@ -106,6 +106,19 @@ function prepareBoxLayout(layout: any, options: any, data: any) {
   return layout;
 }
 
+function prepareRadarLayout(layout: any) {
+  layout.polar = {
+    radialaxis: {
+      visible: true,
+      automargin: true,
+    },
+    angularaxis: {
+      direction: "clockwise",
+    },
+  };
+  return layout;
+}
+
 export default function prepareLayout(element: any, options: any, data: any) {
   const layout: any = {
     margin: { l: 10, r: 10, b: 5, t: 20, pad: 4 },
@@ -131,6 +144,8 @@ export default function prepareLayout(element: any, options: any, data: any) {
       return preparePieLayout(layout, options, data);
     case "box":
       return prepareBoxLayout(layout, options, data);
+    case "radar":
+      return prepareRadarLayout(layout);
     default:
       return prepareDefaultLayout(layout, options, data);
   }

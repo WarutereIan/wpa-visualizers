@@ -47,14 +47,11 @@ export function useSelectedProject(projects?: Project[]) {
   }
 
   useEffect(() => {
-    if (!projects?.length) return
-    const valid = selectedProjectId && projects.some((p) => p.id === selectedProjectId)
-    if (!valid) {
-      const next = projects[0]?.id ?? null
-      if (next !== selectedProjectId) setSelectedProjectId(next)
-    }
+    if (projects === undefined || selectedProjectId === null) return
+    const exists = projects.some((p) => p.id === selectedProjectId)
+    if (!exists) setSelectedProjectId(null)
     // setSelectedProjectId is stable in behavior (closures over current refs);
-    // excluding it avoids retriggering the auto-select on every render.
+    // excluding it avoids retriggering the stale-id fallback on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projects, selectedProjectId])
 

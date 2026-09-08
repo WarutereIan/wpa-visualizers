@@ -31,6 +31,7 @@ export interface DbDataTable {
   storage_backend: 'jsonb' | 'parquet'
   row_count: number
   source_connection_id?: string | null
+  project_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -59,6 +60,7 @@ export interface DbQueryDefinition {
   computed_fields?: unknown
   joins?: unknown
   parameters?: unknown
+  project_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -73,6 +75,7 @@ export interface DbDashboard {
   theme?: unknown
   status: 'draft' | 'published' | 'archived'
   tags?: string[]
+  project_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -138,6 +141,7 @@ export function mapDbTable(
     storageBackend: table.storage_backend,
     rowCount: table.row_count,
     sourceConnectionId: table.source_connection_id ?? null,
+    projectId: table.project_id ?? null,
   }
 }
 
@@ -156,6 +160,7 @@ export function mapDbQuery(row: DbQueryDefinition): QueryDefinition {
     computedFields: (row.computed_fields as QueryDefinition['computedFields']) ?? [],
     joins: (row.joins as QueryDefinition['joins']) ?? [],
     parameters: (row.parameters as QueryParameter[]) ?? [],
+    projectId: row.project_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -180,6 +185,7 @@ export function mapQueryToDb(
     computed_fields: query.computedFields ?? [],
     joins: query.joins ?? [],
     parameters: query.parameters ?? [],
+    project_id: query.projectId ?? null,
   }
 }
 
@@ -195,6 +201,7 @@ export function mapDbDashboard(row: DbDashboard): DashboardDefinition {
     theme: normalizeDashboardTheme(row.theme),
     status: row.status,
     tags: row.tags ?? [],
+    projectId: row.project_id ?? null,
   }
 }
 
@@ -212,6 +219,7 @@ export function mapDashboardToDb(
     theme: normalizeDashboardTheme(dashboard.theme),
     status: dashboard.status ?? 'draft',
     tags: dashboard.tags ?? [],
+    project_id: dashboard.projectId ?? null,
   }
 }
 

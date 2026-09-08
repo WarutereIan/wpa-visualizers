@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '#/components/ui/button'
-import { useConnections, useTriggerIngest } from '#/lib/api/connections'
+import { ProjectMoveSelect } from '#/components/layout/ProjectScopeSelect'
+import { useConnections, useTriggerIngest, useUpdateConnection } from '#/lib/api/connections'
 import { useImportJobs } from '#/lib/api/importJobs'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 
@@ -15,6 +16,7 @@ function ConnectionDetailPage() {
   const { data: connections = [], isLoading } = useConnections(workspaceReady ? orgId : null)
   const { data: jobs = [] } = useImportJobs(workspaceReady ? orgId : null, connectionId)
   const triggerIngest = useTriggerIngest(workspaceReady ? orgId : null)
+  const updateConnection = useUpdateConnection(workspaceReady ? orgId : null)
 
   const connection = connections.find((c) => c.id === connectionId)
 
@@ -57,6 +59,16 @@ function ConnectionDetailPage() {
               {connection.endpointUrl}
             </p>
           ) : null}
+          <div className="mt-3">
+            <p className="mb-1 text-xs font-medium text-[var(--sea-ink-soft)]">Move to project</p>
+            <ProjectMoveSelect
+              value={connection.projectId}
+              onChange={(projectId) =>
+                void updateConnection.mutateAsync({ id: connection.id, patch: { projectId } })
+              }
+              disabled={updateConnection.isPending}
+            />
+          </div>
         </div>
         <Button
           type="button"

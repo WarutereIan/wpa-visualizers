@@ -1,10 +1,12 @@
-import { isNil, merge, first, keys, get } from "lodash";
+import { isNil, merge, first, keys, get, isArray, isPlainObject } from "lodash";
 import { visualizationsSettings } from "@/visualizations/visualizationsSettings";
 import ColorPalette from "./ColorPalette";
 
 function getDefaultMap() {
   return first(keys(visualizationsSettings.choroplethAvailableMaps)) || null;
 }
+
+const NUMERIC_COLUMN_TYPES = new Set(["integer", "float"]);
 
 const DEFAULT_OPTIONS = {
   mapType: "countries",
@@ -37,15 +39,38 @@ const DEFAULT_OPTIONS = {
   },
 };
 
-export default function getOptions(options: any) {
-  const result = merge({}, DEFAULT_OPTIONS, options);
+function omitNullProperties(value: any): any {
+  if (!isPlainObject(value)) {
+    return value;
+  }
+  const result: Record<string, unknown> = {};
+  Object.keys(value).forEach((key) => {
+    const next = value[key];
+    if (next === null) {
+      return;
+    }
+    result[key] = omitNullProperties(next);
+  });
+  return result;
+}
+
+function mergeOptions(options: any) {
+  return merge({}, DEFAULT_OPTIONS, omitNullProperties(options || {}));
+}
+
+function firstColumnMatching(columns: any[], predicate: (column: any) => boolean) {
+  const match = columns.find(predicate);
+  return match?.name ?? null;
+}
+
+export default function getOptions(options: any, data?: any) {
+  const result = mergeOptions(options);
 
   // Both renderer and editor always provide new `bounds` array, so no need to clone it here.
   // Keeping original object also reduces amount of updates in components
   result.bounds = get(options, "bounds");
 
-  // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-  if (isNil(visualizationsSettings.choroplethAvailableMaps[result.mapType])) {
+  if (isNil(get(visualizationsSettings, `choroplethAvailableMaps.${result.mapType}`))) {
     result.mapType = getDefaultMap();
   }
 
@@ -59,6 +84,26 @@ export default function getOptions(options: any) {
     result.targetField = result.countryCodeType;
   }
   delete result.countryCodeType;
+
+  if (isNil(result.targetField) && result.mapType) {
+    const fieldNames = get(
+      visualizationsSettings,
+      `choroplethAvailableMaps.${result.mapType}.fieldNames`,
+      {}
+    ) as Record<string, string>;
+    result.targetField = fieldNames.code ? "code" : first(keys(fieldNames)) || null;
+  }
+
+  const columns = data && isArray(data.columns) ? data.columns : [];
+  if (columns.length > 0) {
+    if (isNil(result.keyColumn)) {
+      result.keyColumn =
+        firstColumnMatching(columns, (column) => !NUMERIC_COLUMN_TYPES.has(column?.type)) ?? columns[0].name;
+    }
+    if (isNil(result.valueColumn)) {
+      result.valueColumn = firstColumnMatching(columns, (column) => NUMERIC_COLUMN_TYPES.has(column?.type));
+    }
+  }
 
   return result;
 }

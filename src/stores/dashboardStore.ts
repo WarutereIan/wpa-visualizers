@@ -40,7 +40,10 @@ export function createNewDashboardDraft(opts?: {
 }
 
 type DashboardUpdatePatch = Partial<
-  Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags'>
+  Pick<
+    DashboardDefinition,
+    'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags' | 'projectId'
+  >
 >
 
 export type FavoriteObjectType = 'dashboard' | 'query'
@@ -56,7 +59,7 @@ interface DashboardState {
   favorites: FavoriteItem[]
   isFavorite: (type: FavoriteObjectType, id: string) => boolean
   toggleFavorite: (type: FavoriteObjectType, id: string) => void
-  addDashboard: (name: string, description?: string) => DashboardDefinition
+  addDashboard: (name: string, description?: string, projectId?: string | null) => DashboardDefinition
   /** Create or replace by id (used by dashboard builder save) */
   upsertDashboard: (d: DashboardDefinition) => void
   updateDashboard: (id: string, patch: DashboardUpdatePatch) => void
@@ -95,7 +98,7 @@ export const useDashboardStore = create<DashboardState>()(
         })
       },
 
-      addDashboard: (name, description) => {
+      addDashboard: (name, description, projectId) => {
         const id = crypto.randomUUID()
         const base = defaultLayoutAndWidgets()
         const d: DashboardDefinition = {
@@ -106,6 +109,7 @@ export const useDashboardStore = create<DashboardState>()(
           updatedAt: nowIso(),
           theme: { ...DEFAULT_DASHBOARD_THEME },
           status: 'draft',
+          projectId: projectId ?? null,
           ...base,
         }
         set((s) => ({ dashboards: [...s.dashboards, d] }))

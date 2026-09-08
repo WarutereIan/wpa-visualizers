@@ -37,7 +37,7 @@ function getTableColumns(options: any, updateSeriesOption: any, debouncedUpdateS
     },
   ];
 
-  if (!includes(["pie", "heatmap"], options.globalSeriesType)) {
+  if (!includes(["pie", "heatmap", "histogram", "waterfall", "violin", "radar"], options.globalSeriesType)) {
     if (!options.swappedAxes) {
       result.push({
         title: "Y Axis",
@@ -67,7 +67,7 @@ function getTableColumns(options: any, updateSeriesOption: any, debouncedUpdateS
           data-test={`Chart.Series.${item.key}.Type`}
           popupMatchSelectWidth={false}
           value={item.type}
-          hiddenChartTypes={["pie", "heatmap", "bubble", "box"]}
+          hiddenChartTypes={["pie", "heatmap", "bubble", "box", "histogram", "waterfall", "violin", "radar"]}
           onChange={(value: any) => updateSeriesOption(item.key, "type", value)}
         />
       ),

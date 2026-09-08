@@ -21,6 +21,7 @@ export interface DataTable {
   storageBackend?: 'jsonb' | 'parquet'
   rowCount?: number
   sourceConnectionId?: string | null
+  projectId?: string | null
 }
 
 export type DataFilterOperator =
@@ -88,6 +89,7 @@ export interface QueryDefinition {
   /** Optional max rows after aggregation/sort. */
   limit?: number | null
   parameters?: QueryParameter[]
+  projectId?: string | null
   createdAt: string
   updatedAt: string
 }

@@ -237,7 +237,7 @@ export function VisualizationWidget({
           {queryName && queryId ? (
             <Link
               to="/data-management"
-              search={{ queryId } as { queryId: string }}
+              search={{ queryId }}
               className="rd-tile-query"
               onClick={(event) => event.stopPropagation()}
             >

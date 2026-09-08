@@ -14,6 +14,7 @@ import "./editor.less";
 
 const isCustomChart = (options: any) => options.globalSeriesType === "custom";
 const isPieChart = (options: any) => options.globalSeriesType === "pie";
+const isRadarChart = (options: any) => options.globalSeriesType === "radar";
 
 export default createTabbedEditor([
   {
@@ -30,13 +31,13 @@ export default createTabbedEditor([
     key: "XAxis",
     title: ({ swappedAxes }: any) => (!swappedAxes ? "X Axis" : "Y Axis"),
     component: XAxisSettings,
-    isAvailable: (options: any) => !isCustomChart(options) && !isPieChart(options),
+    isAvailable: (options: any) => !isCustomChart(options) && !isPieChart(options) && !isRadarChart(options),
   },
   {
     key: "YAxis",
     title: ({ swappedAxes }: any) => (!swappedAxes ? "Y Axis" : "X Axis"),
     component: YAxisSettings,
-    isAvailable: (options: any) => !isCustomChart(options) && !isPieChart(options),
+    isAvailable: (options: any) => !isCustomChart(options) && !isPieChart(options) && !isRadarChart(options),
   },
   {
     key: "Series",

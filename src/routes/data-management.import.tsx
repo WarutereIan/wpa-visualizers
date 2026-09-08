@@ -5,6 +5,7 @@ import { Button } from '#/components/ui/button'
 import { useTriggerIngest } from '#/lib/api/connections'
 import { useOrgId } from '#/lib/api/workspace'
 import { useWorkspaceData } from '#/hooks/useWorkspaceData'
+import { useSelectedProject } from '#/hooks/useSelectedProject'
 import type { DataRow } from '#/types/data'
 
 const ENV_KOBO_URL = import.meta.env.VITE_KOBO_DEFAULT_URL as string | undefined
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/data-management/import')({
 
 function DataImportPage() {
   const { importTable, workspaceReady } = useWorkspaceData()
+  const { selectedProjectId } = useSelectedProject()
   const orgId = useOrgId()
   const serverIngest = useTriggerIngest(workspaceReady ? orgId : null)
   const useServerPath = workspaceReady && Boolean(orgId)
@@ -79,6 +81,7 @@ function DataImportPage() {
             endpointUrl: koboUrl.trim(),
             credentials: koboToken.trim() ? { token: koboToken.trim() } : {},
             tableName: koboTableName.trim() || 'Kobo Import',
+            projectId: selectedProjectId,
           },
         })
         setKoboMsg(`Imported ${result.rowCount} rows (connection ${result.connectionId}).`)
@@ -90,6 +93,7 @@ function DataImportPage() {
         const table = await importTable({
           name: koboTableName.trim() || 'Kobo Import',
           rows,
+          projectId: selectedProjectId,
         })
         setKoboMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
       }
@@ -122,6 +126,7 @@ function DataImportPage() {
             sourceType: 'excel',
             tableName: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
             rows,
+            projectId: selectedProjectId,
           },
         })
         setExcelMsg(`Imported ${result.rowCount} rows via server ingest (${result.connectionId}).`)
@@ -129,6 +134,7 @@ function DataImportPage() {
         const table = await importTable({
           name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
           rows,
+          projectId: selectedProjectId,
         })
         setExcelMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
       }
@@ -170,6 +176,7 @@ function DataImportPage() {
             endpointUrl: dynamicsUrl.trim(),
             credentials,
             tableName: dynamicsTableName.trim() || 'Dynamics 365 Import',
+            projectId: selectedProjectId,
           },
         })
         setDynamicsMsg(`Imported ${result.rowCount} rows (connection ${result.connectionId}).`)
@@ -190,6 +197,7 @@ function DataImportPage() {
         const table = await importTable({
           name: dynamicsTableName.trim() || 'Dynamics 365 Import',
           rows,
+          projectId: selectedProjectId,
         })
         setDynamicsMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
       }
@@ -224,6 +232,7 @@ function DataImportPage() {
               pageSize: surveyCtoPageSize,
             },
             tableName: surveyCtoTableName.trim() || 'SurveyCTO Import',
+            projectId: selectedProjectId,
           },
         })
         setSurveyCtoMsg(`Imported ${result.rowCount} rows (connection ${result.connectionId}).`)
@@ -238,6 +247,7 @@ function DataImportPage() {
         const table = await importTable({
           name: surveyCtoTableName.trim() || 'SurveyCTO Import',
           rows,
+          projectId: selectedProjectId,
         })
         setSurveyCtoMsg(`Imported ${rows.length} rows into "${table.name}" (${table.id}).`)
       }

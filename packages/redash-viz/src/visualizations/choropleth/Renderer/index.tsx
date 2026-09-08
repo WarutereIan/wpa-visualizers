@@ -35,7 +35,7 @@ export default function Renderer({ data, options, onOptionsChange }: any) {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       map.updateLayers(
         geoJson,
-        prepareData(data.rows, optionsWithoutBounds.keyColumn, optionsWithoutBounds.valueColumn),
+        prepareData(data?.rows, optionsWithoutBounds.keyColumn, optionsWithoutBounds.valueColumn),
         options // detect changes for all options except bounds, but pass them all!
       );
     }
@@ -51,7 +51,11 @@ export default function Renderer({ data, options, onOptionsChange }: any) {
 
   return (
     // @ts-expect-error ts-migrate(2322) FIXME: Type 'Dispatch<SetStateAction<null>>' is not assig... Remove this comment to see the full error message
-    <div className="map-visualization-container" style={{ background: options.colors.background }} ref={setContainer} />
+    <div
+      className="map-visualization-container"
+      style={{ background: options.colors?.background }}
+      ref={setContainer}
+    />
   );
 }
 

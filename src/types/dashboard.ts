@@ -105,4 +105,5 @@ export interface DashboardDefinition {
   /** Visual theme for the whole canvas and all widgets. */
   theme?: DashboardTheme
   tags?: string[]
+  projectId?: string | null
 }

@@ -8,7 +8,7 @@ import {
   useUpdateQuery,
 } from '#/lib/api/queries'
 import { runQueryDefinition } from '#/lib/queryEngine'
-import { useImportTable, useTables, useDeleteTable, useUpdateTableColumnType } from '#/lib/api/tables'
+import { useImportTable, useTables, useDeleteTable, useUpdateTable, useUpdateTableColumnType } from '#/lib/api/tables'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
 import { DEFAULT_TABLE_VISUALIZATION } from '#/lib/visualizationOrder'
@@ -33,6 +33,7 @@ export function useWorkspaceData() {
   const demoRemoveQuery = useDataStore((s) => s.removeQuery)
   const demoImportTable = useDataStore((s) => s.importTable)
   const demoRemoveTable = useDataStore((s) => s.removeTable)
+  const demoUpdateTable = useDataStore((s) => s.updateTable)
   const demoUpdateColumnType = useDataStore((s) => s.updateColumnType)
 
   const tablesQuery = useTables(workspaceReady ? orgId : null)
@@ -43,6 +44,7 @@ export function useWorkspaceData() {
   const deleteQueryMutation = useDeleteQuery(workspaceReady ? orgId : null)
   const importTableMutation = useImportTable(workspaceReady ? orgId : null)
   const deleteTableMutation = useDeleteTable(workspaceReady ? orgId : null)
+  const updateTableMutation = useUpdateTable(workspaceReady ? orgId : null)
   const updateColumnTypeMutation = useUpdateTableColumnType(workspaceReady ? orgId : null)
 
   const tables = workspaceReady ? (tablesQuery.data ?? []) : demoTablesList
@@ -87,11 +89,22 @@ export function useWorkspaceData() {
   )
 
   const importTable = useCallback(
-    async (input: { name: string; rows: DataRow[] }) => {
+    async (input: { name: string; rows: DataRow[]; projectId?: string | null }) => {
       if (workspaceReady) return importTableMutation.mutateAsync(input)
       return demoImportTable(input)
     },
     [workspaceReady, importTableMutation, demoImportTable],
+  )
+
+  const updateTable = useCallback(
+    async (tableId: string, patch: { projectId?: string | null }) => {
+      if (workspaceReady) {
+        await updateTableMutation.mutateAsync({ id: tableId, patch })
+        return
+      }
+      demoUpdateTable(tableId, patch)
+    },
+    [workspaceReady, updateTableMutation, demoUpdateTable],
   )
 
   const removeTable = useCallback(
@@ -126,6 +139,7 @@ export function useWorkspaceData() {
     updateQuery,
     removeQuery,
     importTable,
+    updateTable,
     removeTable,
     updateColumnType,
     isImporting: importTableMutation.isPending,

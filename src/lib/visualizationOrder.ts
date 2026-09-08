@@ -4,6 +4,7 @@ export const REDASH_VIZ_TYPE_LABELS: Record<RedashVisualizationType, string> = {
   CHART: 'Chart',
   TABLE: 'Table',
   COUNTER: 'Counter',
+  GAUGE: 'Gauge',
   PIVOT: 'Pivot Table',
   FUNNEL: 'Funnel',
   SANKEY: 'Sankey',
@@ -13,6 +14,7 @@ export const REDASH_VIZ_TYPE_LABELS: Record<RedashVisualizationType, string> = {
   COHORT: 'Cohort',
   WORD_CLOUD: 'Word Cloud',
   DETAILS: 'Details View',
+  TREEMAP: 'Treemap',
 }
 
 export const REDASH_VIZ_TYPES = Object.keys(REDASH_VIZ_TYPE_LABELS) as RedashVisualizationType[]

@@ -86,6 +86,7 @@ export function useTriggerIngest(orgId: string | null) {
         credentials?: Record<string, unknown>
         tableName: string
         rows?: DataRow[]
+        projectId?: string | null
       }
     }) => {
       if (!orgId) throw new Error('No organization')
@@ -105,6 +106,37 @@ export function useTriggerIngest(orgId: string | null) {
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.importJobs(orgId) })
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.tables(orgId) })
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.meal(orgId) })
+    },
+  })
+}
+
+export function useUpdateConnection(orgId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string
+      patch: { projectId?: string | null }
+    }) => {
+      if (!orgId) throw new Error('No organization')
+      const supabase = getSupabase()
+      if (!supabase) throw new Error('Supabase is not configured')
+
+      const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+      if (patch.projectId !== undefined) update.project_id = patch.projectId ?? null
+
+      const { error } = await supabase
+        .from('data_source_connections')
+        .update(update)
+        .eq('id', id)
+        .eq('organization_id', orgId)
+
+      throwIfSupabaseError(error, 'api.updateConnection', { orgId, id })
+    },
+    onSuccess: () => {
+      if (orgId) void queryClient.invalidateQueries({ queryKey: workspaceKeys.connections(orgId) })
     },
   })
 }

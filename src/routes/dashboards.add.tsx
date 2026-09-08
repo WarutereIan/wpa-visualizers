@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
+import { useSelectedProject } from '#/hooks/useSelectedProject'
 
 export const Route = createFileRoute('/dashboards/add')({
   component: DashboardAddPage,
@@ -17,6 +18,7 @@ export const Route = createFileRoute('/dashboards/add')({
 function DashboardAddPage() {
   const navigate = useNavigate()
   const { addDashboard } = useWorkspaceDashboards()
+  const { selectedProjectId } = useSelectedProject()
   const [name, setName] = useState('')
   const [open, setOpen] = useState(true)
 
@@ -28,7 +30,7 @@ function DashboardAddPage() {
   const create = () => {
     const trimmed = name.trim()
     if (!trimmed) return
-    const dashboard = addDashboard(trimmed)
+    const dashboard = addDashboard(trimmed, undefined, selectedProjectId)
     void navigate({
       to: '/dashboards/$dashboardId',
       params: { dashboardId: dashboard.id },

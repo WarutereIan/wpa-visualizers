@@ -83,13 +83,15 @@ export function createScale(features: any, data: any, options: any) {
     };
   }
   const steps = Math.min(values.length, options.steps);
+  const minColor = options.colors?.min;
+  const maxColor = options.colors?.max;
   if (steps === 1) {
     return {
       limits: values,
-      colors: [options.colors.max],
+      colors: [maxColor],
       legend: [
         {
-          color: options.colors.max,
+          color: maxColor,
           limit: first(values),
         },
       ],
@@ -98,7 +100,7 @@ export function createScale(features: any, data: any, options: any) {
   const limits = chroma.limits(values, options.clusteringMode, steps - 1);
 
   // Create color buckets
-  const colors = chroma.scale([options.colors.min, options.colors.max]).colors(limits.length);
+  const colors = chroma.scale([minColor, maxColor]).colors(limits.length);
 
   // Group values for legend
   const legend = map(colors, (color, index) => ({

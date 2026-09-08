@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { AddTextboxModal } from '#/components/dashboard/redash/AddTextboxModal'
 import { AddWidgetModal } from '#/components/dashboard/redash/AddWidgetModal'
+import { QueryEditorModal } from '#/components/dashboard/redash/QueryEditorModal'
 import { DashboardGrid } from '#/components/dashboard/redash/DashboardGrid'
 import { DashboardHeader } from '#/components/dashboard/redash/DashboardHeader'
 import { ParameterBar } from '#/components/dashboard/redash/ParameterBar'
@@ -60,6 +61,8 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
   const [widgetModalOpen, setWidgetModalOpen] = useState(false)
   const [textboxModalOpen, setTextboxModalOpen] = useState(false)
   const [textboxEdit, setTextboxEdit] = useState<DashboardWidget | null>(null)
+  const [queryEditorOpen, setQueryEditorOpen] = useState(false)
+  const [queryEditorInitialId, setQueryEditorInitialId] = useState<string | null>(null)
 
   const editing = Boolean(edit && canEdit)
 
@@ -177,6 +180,16 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
               >
                 Add Textbox
               </button>
+              <button
+                type="button"
+                className="rd-btn"
+                onClick={() => {
+                  setQueryEditorInitialId(null)
+                  setQueryEditorOpen(true)
+                }}
+              >
+                Create / Edit Query
+              </button>
             </div>
             <button type="button" className="rd-btn rd-btn-primary" onClick={() => setEditing(false)}>
               Done Editing
@@ -199,6 +212,14 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
         onClose={() => {
           setTextboxModalOpen(false)
           setTextboxEdit(null)
+        }}
+      />
+      <QueryEditorModal
+        open={queryEditorOpen}
+        initialQueryId={queryEditorInitialId}
+        onClose={() => {
+          setQueryEditorOpen(false)
+          setQueryEditorInitialId(null)
         }}
       />
     </div>

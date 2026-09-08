@@ -3,7 +3,11 @@ import { createNumberFormatter, formatSimpleTemplate } from "@/lib/value-format"
 import { normalizeValue } from "./utils";
 
 function shouldUseUnifiedXAxis(options: any) {
-  return options.sortX && options.xAxis.type === "category" && options.globalSeriesType !== "box";
+  return (
+    options.sortX &&
+    options.xAxis.type === "category" &&
+    !includes(["box", "histogram", "waterfall", "violin", "radar"], options.globalSeriesType)
+  );
 }
 
 function defaultFormatSeriesText(item: any) {
@@ -226,6 +230,16 @@ export default function updateData(seriesList: any, options: any) {
         updateLineAreaData(visibleSeriesList, options);
         break;
       case "heatmap":
+        break;
+      case "histogram":
+        updateSeriesText(visibleSeriesList, options);
+        break;
+      case "radar":
+        updateDefaultData(visibleSeriesList, options);
+        each(visibleSeriesList, (series) => {
+          series.theta = series.x;
+          series.r = series.y;
+        });
         break;
       default:
         updateDefaultData(visibleSeriesList, options);

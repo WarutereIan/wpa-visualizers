@@ -89,6 +89,40 @@ function prepareBoxSeries(series: any, options: any, { seriesColor }: any) {
   return series;
 }
 
+function prepareHistogramSeries(series: any, options: any) {
+  series.type = "histogram";
+  delete series.y;
+  delete series.error_y;
+  if (!isNil(options.histogramBinCount) && options.histogramBinCount !== "") {
+    const binCount = Number(options.histogramBinCount);
+    if (binCount > 0) {
+      series.nbinsx = binCount;
+    }
+  }
+  return series;
+}
+
+function prepareWaterfallSeries(series: any) {
+  series.type = "waterfall";
+  series.measure = map(series.x, () => "relative");
+  return series;
+}
+
+function prepareViolinSeries(series: any) {
+  series.type = "violin";
+  return series;
+}
+
+function prepareRadarSeries(series: any, options: any) {
+  series.type = "scatterpolar";
+  series.mode = "lines";
+  series.fill = options.radarFill === "line" ? "none" : "toself";
+  series.theta = series.x;
+  series.r = series.y;
+  delete series.yaxis;
+  return series;
+}
+
 function prepareSeries(series: any, options: any, numSeries: any, additionalOptions: any) {
   const { hoverInfoPattern, index } = additionalOptions;
 
@@ -189,6 +223,14 @@ function prepareSeries(series: any, options: any, numSeries: any, additionalOpti
       return prepareBubbleSeries(plotlySeries, options, additionalOptions);
     case "box":
       return prepareBoxSeries(plotlySeries, options, additionalOptions);
+    case "histogram":
+      return prepareHistogramSeries(plotlySeries, options);
+    case "waterfall":
+      return prepareWaterfallSeries(plotlySeries);
+    case "violin":
+      return prepareViolinSeries(plotlySeries);
+    case "radar":
+      return prepareRadarSeries(plotlySeries, options);
     default:
       return plotlySeries;
   }

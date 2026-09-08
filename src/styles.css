@@ -466,3 +466,13 @@ a {
     @apply font-mono;
   }
 }
+
+/* Ant Design popups inside Radix Dialog: keep them clickable above the modal layer. */
+.ant-select-dropdown,
+.ant-picker-dropdown,
+.ant-dropdown,
+.ant-tooltip,
+.ant-popover {
+  pointer-events: auto !important;
+  z-index: 200 !important;
+}

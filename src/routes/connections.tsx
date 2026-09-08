@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useMemo } from 'react'
 import { Button } from '#/components/ui/button'
-import { useConnections, useOrganizationUsage, useTriggerIngest } from '#/lib/api/connections'
+import { ProjectMoveSelect } from '#/components/layout/ProjectScopeSelect'
+import { useConnections, useOrganizationUsage, useTriggerIngest, useUpdateConnection } from '#/lib/api/connections'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
+import { useSelectedProject } from '#/hooks/useSelectedProject'
+import { filterByProjectScope } from '#/lib/projectScope'
 
 export const Route = createFileRoute('/connections')({
   component: ConnectionsPage,
@@ -11,8 +15,14 @@ function ConnectionsPage() {
   const workspaceReady = useWorkspaceReady()
   const orgId = useOrgId()
   const { data: connections = [], isLoading } = useConnections(workspaceReady ? orgId : null)
+  const { selectedProjectId } = useSelectedProject()
+  const scopedConnections = useMemo(
+    () => filterByProjectScope(connections, selectedProjectId),
+    [connections, selectedProjectId],
+  )
   const { data: usage } = useOrganizationUsage(workspaceReady ? orgId : null)
   const triggerIngest = useTriggerIngest(workspaceReady ? orgId : null)
+  const updateConnection = useUpdateConnection(workspaceReady ? orgId : null)
 
   if (!workspaceReady) {
     return (
@@ -45,7 +55,7 @@ function ConnectionsPage() {
 
       {isLoading ? (
         <p className="text-sm text-[var(--sea-ink-soft)]">Loading connections…</p>
-      ) : connections.length === 0 ? (
+      ) : scopedConnections.length === 0 ? (
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-8 text-center text-sm text-[var(--sea-ink-soft)]">
           No connections yet. Use Data import to create your first server-side connection.
         </div>
@@ -59,11 +69,12 @@ function ConnectionsPage() {
                 <th className="px-4 py-3 font-medium">Schedule</th>
                 <th className="px-4 py-3 font-medium">Last sync</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Project</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody>
-              {connections.map((c) => (
+              {scopedConnections.map((c) => (
                 <tr key={c.id} className="border-b border-[var(--line)] last:border-0">
                   <td className="px-4 py-3 font-medium text-[var(--sea-ink)]">
                     <Link
@@ -81,6 +92,15 @@ function ConnectionsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={c.lastSyncStatus} error={c.lastError} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ProjectMoveSelect
+                      value={c.projectId}
+                      onChange={(projectId) =>
+                        void updateConnection.mutateAsync({ id: c.id, patch: { projectId } })
+                      }
+                      disabled={updateConnection.isPending}
+                    />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Button

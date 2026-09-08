@@ -5,6 +5,7 @@ declare module '@redash/viz/lib' {
     | 'CHART'
     | 'TABLE'
     | 'COUNTER'
+    | 'GAUGE'
     | 'PIVOT'
     | 'FUNNEL'
     | 'SANKEY'
@@ -14,6 +15,7 @@ declare module '@redash/viz/lib' {
     | 'COHORT'
     | 'WORD_CLOUD'
     | 'DETAILS'
+    | 'TREEMAP'
 
   export type RedashColumnType = 'integer' | 'float' | 'boolean' | 'string' | 'datetime' | 'date'
 

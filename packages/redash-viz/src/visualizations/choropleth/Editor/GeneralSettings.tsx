@@ -1,5 +1,6 @@
 import { isString, map, filter, get } from "lodash";
 import React, { useMemo, useCallback } from "react";
+import Alert from "antd/lib/alert";
 import * as Grid from "antd/lib/grid";
 import { EditorPropTypes } from "@/visualizations/prop-types";
 import { Section, Select } from "@/components/visualizations/editor";
@@ -9,8 +10,9 @@ import useLoadGeoJson from "../hooks/useLoadGeoJson";
 import { getGeoJsonFields } from "./utils";
 
 export default function GeneralSettings({ options, data, onOptionsChange }: any) {
-  const [geoJson, isLoadingGeoJson] = useLoadGeoJson(options.mapType);
+  const [geoJson, isLoadingGeoJson, geoJsonError] = useLoadGeoJson(options.mapType);
   const geoJsonFields = useMemo(() => getGeoJsonFields(geoJson), [geoJson]);
+  const columns = data?.columns ?? [];
 
   // While geoJson is loading - show last selected field in select
   const targetFields = isLoadingGeoJson ? filter([options.targetField], isString) : geoJsonFields;
@@ -43,6 +45,12 @@ export default function GeneralSettings({ options, data, onOptionsChange }: any)
         </Select>
       </Section>
 
+      {geoJsonError ? (
+        <Section>
+          <Alert type="error" showIcon message={geoJsonError} />
+        </Section>
+      ) : null}
+
       <Section>
         <Grid.Row gutter={15}>
           <Grid.Col span={12}>
@@ -50,11 +58,11 @@ export default function GeneralSettings({ options, data, onOptionsChange }: any)
               label="Key Column"
               className="w-100"
               data-test="Choropleth.Editor.KeyColumn"
-              disabled={data.columns.length === 0}
+              disabled={columns.length === 0}
               defaultValue={options.keyColumn}
               onChange={(keyColumn: any) => onOptionsChange({ keyColumn })}
             >
-              {map(data.columns, ({ name }) => (
+              {map(columns, ({ name }) => (
                 // @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message
                 <Select.Option key={name} data-test={`Choropleth.Editor.KeyColumn.${name}`}>
                   {name}
@@ -89,11 +97,11 @@ export default function GeneralSettings({ options, data, onOptionsChange }: any)
         <Select
           label="Value Column"
           data-test="Choropleth.Editor.ValueColumn"
-          disabled={data.columns.length === 0}
+          disabled={columns.length === 0}
           defaultValue={options.valueColumn}
           onChange={(valueColumn: any) => onOptionsChange({ valueColumn })}
         >
-          {map(data.columns, ({ name }) => (
+          {map(columns, ({ name }) => (
             // @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message
             <Select.Option key={name} data-test={`Choropleth.Editor.ValueColumn.${name}`}>
               {name}

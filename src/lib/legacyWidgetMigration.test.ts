@@ -28,13 +28,16 @@ describe('planWidgetMigration', () => {
     ))
     expect(plan[0]).toMatchObject({ action: 'textbox', text: '# hi', position: { col: 3, row: 0, sizeX: 3, sizeY: 4 } })
   })
-  it('downgrades radar with a reason', () => {
+  it('maps radar to CHART radar', () => {
     const plan = planWidgetMigration(dash(
       { w1: { id: 'w1', type: 'radar', title: 'R', dataSourceId: 'q1', bindings: {} } },
       [{ i: 'w1', x: 0, y: 0, w: 4, h: 8 }],
     ))
-    expect(plan[0]).toMatchObject({ vizType: 'CHART', downgraded: true })
-    expect(plan[0].reason).toContain('radar')
+    expect(plan[0]).toMatchObject({
+      vizType: 'CHART',
+      vizOptions: { globalSeriesType: 'radar' },
+      downgraded: false,
+    })
   })
   it('skips widgets without a query', () => {
     const plan = planWidgetMigration(dash(
@@ -53,7 +56,7 @@ describe('planWidgetMigration', () => {
       { type: 'table', expected: { action: 'visualization', vizType: 'TABLE', vizOptions: {}, downgraded: false } },
       { type: 'kpi', extra: { bindings: { valueKey: 'total' } }, expected: { action: 'visualization', vizType: 'COUNTER', vizOptions: { counterColName: 'total', rowNumber: 1 }, downgraded: false } },
       { type: 'bar', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: false } },
-      { type: 'histogram', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: false } },
+      { type: 'histogram', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'histogram' }, downgraded: false } },
       { type: 'stacked_bar', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column', series: { stacking: 'stack' } }, downgraded: false } },
       { type: 'horizontal_bar', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column', swappedAxes: true }, downgraded: false } },
       { type: 'line', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'line' }, downgraded: false } },
@@ -67,13 +70,13 @@ describe('planWidgetMigration', () => {
       { type: 'funnel', expected: { action: 'visualization', vizType: 'FUNNEL', vizOptions: {}, downgraded: false } },
       { type: 'sankey', expected: { action: 'visualization', vizType: 'SANKEY', vizOptions: {}, downgraded: false } },
       { type: 'sunburst', expected: { action: 'visualization', vizType: 'SUNBURST_SEQUENCE', vizOptions: {}, downgraded: false } },
-      { type: 'treemap', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'treemap → CHART(column)' } },
+      { type: 'treemap', expected: { action: 'visualization', vizType: 'TREEMAP', vizOptions: {}, downgraded: false } },
       { type: 'graph', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'graph → CHART(column)' } },
-      { type: 'radar', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'radar → CHART(column)' } },
+      { type: 'radar', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'radar' }, downgraded: false } },
       { type: 'boxplot', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'box' }, downgraded: true, reason: 'boxplot → CHART(box)' } },
       { type: 'candlestick', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'candlestick → CHART(column)' } },
-      { type: 'gauge', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'gauge → CHART(column)' } },
-      { type: 'waterfall', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'waterfall → CHART(column)' } },
+      { type: 'gauge', expected: { action: 'visualization', vizType: 'GAUGE', vizOptions: {}, downgraded: false } },
+      { type: 'waterfall', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'waterfall' }, downgraded: false } },
       { type: 'composed', expected: { vizType: 'CHART', vizOptions: { globalSeriesType: 'column' }, downgraded: true, reason: 'composed → CHART(column)' } },
     ]
 

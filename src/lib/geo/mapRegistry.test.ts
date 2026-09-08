@@ -64,7 +64,7 @@ describe('mapRegistry', () => {
     expect(getDefaultChoroplethOptions(maps)).toEqual({
       mapType: 'kenya-counties',
       keyColumn: null,
-      targetField: null,
+      targetField: 'code',
       valueColumn: null,
     })
   })
@@ -82,7 +82,30 @@ describe('mapRegistry', () => {
 
     const defaults = getDefaultChoroplethOptions(maps)
     expect(defaults.mapType).toBeTruthy()
+    expect(defaults.targetField).toBe('code')
     expect(defaults.keyColumn).toBeNull()
     expect(defaults.valueColumn).toBeNull()
+  })
+
+  it('getDefaultChoroplethOptions uses first fieldNames key for custom maps without code', () => {
+    const maps = buildChoroplethAvailableMaps([
+      {
+        id: 'regions',
+        name: 'Regions',
+        url: 'https://example.com/regions.geojson',
+        fieldNames: { region_id: 'Region' },
+      },
+    ])
+    delete maps['kenya-counties']
+    delete maps['world-countries']
+    delete maps['africa-countries']
+    delete maps['kenya-subcounties']
+
+    expect(getDefaultChoroplethOptions(maps)).toEqual({
+      mapType: customChoroplethMapKey('regions'),
+      keyColumn: null,
+      targetField: 'region_id',
+      valueColumn: null,
+    })
   })
 })

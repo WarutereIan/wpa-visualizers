@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ConfigProvider } from 'antd'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -64,6 +65,7 @@ export function VisualizationEditorModal({
   const [saving, setSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
 
   const { widgets: refs, isLoading: refsLoading } = useVisualizationWidgetRefs(
     visualization?.id ?? null,
@@ -137,7 +139,19 @@ export function VisualizationEditorModal({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         showCloseButton
-        className="inset-3 top-3 left-3 flex h-[calc(100dvh-1.5rem)] max-h-none w-[calc(100vw-1.5rem)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
+        className="inset-3 top-3 left-3 flex h-[calc(100dvh-1.5rem)] max-h-none w-[calc(100vw-1.5rem)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-visible p-0 sm:max-w-none"
+        onPointerDownOutside={(event) => {
+          const target = event.target as HTMLElement | null
+          if (target?.closest('.ant-select-dropdown, .ant-picker-dropdown, .ant-dropdown')) {
+            event.preventDefault()
+          }
+        }}
+        onInteractOutside={(event) => {
+          const target = event.target as HTMLElement | null
+          if (target?.closest('.ant-select-dropdown, .ant-picker-dropdown, .ant-dropdown')) {
+            event.preventDefault()
+          }
+        }}
       >
         <DialogHeader className="shrink-0 border-b border-[var(--line)] px-4 py-3">
           <DialogTitle>{visualization ? 'Edit visualization' : 'New visualization'}</DialogTitle>
@@ -146,8 +160,11 @@ export function VisualizationEditorModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[minmax(280px,360px),1fr]">
-          <aside className="min-h-0 space-y-3 overflow-y-auto border-b border-[var(--line)] p-4 md:border-r md:border-b-0">
+        <div
+          ref={bodyRef}
+          className="flex min-h-0 flex-1 flex-row"
+        >
+          <aside className="flex min-h-0 w-[min(42%,520px)] min-w-[300px] shrink-0 flex-col space-y-3 overflow-y-auto border-r border-[var(--line)] p-4">
             <div>
               <label className="text-sm font-medium text-[var(--sea-ink)]">Type</label>
               <Select
@@ -158,7 +175,7 @@ export function VisualizationEditorModal({
                 <SelectTrigger className="mt-1" aria-label="Visualization type">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   {REDASH_VIZ_TYPES.map((value) => (
                     <SelectItem key={value} value={value}>
                       {REDASH_VIZ_TYPE_LABELS[value]}
@@ -179,31 +196,46 @@ export function VisualizationEditorModal({
               />
             </div>
             {type === 'CHOROPLETH' ? <ChoroplethAuthoringHint /> : null}
-            <div className="min-h-[200px]">
+            <div className="min-h-[200px] flex-1">
               {vizError ? (
                 <p className="text-xs text-red-700">{vizError}</p>
               ) : !Editor ? (
                 <p className="text-xs text-[var(--sea-ink-soft)]">Loading editor…</p>
               ) : (
-                <Editor
-                  type={type}
-                  options={options}
-                  data={data}
-                  visualizationName={name}
-                  onOptionsChange={(opts) => setOptions({ ...(opts as Record<string, unknown>) })}
-                />
+                <ConfigProvider
+                  getPopupContainer={(node) =>
+                    (node?.closest('[data-slot="dialog-content"]') as HTMLElement | null) ??
+                    bodyRef.current ??
+                    document.body
+                  }
+                  theme={{
+                    token: {
+                      zIndexPopupBase: 200,
+                    },
+                  }}
+                >
+                  <Editor
+                    type={type}
+                    options={options}
+                    data={data}
+                    visualizationName={name}
+                    onOptionsChange={(opts) => setOptions({ ...(opts as Record<string, unknown>) })}
+                  />
+                </ConfigProvider>
               )}
             </div>
           </aside>
 
-          <div className="min-h-[240px] overflow-auto bg-[var(--surface)] p-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-[var(--surface)] p-4">
             {vizError ? (
               <pre className="whitespace-pre-wrap text-xs text-red-700">{vizError}</pre>
             ) : !Renderer ? (
               <p className="text-sm text-[var(--sea-ink-soft)]">Loading preview…</p>
             ) : (
-              <div className="min-h-[280px]">
-                <Renderer type={type} options={options} data={data} visualizationName={name} />
+              <div className="min-h-0 flex-1">
+                <div className="h-full min-h-[360px]">
+                  <Renderer type={type} options={options} data={data} visualizationName={name} />
+                </div>
               </div>
             )}
           </div>

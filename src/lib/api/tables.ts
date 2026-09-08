@@ -73,14 +73,14 @@ async function fetchTableRows(tableId: string, orgId: string): Promise<DataRow[]
 
 export async function importTableToOrg(
   orgId: string,
-  input: { name: string; rows: DataRow[] },
+  input: { name: string; rows: DataRow[]; projectId?: string | null },
   opts?: { viaEdge?: boolean },
 ): Promise<DataTable> {
   if (opts?.viaEdge !== false) {
     try {
       const { tableId, rowCount } = await invokeEdgeFunction<{ tableId: string; rowCount: number }>(
         'upsert-rows',
-        { organizationId: orgId, name: input.name, rows: input.rows },
+        { organizationId: orgId, name: input.name, rows: input.rows, projectId: input.projectId ?? null },
       )
       const columns = inferColumnsFromRows(input.rows)
       return mapDbTable(
@@ -90,6 +90,7 @@ export async function importTableToOrg(
           name: input.name.trim() || 'Imported Table',
           storage_backend: 'jsonb',
           row_count: rowCount,
+          project_id: input.projectId ?? null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         } as DbDataTable,
@@ -125,6 +126,7 @@ export async function importTableToOrg(
       name,
       storage_backend: 'jsonb',
       row_count: input.rows.length,
+      project_id: input.projectId ?? null,
     })
     .select('*')
     .single()
@@ -200,6 +202,26 @@ export async function updateTableColumnType(
   throwIfSupabaseError(error, 'api.updateTableColumnType', { orgId, tableId, columnName, dataType })
 }
 
+export async function updateTableFromOrg(
+  orgId: string,
+  tableId: string,
+  patch: { projectId?: string | null },
+): Promise<void> {
+  const supabase = getSupabase()
+  if (!supabase) throw new Error('Supabase is not configured')
+
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (patch.projectId !== undefined) update.project_id = patch.projectId ?? null
+
+  const { error } = await supabase
+    .from('data_tables')
+    .update(update)
+    .eq('id', tableId)
+    .eq('organization_id', orgId)
+
+  throwIfSupabaseError(error, 'api.updateTable', { orgId, tableId })
+}
+
 export function useTables(orgId: string | null) {
   return useQuery({
     queryKey: orgId ? workspaceKeys.tables(orgId) : ['workspace', 'tables', 'none'],
@@ -226,7 +248,7 @@ export function useTableWithRows(orgId: string | null, tableId: string | null) {
 export function useImportTable(orgId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { name: string; rows: DataRow[] }) => {
+    mutationFn: (input: { name: string; rows: DataRow[]; projectId?: string | null }) => {
       if (!orgId) throw new Error('No organization')
       return importTableToOrg(orgId, input)
     },
@@ -242,6 +264,19 @@ export function useDeleteTable(orgId: string | null) {
     mutationFn: (tableId: string) => {
       if (!orgId) throw new Error('No organization')
       return deleteTableFromOrg(orgId, tableId)
+    },
+    onSuccess: () => {
+      if (orgId) void queryClient.invalidateQueries({ queryKey: workspaceKeys.tables(orgId) })
+    },
+  })
+}
+
+export function useUpdateTable(orgId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string; patch: { projectId?: string | null } }) => {
+      if (!orgId) throw new Error('No organization')
+      return updateTableFromOrg(orgId, input.id, input.patch)
     },
     onSuccess: () => {
       if (orgId) void queryClient.invalidateQueries({ queryKey: workspaceKeys.tables(orgId) })

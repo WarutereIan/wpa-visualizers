@@ -38,20 +38,20 @@ function prepareLayer({ feature, layer, data, options, limits, colors, formatVal
   const value = getValueForFeature(feature, data, options.targetField);
   const valueFormatted = formatValue(value);
   const featureData = prepareFeatureProperties(feature, valueFormatted, data, options.targetField);
-  const color = getColorByValue(value, limits, colors, options.colors.noValue);
+  const color = getColorByValue(value, limits, colors, options.colors?.noValue);
 
   layer.setStyle({
-    color: options.colors.borders,
+    color: options.colors?.borders,
     weight: 1,
     fillColor: color,
     fillOpacity: 1,
   });
 
-  if (options.tooltip.enabled) {
+  if (options.tooltip?.enabled) {
     layer.bindTooltip(sanitize(formatSimpleTemplate(options.tooltip.template, featureData)), { sticky: true });
   }
 
-  if (options.popup.enabled) {
+  if (options.popup?.enabled) {
     layer.bindPopup(sanitize(formatSimpleTemplate(options.popup.template, featureData)));
   }
 
@@ -131,10 +131,9 @@ export default function initChoropleth(container: any, onBoundsChange: any) {
     _map.removeControl(_legend);
 
     // @ts-expect-error ts-migrate(2339) FIXME: Property 'features' does not exist on type 'object... Remove this comment to see the full error message
-    if (!isObject(geoJson) || !isArray(geoJson.features)) {
+    if (!isObject(geoJson) || !isArray(geoJson.features) || geoJson.features.length === 0) {
       _choropleth = null;
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'null' is not assignable to param... Remove this comment to see the full error message
-      _map.setMaxBounds(null);
+      _map.options.maxBounds = undefined;
       return;
     }
 
@@ -151,15 +150,18 @@ export default function initChoropleth(container: any, onBoundsChange: any) {
 
     const mapBounds = _choropleth.getBounds();
     const bounds = validateBounds(options.bounds, mapBounds);
-    _map.fitBounds(bounds, { animate: false, duration: 0 });
+    if (bounds) {
+      _map.fitBounds(bounds, { animate: false, duration: 0 });
+    }
 
-    // equivalent to `_map.setMaxBounds(mapBounds)` but without animation
-    _map.options.maxBounds = mapBounds;
-    _map.panInsideBounds(mapBounds, { animate: false, duration: 0 });
+    if (mapBounds && mapBounds.isValid()) {
+      _map.options.maxBounds = mapBounds;
+      _map.panInsideBounds(mapBounds, { animate: false, duration: 0 });
+    }
 
     // update legend
-    if (options.legend.visible && legend.length > 0) {
-      _legend.setPosition(options.legend.position.replace("-", ""));
+    if (options.legend?.visible && legend.length > 0) {
+      _legend.setPosition((options.legend.position || "bottom-left").replace("-", ""));
       _map.addControl(_legend);
       if (!_legendRoot) {
         _legendRoot = createRoot(_legend.getContainer()!);

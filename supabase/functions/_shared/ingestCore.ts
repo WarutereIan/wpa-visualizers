@@ -60,6 +60,7 @@ export async function writeTableRows(
   tableName: string,
   rows: DataRow[],
   connectionId: string | null,
+  projectId: string | null = null,
 ): Promise<{ tableId: string; rowCount: number }> {
   const columns = inferColumnsFromRows(rows)
 
@@ -71,6 +72,7 @@ export async function writeTableRows(
       storage_backend: 'jsonb',
       row_count: rows.length,
       source_connection_id: connectionId,
+      project_id: projectId,
     })
     .select('*')
     .single()
@@ -113,6 +115,7 @@ export async function runIngest(opts: {
     credentials?: Record<string, unknown>
     tableName: string
     rows?: DataRow[]
+    projectId?: string | null
   }
 }): Promise<{ jobId: string; tableId: string; rowCount: number; connectionId: string }> {
   const { admin, orgId, userId } = opts
@@ -123,6 +126,7 @@ export async function runIngest(opts: {
   let credentials: Record<string, string> = {}
   let tableName: string
   let secretId: string | null = null
+  let projectId: string | null = opts.connection?.projectId ?? null
 
   if (connectionId) {
     const { data: conn, error } = await admin
@@ -136,6 +140,7 @@ export async function runIngest(opts: {
     endpointUrl = conn.endpoint_url
     tableName = conn.name
     secretId = conn.credentials_secret_id
+    projectId = conn.project_id ?? projectId
     credentials = await readConnectionSecret(admin, secretId)
   } else if (opts.connection) {
     sourceType = opts.connection.sourceType
@@ -160,6 +165,7 @@ export async function runIngest(opts: {
         credentials_secret_id: secretId,
         sync_schedule: opts.connection.syncSchedule ?? 'manual',
         last_sync_status: 'running',
+        project_id: projectId,
       })
       .select('*')
       .single()
@@ -197,6 +203,7 @@ export async function runIngest(opts: {
       opts.connection?.tableName ?? tableName,
       rows,
       connectionId,
+      projectId,
     )
 
     await promoteTableToParquetIfNeeded(admin, orgId, tableId, rowCount)

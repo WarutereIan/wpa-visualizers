@@ -216,7 +216,7 @@ export const useOutputsIndicatorsStore = create<OutputsIndicatorsState>()(
       outputs: demoOutputs,
       indicators: demoIndicators,
       links: demoLinks,
-      selectedProjectId: demoProjects[0]?.id ?? null,
+      selectedProjectId: null,
 
       setSelectedProjectId: (id) => set({ selectedProjectId: id }),
 

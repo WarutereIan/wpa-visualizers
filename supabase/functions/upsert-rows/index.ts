@@ -23,10 +23,11 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { organizationId, name, rows } = await req.json() as {
+    const { organizationId, name, rows, projectId } = await req.json() as {
       organizationId: string
       name: string
       rows: Record<string, unknown>[]
+      projectId?: string | null
     }
 
     if (!organizationId) {
@@ -68,6 +69,7 @@ Deno.serve(async (req) => {
         name: name.trim() || 'Imported Table',
         storage_backend: 'jsonb',
         row_count: rows.length,
+        project_id: projectId ?? null,
       })
       .select('*')
       .single()

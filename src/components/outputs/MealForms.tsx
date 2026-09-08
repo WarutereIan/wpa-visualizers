@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Button } from '#/components/ui/button'
 import { useWorkspaceMeal } from '#/hooks/useWorkspaceMeal'
-import { useSelectedProject } from '#/hooks/useSelectedProject'
 import {
   INDICATOR_TYPES,
   INDICATOR_TYPE_LABELS,
@@ -12,6 +11,7 @@ import {
   type Output,
   type Project,
 } from '#/types/outputsIndicators'
+import { ProjectMoveSelect } from '#/components/layout/ProjectScopeSelect'
 
 const outputStatuses: OutputStatus[] = ['planned', 'in_progress', 'completed', 'at_risk']
 const projectStatuses: ProjectStatus[] = ['planned', 'in_progress', 'completed', 'at_risk']
@@ -22,29 +22,6 @@ function fieldClass() {
 
 function useMutationError() {
   return useState<string | null>(null)
-}
-
-export function ProjectSelect() {
-  const { projects } = useWorkspaceMeal()
-  const { selectedProjectId, setSelectedProjectId } = useSelectedProject(projects)
-
-  return (
-    <label className="flex flex-col gap-1.5 text-sm sm:flex-row sm:items-center sm:gap-3">
-      <span className="shrink-0 font-medium text-[var(--sea-ink)]">Project</span>
-      <select
-        className="min-w-[min(100%,280px)] rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[var(--sea-ink)] outline-none focus:ring-2 focus:ring-[var(--lagoon)]"
-        value={selectedProjectId ?? ''}
-        onChange={(e) => setSelectedProjectId(e.target.value || null)}
-      >
-        <option value="">All projects</option>
-        {projects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.code} — {p.name}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
 }
 
 export function NewOutputForm({ projectId }: { projectId: string | null }) {
@@ -132,7 +109,7 @@ export function NewIndicatorForm({ projectId }: { projectId: string | null }) {
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useMutationError()
 
-  if (!meal.canEdit || !projectId) return null
+  if (!meal.canEdit) return null
 
   return (
     <div>
@@ -479,6 +456,7 @@ export function IndicatorEditForm({ indicator }: { indicator: Indicator }) {
   const [target, setTarget] = useState(String(indicator.target ?? 0))
   const [current, setCurrent] = useState(String(indicator.current ?? 0))
   const [period, setPeriod] = useState(indicator.period ?? '')
+  const [projectId, setProjectId] = useState(indicator.projectId)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useMutationError()
 
@@ -509,6 +487,7 @@ export function IndicatorEditForm({ indicator }: { indicator: Indicator }) {
             target: Number(target),
             current: Number(current),
             period: period || null,
+            projectId,
           })
           .then(() => setOpen(false))
           .catch((e: unknown) => setErr(e instanceof Error ? e.message : 'Failed to update indicator'))
@@ -552,6 +531,16 @@ export function IndicatorEditForm({ indicator }: { indicator: Indicator }) {
       <label className="text-sm">
         Period
         <input className={fieldClass()} value={period} onChange={(e) => setPeriod(e.target.value)} />
+      </label>
+      <label className="text-sm sm:col-span-2">
+        Project
+        <div className="mt-1">
+          <ProjectMoveSelect
+            className="h-9 w-full max-w-none py-2 text-sm"
+            value={projectId}
+            onChange={setProjectId}
+          />
+        </div>
       </label>
       <div className="flex items-center gap-2 sm:col-span-2">
         <Button type="submit" size="sm" disabled={saving}>

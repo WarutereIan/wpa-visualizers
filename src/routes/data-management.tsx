@@ -1,8 +1,15 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { LocalStorageMigrationBanner } from '#/components/workspace/LocalStorageMigrationBanner'
 import { QueryEditor } from '#/components/data/QueryEditor'
 import { Button } from '#/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { downloadTableCsv } from '#/lib/api/export'
 import { promoteTableBackend } from '#/lib/api/connections'
 import { useOrgId, useWorkspaceReady, workspaceKeys } from '#/lib/api/workspace'
@@ -11,6 +18,9 @@ import { useAllDashboardWidgets } from '#/hooks/useDashboardWidgets'
 import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
 import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
+import { useSelectedProject } from '#/hooks/useSelectedProject'
+import { ProjectMoveSelect } from '#/components/layout/ProjectScopeSelect'
+import { filterByProjectScope } from '#/lib/projectScope'
 import {
   findQueryUsages,
   formatQueryUsageLines,
@@ -18,7 +28,14 @@ import {
 } from '#/lib/queryUsage'
 import type { DataTable } from '#/types/data'
 
+type DataManagementSearch = {
+  queryId?: string
+}
+
 export const Route = createFileRoute('/data-management')({
+  validateSearch: (search: Record<string, unknown>): DataManagementSearch => ({
+    queryId: typeof search.queryId === 'string' ? search.queryId : undefined,
+  }),
   component: DataManagementPage,
 })
 
@@ -32,10 +49,29 @@ function DataManagementPage() {
 }
 
 function QueryBuilderPage() {
+  const search = Route.useSearch()
   const workspaceReady = useWorkspaceReady()
   const orgId = useOrgId()
-  const { tables, queries, createQuery, updateQuery, removeQuery, removeTable, updateColumnType, loading } =
-    useWorkspaceData()
+  const {
+    tables,
+    queries,
+    createQuery,
+    updateQuery,
+    removeQuery,
+    removeTable,
+    updateTable,
+    updateColumnType,
+    loading,
+  } = useWorkspaceData()
+  const { selectedProjectId } = useSelectedProject()
+  const scopedQueries = useMemo(
+    () => filterByProjectScope(queries, selectedProjectId),
+    [queries, selectedProjectId],
+  )
+  const scopedTables = useMemo(
+    () => filterByProjectScope(tables, selectedProjectId),
+    [tables, selectedProjectId],
+  )
   const { dashboards } = useWorkspaceDashboards()
   const { visualizations } = useWorkspaceVisualizations()
   const { widgets } = useAllDashboardWidgets()
@@ -45,15 +81,22 @@ function QueryBuilderPage() {
   const [showTables, setShowTables] = useState(false)
   const queryClient = useQueryClient()
 
-  const [activeQueryId, setActiveQueryId] = useState<string>(queries[0]?.id ?? '')
-  const activeQuery = queries.find((q) => q.id === activeQueryId) ?? queries[0] ?? null
+  const [userSelectedQueryId, setActiveQueryId] = useState<string | null>(null)
+  const activeQueryId =
+    userSelectedQueryId && scopedQueries.some((q) => q.id === userSelectedQueryId)
+      ? userSelectedQueryId
+      : search.queryId && scopedQueries.some((q) => q.id === search.queryId)
+        ? search.queryId
+        : scopedQueries[0]?.id ?? ''
+  const activeQuery = scopedQueries.find((q) => q.id === activeQueryId) ?? scopedQueries[0] ?? null
   const activeTable = tables.find((t) => t.id === activeQuery?.tableId)
   const usageScan = { visualizations, widgets }
   const activeUsages = activeQuery ? findQueryUsages(dashboards, activeQuery.id, usageScan) : []
 
   const handleNewQuery = () => {
-    const tableId = tables[0]?.id
-    const firstCols = tables[0]?.columns.slice(0, 2).map((c) => c.name) ?? []
+    const sourceTables = scopedTables.length > 0 ? scopedTables : tables
+    const tableId = sourceTables[0]?.id
+    const firstCols = sourceTables[0]?.columns.slice(0, 2).map((c) => c.name) ?? []
     if (!tableId) return
     void createQuery({
       name: `Query ${queries.length + 1}`,
@@ -62,6 +105,7 @@ function QueryBuilderPage() {
       filters: [],
       groupBy: [],
       aggregations: [],
+      projectId: selectedProjectId,
     }).then((q) => setActiveQueryId(q.id))
   }
 
@@ -88,7 +132,7 @@ function QueryBuilderPage() {
           <p className="text-sm text-[var(--sea-ink-soft)]">
             {tables.length === 0
               ? 'No tables yet. Import data to start building queries.'
-              : 'No queries yet. Create your first query to get started.'}
+              : 'No queries in this project scope yet. Create a query or switch project.'}
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {tables.length === 0 ? (
@@ -103,7 +147,7 @@ function QueryBuilderPage() {
           </div>
         </div>
         <TablesManager
-          tables={tables}
+          tables={scopedTables}
           deletingTableId={deletingTableId}
           onDelete={(tableId) => {
             if (
@@ -117,6 +161,9 @@ function QueryBuilderPage() {
           }}
           onColumnTypeChange={(tableId, columnName, type) => {
             void updateColumnType(tableId, columnName, type)
+          }}
+          onProjectChange={(tableId, projectId) => {
+            void updateTable(tableId, { projectId })
           }}
         />
       </div>
@@ -146,7 +193,7 @@ function QueryBuilderPage() {
       {showTables && (
         <div className="shrink-0 overflow-y-auto max-h-56">
           <TablesManager
-            tables={tables}
+            tables={scopedTables}
             deletingTableId={deletingTableId}
             onDelete={(tableId) => {
               if (
@@ -161,47 +208,55 @@ function QueryBuilderPage() {
             onColumnTypeChange={(tableId, columnName, type) => {
               void updateColumnType(tableId, columnName, type)
             }}
+            onProjectChange={(tableId, projectId) => {
+              void updateTable(tableId, { projectId })
+            }}
           />
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 gap-3 overflow-hidden lg:grid-cols-[240px,minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)]">
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
-            <h2 className="text-sm font-semibold text-[var(--sea-ink)]">Queries</h2>
-            <Button type="button" size="sm" onClick={handleNewQuery} disabled={tables.length === 0}>
-              New
-            </Button>
-          </div>
-          <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
-            {queries.map((q) => {
-              const tableName = tables.find((t) => t.id === q.tableId)?.name
-              const usages = findQueryUsages(dashboards, q.id, usageScan)
-              const active = (activeQuery?.id ?? activeQueryId) === q.id
-              return (
-                <li key={q.id}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveQueryId(q.id)}
-                    className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
-                      active
-                        ? 'border-[var(--lagoon)] bg-[rgba(79,184,178,0.12)]'
-                        : 'border-[var(--line)] bg-[var(--surface)]'
-                    }`}
-                  >
-                    <p className="truncate font-medium text-[var(--sea-ink)]">{q.name}</p>
-                    <p className="truncate text-[11px] text-[var(--sea-ink-soft)]">
-                      {tableName ?? 'Unknown table'}
-                      {usages.length > 0 ? ` · ${usages.length} widget${usages.length === 1 ? '' : 's'}` : ''}
-                    </p>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </aside>
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)]">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] px-3 py-2 sm:px-4">
+          <label className="text-xs font-medium text-[var(--sea-ink-soft)]" htmlFor="active-query">
+            Query
+          </label>
+          <Select
+            value={activeQuery?.id ?? (activeQueryId || undefined)}
+            onValueChange={(id) => setActiveQueryId(id)}
+          >
+            <SelectTrigger id="active-query" className="h-8 w-[min(100%,280px)]" aria-label="Select query">
+              <SelectValue placeholder="Select a query" />
+            </SelectTrigger>
+            <SelectContent>
+              {scopedQueries.map((q) => {
+                const tableName = tables.find((t) => t.id === q.tableId)?.name
+                return (
+                  <SelectItem key={q.id} value={q.id}>
+                    {q.name}
+                    {tableName ? ` · ${tableName}` : ''}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
+          {activeQuery ? (
+            <ProjectMoveSelect
+              value={activeQuery.projectId ?? null}
+              onChange={(projectId) => void updateQuery(activeQuery.id, { projectId })}
+            />
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            className="ml-auto"
+            onClick={handleNewQuery}
+            disabled={tables.length === 0}
+          >
+            New Query
+          </Button>
+        </div>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 sm:p-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
           {activeUsages.length > 1 && (
             <div className="mb-3 shrink-0 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
               <p>
@@ -297,8 +352,8 @@ function QueryBuilderPage() {
               }
             />
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   )
 }
@@ -308,6 +363,7 @@ function TablesManager({
   deletingTableId,
   onDelete,
   onColumnTypeChange,
+  onProjectChange,
 }: {
   tables: DataTable[]
   deletingTableId: string | null
@@ -317,6 +373,7 @@ function TablesManager({
     columnName: string,
     type: 'string' | 'number' | 'boolean' | 'date',
   ) => void
+  onProjectChange: (tableId: string, projectId: string | null) => void
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -365,6 +422,12 @@ function TablesManager({
                   >
                     {deletingTableId === t.id ? 'Deleting…' : 'Delete'}
                   </Button>
+                </div>
+                <div className="mt-2">
+                  <ProjectMoveSelect
+                    value={t.projectId ?? null}
+                    onChange={(projectId) => onProjectChange(t.id, projectId)}
+                  />
                 </div>
                 {open && (
                   <ul className="mt-2 space-y-1 rounded-md border border-[var(--line)] bg-[var(--surface)] p-2">

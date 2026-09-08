@@ -8,11 +8,13 @@ import cohortVisualization from "./cohort";
 import counterVisualization from "./counter";
 import detailsVisualization from "./details";
 import funnelVisualization from "./funnel";
+import gaugeVisualization from "./gauge";
 import mapVisualization from "./map";
 import pivotVisualization from "./pivot";
 import sankeyVisualization from "./sankey";
 import sunburstVisualization from "./sunburst";
 import tableVisualization from "./table";
+import treemapVisualization from "./treemap";
 import wordCloudVisualization from "./word-cloud";
 
 type VisualizationConfig = {
@@ -85,11 +87,13 @@ each(
     counterVisualization,
     detailsVisualization,
     funnelVisualization,
+    gaugeVisualization,
     mapVisualization,
     pivotVisualization,
     sankeyVisualization,
     sunburstVisualization,
     tableVisualization,
+    treemapVisualization,
     wordCloudVisualization,
   ]),
   registerVisualization

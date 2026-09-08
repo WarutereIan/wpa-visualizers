@@ -4,6 +4,7 @@ import { FavoriteStar } from '#/components/dashboard/redash/FavoriteStar'
 import { ShareDashboardDialog } from '#/components/dashboard/redash/ShareDashboardDialog'
 import { TagsEditor } from '#/components/dashboard/redash/TagsEditor'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
+import { ProjectMoveSelect } from '#/components/layout/ProjectScopeSelect'
 import {
   AUTO_REFRESH_INTERVALS,
   canArchive,
@@ -80,6 +81,7 @@ export function DashboardHeader({
   onFullscreen,
   onRename,
 }: DashboardHeaderProps) {
+  const { updateDashboard } = useWorkspaceDashboards()
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState(dashboard.name)
   const [menu, setMenu] = useState<'more' | 'refresh' | null>(null)
@@ -244,6 +246,18 @@ export function DashboardHeader({
               >
                 Duplicate
               </button>
+            ) : null}
+            {canEdit ? (
+              <label className="flex flex-col gap-1 px-2 py-1 text-xs text-[var(--sea-ink-soft)]">
+                Move to project
+                <ProjectMoveSelect
+                  value={dashboard.projectId ?? null}
+                  onChange={(projectId) => {
+                    void updateDashboard(dashboard.id, { projectId })
+                    setMenu(null)
+                  }}
+                />
+              </label>
             ) : null}
             {canEdit && canArchive(status) ? (
               <button

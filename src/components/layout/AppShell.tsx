@@ -11,6 +11,7 @@ import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import { Button } from '#/components/ui/button'
 import { isPublicPath } from '#/types/auth'
 import { usePersistedSidebarCollapsed } from '#/hooks/usePersistedSidebarCollapsed'
+import { ProjectScopeSelect } from '#/components/layout/ProjectScopeSelect'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed, toggle: toggleCollapsed } = usePersistedSidebarCollapsed()
@@ -289,6 +290,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--sea-ink)]">
             DIMES-BI analytics workspace
           </div>
+          <ProjectScopeSelect />
           <NotificationBell />
           <UserMenu />
           <ThemeToggle />

@@ -231,6 +231,52 @@ export default function GeneralSettings({ options, data, onOptionsChange }: any)
               {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message */}
             </Select.Option>
           </Select>
+          <InputNumber
+            label="Donut hole"
+            data-test="Chart.PieHole"
+            min={0}
+            max={0.9}
+            step={0.1}
+            defaultValue={options.pieHole ?? 0.4}
+            onChange={(value: any) => onOptionsChange({ pieHole: toNumber(value) })}
+          />
+        </Section>
+      )}
+
+      {includes(["histogram"], options.globalSeriesType) && (
+        <Section>
+          <InputNumber
+            label="Number of bins"
+            data-test="Chart.HistogramBinCount"
+            min={1}
+            placeholder="Auto"
+            defaultValue={options.histogramBinCount}
+            onChange={(value: any) =>
+              onOptionsChange({ histogramBinCount: value === null || value === "" ? null : toNumber(value) })
+            }
+          />
+        </Section>
+      )}
+
+      {includes(["radar"], options.globalSeriesType) && (
+        <Section>
+          <Select
+            label="Fill"
+            data-test="Chart.RadarFill"
+            defaultValue={options.radarFill === "line" ? "line" : "area"}
+            onChange={(radarFill: any) => onOptionsChange({ radarFill })}
+          >
+            {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message */}
+            <Select.Option value="area" data-test="Chart.RadarFill.Area">
+              Area
+              {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message */}
+            </Select.Option>
+            {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message */}
+            <Select.Option value="line" data-test="Chart.RadarFill.Line">
+              Line
+              {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'Option' does not exist on type '({ class... Remove this comment to see the full error message */}
+            </Select.Option>
+          </Select>
         </Section>
       )}
 
@@ -297,7 +343,7 @@ export default function GeneralSettings({ options, data, onOptionsChange }: any)
         </Section>
       )}
 
-      {!includes(["custom", "heatmap"], options.globalSeriesType) && (
+      {!includes(["custom", "heatmap", "histogram", "waterfall", "violin", "radar"], options.globalSeriesType) && (
         <Section>
           <Select
             label="Stacking"

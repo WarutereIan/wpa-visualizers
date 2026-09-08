@@ -54,7 +54,9 @@ interface DataState {
     name: string
     rows: DataRow[]
     preferredId?: string
+    projectId?: string | null
   }) => DataTable
+  updateTable: (tableId: string, patch: Partial<Pick<DataTable, 'projectId'>>) => void
   removeTable: (tableId: string) => void
   updateColumnType: (tableId: string, columnName: string, type: DataColumnType) => void
 }
@@ -193,7 +195,7 @@ export const useDataStore = create<DataState>()(
           version: s.version + 1,
         }))
       },
-      importTable: ({ name, rows, preferredId }) => {
+      importTable: ({ name, rows, preferredId, projectId }) => {
         const columns = inferColumnsFromRows(rows)
         const tableId =
           preferredId?.trim() ||
@@ -205,6 +207,7 @@ export const useDataStore = create<DataState>()(
           name: name.trim() || 'Imported Table',
           columns,
           rows,
+          projectId: projectId ?? null,
         }
         set((s) => ({
           tables: [table, ...s.tables.filter((t) => t.id !== tableId)],
@@ -219,6 +222,13 @@ export const useDataStore = create<DataState>()(
           // Drop queries that referenced the deleted table so the builder
           // never shows a query bound to a missing source.
           queries: s.queries.filter((q) => q.tableId !== tableId),
+          version: s.version + 1,
+        }))
+      },
+
+      updateTable: (tableId, patch) => {
+        set((s) => ({
+          tables: s.tables.map((t) => (t.id === tableId ? { ...t, ...patch } : t)),
           version: s.version + 1,
         }))
       },

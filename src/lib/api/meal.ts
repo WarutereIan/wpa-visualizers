@@ -281,7 +281,7 @@ export function useCreateIndicator(orgId: string | null) {
         .from('indicator_definitions')
         .insert({
           organization_id: orgId,
-          project_id: input.projectId,
+          project_id: input.projectId ?? null,
           name: input.name.trim(),
           type: input.type ?? 'count',
           location: input.location || null,
@@ -323,7 +323,7 @@ export function useUpdateIndicator(orgId: string | null) {
       if (patch.target !== undefined) update.target = patch.target
       if (patch.current !== undefined) update.current = patch.current
       if (patch.period !== undefined) update.period = patch.period || null
-      if (patch.projectId !== undefined) update.project_id = patch.projectId
+      if (patch.projectId !== undefined) update.project_id = patch.projectId ?? null
       if (patch.sourceQueryId !== undefined) update.source_query_id = patch.sourceQueryId
       if (patch.formula !== undefined) update.formula = patch.formula
       if (patch.disaggregations !== undefined) update.disaggregations = patch.disaggregations

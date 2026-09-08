@@ -67,6 +67,15 @@ export function customChoroplethMapKey(id: string): string {
   return `custom:${id}`
 }
 
+function defaultTargetFieldForMap(maps: ChoroplethAvailableMaps, mapType: string): string | null {
+  if (Object.prototype.hasOwnProperty.call(BUILTIN_CHOROPLETH_MAPS, mapType)) {
+    return BUILTIN_CHOROPLETH_MAPS[mapType as BuiltinMapId].defaultTargetField
+  }
+  const fieldNames = maps[mapType]?.fieldNames ?? {}
+  if (fieldNames.code) return 'code'
+  return Object.keys(fieldNames)[0] ?? null
+}
+
 /** Sensible defaults when authoring a new choropleth visualization. */
 export function getDefaultChoroplethOptions(
   maps: ChoroplethAvailableMaps,
@@ -77,7 +86,7 @@ export function getDefaultChoroplethOptions(
   return {
     mapType,
     keyColumn: null,
-    targetField: null,
+    targetField: defaultTargetFieldForMap(maps, mapType),
     valueColumn: null,
   }
 }

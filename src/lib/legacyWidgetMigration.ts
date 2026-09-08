@@ -80,11 +80,17 @@ function mapLegacyType(widget: WidgetConfig): Omit<MigrationPlanItem, 'widgetId'
       }
     }
     case 'bar':
-    case 'histogram':
       return {
         action: 'visualization',
         vizType: 'CHART',
         vizOptions: chartOptions('column', bindings),
+        downgraded: false,
+      }
+    case 'histogram':
+      return {
+        action: 'visualization',
+        vizType: 'CHART',
+        vizOptions: chartOptions('histogram', bindings),
         downgraded: false,
       }
     case 'stacked_bar':
@@ -175,12 +181,26 @@ function mapLegacyType(widget: WidgetConfig): Omit<MigrationPlanItem, 'widgetId'
         downgraded: true,
         reason: 'boxplot → CHART(box)',
       }
-    case 'treemap':
-    case 'graph':
     case 'radar':
-    case 'candlestick':
-    case 'gauge':
+      return {
+        action: 'visualization',
+        vizType: 'CHART',
+        vizOptions: chartOptions('radar', bindings),
+        downgraded: false,
+      }
     case 'waterfall':
+      return {
+        action: 'visualization',
+        vizType: 'CHART',
+        vizOptions: chartOptions('waterfall', bindings),
+        downgraded: false,
+      }
+    case 'treemap':
+      return { action: 'visualization', vizType: 'TREEMAP', vizOptions: {}, downgraded: false }
+    case 'gauge':
+      return { action: 'visualization', vizType: 'GAUGE', vizOptions: {}, downgraded: false }
+    case 'graph':
+    case 'candlestick':
     case 'composed':
       return {
         action: 'visualization',

@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
         credentials?: Record<string, unknown>
         tableName: string
         rows?: DataRow[]
+        projectId?: string | null
       }
     }
 

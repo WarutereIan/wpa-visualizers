@@ -1,8 +1,8 @@
 import type { DataRow } from '#/types/data'
 
 export type RedashVisualizationType =
-  | 'CHART' | 'TABLE' | 'COUNTER' | 'PIVOT' | 'FUNNEL' | 'SANKEY'
-  | 'SUNBURST_SEQUENCE' | 'MAP' | 'CHOROPLETH' | 'COHORT' | 'WORD_CLOUD' | 'DETAILS'
+  | 'CHART' | 'TABLE' | 'COUNTER' | 'GAUGE' | 'PIVOT' | 'FUNNEL' | 'SANKEY'
+  | 'SUNBURST_SEQUENCE' | 'MAP' | 'CHOROPLETH' | 'COHORT' | 'WORD_CLOUD' | 'DETAILS' | 'TREEMAP'
 
 export interface VisualizationDefinition {
   id: string

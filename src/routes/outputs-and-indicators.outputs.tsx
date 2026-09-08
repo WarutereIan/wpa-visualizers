@@ -4,7 +4,6 @@ import {
   OutputEditForm,
   OutputEditorActions,
   ProjectEditForm,
-  ProjectSelect,
 } from '#/components/outputs/MealForms'
 import { OutputContributionVisualizer } from '#/components/outputs/OutputContributionVisualizer'
 import { OutputsComparisonChart } from '#/components/outputs/OutputsComparisonChart'
@@ -33,11 +32,6 @@ function OutputsPage() {
   const meal = useWorkspaceMeal()
   const { selectedProjectId, projects, outputs, links, indicators, loading } = meal
 
-  const filtered =
-    selectedProjectId === null || selectedProjectId === ''
-      ? outputs
-      : outputs.filter((o) => o.projectId === selectedProjectId)
-
   if (loading) {
     return (
       <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 text-sm text-[var(--sea-ink-soft)]">
@@ -45,6 +39,25 @@ function OutputsPage() {
       </div>
     )
   }
+
+  if (selectedProjectId == null) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-base font-semibold text-[var(--sea-ink)]">Outputs</h2>
+          <p className="text-sm text-[var(--sea-ink-soft)]">
+            Each card shows linked indicators, a donut mix of <strong>weight × achievement</strong>, and the{' '}
+            <strong>composite score</strong> (weighted mean % toward targets).
+          </p>
+        </div>
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-8 text-center text-sm text-[var(--sea-ink-soft)]">
+          Select a project to view outputs
+        </div>
+      </div>
+    )
+  }
+
+  const filtered = outputs.filter((o) => o.projectId === selectedProjectId)
 
   return (
     <div className="space-y-6">
@@ -57,7 +70,6 @@ function OutputsPage() {
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
-          <ProjectSelect />
           {selectedProjectId && projects.find((p) => p.id === selectedProjectId) && (
             <ProjectEditForm project={projects.find((p) => p.id === selectedProjectId)!} />
           )}
