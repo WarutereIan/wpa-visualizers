@@ -50,6 +50,7 @@ interface DashboardState {
   getById: (id: string) => DashboardDefinition | undefined
   listWidgets: (dashboardId: string) => DashboardWidget[]
   listByDashboard: (dashboardId: string) => DashboardWidget[]
+  listByVisualization: (visualizationId: string) => DashboardWidget[]
   createWidget: (input: Omit<DashboardWidget, 'id' | 'createdAt' | 'updatedAt'>) => DashboardWidget
   updateWidget: (
     id: string,
@@ -114,6 +115,8 @@ export const useDashboardStore = create<DashboardState>()(
 
       listWidgets: (dashboardId) => get().widgets.filter((w) => w.dashboardId === dashboardId),
       listByDashboard: (dashboardId) => get().widgets.filter((w) => w.dashboardId === dashboardId),
+      listByVisualization: (visualizationId) =>
+        get().widgets.filter((w) => w.visualizationId === visualizationId),
 
       createWidget: (input) => {
         const now = nowIso()

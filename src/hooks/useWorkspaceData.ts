@@ -10,6 +10,8 @@ import {
 import { runQueryDefinition } from '#/lib/queryEngine'
 import { useImportTable, useTables, useDeleteTable, useUpdateTableColumnType } from '#/lib/api/tables'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
+import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
+import { DEFAULT_TABLE_VISUALIZATION } from '#/lib/visualizationOrder'
 import {
   createDefaultAggregation,
   FILTER_OPERATORS,
@@ -35,6 +37,7 @@ export function useWorkspaceData() {
 
   const tablesQuery = useTables(workspaceReady ? orgId : null)
   const queriesQuery = useQueries(workspaceReady ? orgId : null)
+  const { createVisualization } = useWorkspaceVisualizations()
   const createQueryMutation = useCreateQuery(workspaceReady ? orgId : null)
   const updateQueryMutation = useUpdateQuery(workspaceReady ? orgId : null)
   const deleteQueryMutation = useDeleteQuery(workspaceReady ? orgId : null)
@@ -48,10 +51,17 @@ export function useWorkspaceData() {
 
   const createQuery = useCallback(
     async (input: Omit<QueryDefinition, 'id' | 'createdAt' | 'updatedAt'>) => {
-      if (workspaceReady) return createQueryMutation.mutateAsync(input)
+      if (workspaceReady) {
+        const query = await createQueryMutation.mutateAsync(input)
+        await createVisualization({
+          queryId: query.id,
+          ...DEFAULT_TABLE_VISUALIZATION,
+        })
+        return query
+      }
       return demoCreateQuery(input)
     },
-    [workspaceReady, createQueryMutation, demoCreateQuery],
+    [workspaceReady, createQueryMutation, demoCreateQuery, createVisualization],
   )
 
   const updateQuery = useCallback(

@@ -14,6 +14,7 @@ import type {
   QueryAggregation,
   QueryDefinition,
 } from '#/types/data'
+import { DEFAULT_TABLE_VISUALIZATION } from '#/lib/visualizationOrder'
 import type { VisualizationDefinition } from '#/types/visualization'
 
 const STORAGE_KEY = 'wpa-data-layer-v3'
@@ -84,7 +85,18 @@ export const useDataStore = create<DataState>()(
           createdAt: now,
           updatedAt: now,
         }
-        set((s) => ({ queries: [...s.queries, query], version: s.version + 1 }))
+        const tableViz: VisualizationDefinition = {
+          id: id('viz'),
+          queryId: query.id,
+          ...DEFAULT_TABLE_VISUALIZATION,
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((s) => ({
+          queries: [...s.queries, query],
+          visualizations: [...s.visualizations, tableViz],
+          version: s.version + 1,
+        }))
         return query
       },
 

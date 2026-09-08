@@ -27,6 +27,35 @@ async function fetchWidgetsForDashboard(
   return ((data ?? []) as DbDashboardWidget[]).map(mapDbDashboardWidget)
 }
 
+export async function fetchWidgetsByVisualizationId(
+  orgId: string,
+  visualizationId: string,
+): Promise<DashboardWidget[]> {
+  const supabase = getSupabase()
+  if (!supabase) return []
+
+  const { data, error } = await supabase
+    .from('dashboard_widgets')
+    .select('*')
+    .eq('organization_id', orgId)
+    .eq('visualization_id', visualizationId)
+    .order('created_at', { ascending: true })
+
+  throwIfSupabaseError(error, 'api.fetchWidgetsByVisualization', { orgId, visualizationId })
+  return ((data ?? []) as DbDashboardWidget[]).map(mapDbDashboardWidget)
+}
+
+export function useWidgetsByVisualization(orgId: string | null, visualizationId: string | null) {
+  return useQuery({
+    queryKey:
+      orgId && visualizationId
+        ? workspaceKeys.widgetsByVisualization(orgId, visualizationId)
+        : ['workspace', 'widgets-by-viz', 'none'],
+    queryFn: () => fetchWidgetsByVisualizationId(orgId!, visualizationId!),
+    enabled: Boolean(orgId && visualizationId),
+  })
+}
+
 export function useWidgets(orgId: string | null, dashboardId: string | null) {
   return useQuery({
     queryKey:

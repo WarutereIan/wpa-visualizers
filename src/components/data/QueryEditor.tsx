@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { QueryBuilder, type Field, type RuleGroupType } from 'react-querybuilder'
 import 'react-querybuilder/dist/query-builder.css'
+import { VisualizationTabs } from '#/components/data/VisualizationTabs'
 import { Button } from '#/components/ui/button'
 import {
   AGGREGATION_OPERATORS,
   createDefaultAggregation,
   useRunQueryResult,
+  useWorkspaceData,
 } from '#/hooks/useWorkspaceData'
 import {
   defaultAggregationAlias,
@@ -61,6 +63,8 @@ export function QueryEditor({
       query.limit != null,
   )
   const [showSchema, setShowSchema] = useState(false)
+  const { queries: savedQueries } = useWorkspaceData()
+  const isSavedQuery = Boolean(query.id) && savedQueries.some((q) => q.id === query.id)
 
   const activeTable = tables.find((t) => t.id === query.tableId)
   const hasLocalRows = (activeTable?.rows?.length ?? 0) > 0
@@ -127,6 +131,15 @@ export function QueryEditor({
       previewError={previewError}
       compact={compact}
       sticky={splitPreview}
+      visualizationTabs={
+        isSavedQuery ? (
+          <VisualizationTabs
+            query={query}
+            previewRows={previewRows}
+            sourceColumns={activeTable.columns}
+          />
+        ) : null
+      }
     />
   )
 
@@ -563,6 +576,7 @@ function PreviewPanel({
   previewError,
   compact,
   sticky,
+  visualizationTabs,
 }: {
   resultFieldHint: string[]
   previewDisplayRows: Record<string, unknown>[]
@@ -570,6 +584,7 @@ function PreviewPanel({
   previewError: string | null
   compact: boolean
   sticky: boolean
+  visualizationTabs?: React.ReactNode
 }) {
   return (
     <div
@@ -633,6 +648,7 @@ function PreviewPanel({
           </table>
         )}
       </div>
+      {visualizationTabs}
     </div>
   )
 }

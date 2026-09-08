@@ -4,6 +4,7 @@ import {
   useDeleteWidget,
   useUpdateWidget,
   useWidgets,
+  useWidgetsByVisualization,
 } from '#/lib/api/widgets'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useDashboardStore } from '#/stores/dashboardStore'
@@ -68,6 +69,28 @@ export function useDashboardWidgets(dashboardId: string | null) {
     createWidget,
     updateWidget,
     removeWidget,
+    isLoading: workspaceReady ? serverQuery.isLoading : false,
+  }
+}
+
+/** Widgets that reference a visualization — used to block viz delete (Redash behavior). */
+export function useVisualizationWidgetRefs(visualizationId: string | null) {
+  const workspaceReady = useWorkspaceReady()
+  const orgId = useOrgId()
+  const demoWidgets = useDashboardStore((s) => s.widgets)
+  const serverQuery = useWidgetsByVisualization(
+    workspaceReady ? orgId : null,
+    workspaceReady ? visualizationId : null,
+  )
+
+  const widgets = workspaceReady
+    ? (serverQuery.data ?? [])
+    : visualizationId
+      ? demoWidgets.filter((w) => w.visualizationId === visualizationId)
+      : []
+
+  return {
+    widgets,
     isLoading: workspaceReady ? serverQuery.isLoading : false,
   }
 }
