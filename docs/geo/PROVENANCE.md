@@ -28,7 +28,7 @@ Africa is a subset of the world layer: features whose `continent` / `CONTINENT` 
 Geometries are simplified with [mapshaper](https://github.com/mbloch/mapshaper) (Visvalingam, `keep-shapes`) so Kenya ADM2 stays in a web-friendly size (target under ~2–3 MB). Feature `properties` are normalized so every feature has:
 
 - `name` — human-readable label
-- `code` — join key (ISO alpha-2 for countries; Kenya ADM1 uses ISO 3166-2 `shapeISO` when present, otherwise `shapeID`)
+- `code` — join key (ISO alpha-2 for countries; Kenya ADM1 uses ISO 3166-2 `shapeISO` when present, otherwise `shapeID`). **Kenya ADM2:** `shapeISO` is usually empty, so `code` is the opaque geoBoundaries `shapeID` — prefer joining on `name` for human sub-county labels unless your data uses shape IDs.
 
 Original properties (`iso_a2`, `iso_a3`, `shapeName`, `shapeID`, `shapeGroup`, and Natural Earth fields when present) are retained.
 

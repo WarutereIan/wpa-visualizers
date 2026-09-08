@@ -19,7 +19,16 @@ export function ChoroplethAuthoringHint() {
           County-level Kenya data: choose the <strong className="text-[var(--sea-ink)]">Kenya Counties</strong>{' '}
           map and match your county codes or names.
         </li>
+        <li>
+          Sub-county Kenya data: use <strong className="text-[var(--sea-ink)]">Kenya Sub-counties</strong> and join
+          on <code className="rounded bg-[var(--surface)] px-1 py-0.5 font-mono text-[10px]">name</code> —{' '}
+          <code className="rounded bg-[var(--surface)] px-1 py-0.5 font-mono text-[10px]">code</code> is an opaque
+          shape ID.
+        </li>
       </ul>
+      <p className="mt-2 text-[10px] text-[var(--sea-ink-soft)]">
+        Kenya boundaries from geoBoundaries (CC BY 4.0).
+      </p>
     </div>
   )
 }
