@@ -125,7 +125,7 @@ export function useQueries(orgId: string | null) {
   })
 }
 
-export function useRunQuery(orgId: string | null, query: QueryDefinition | null) {
+export function useRunQuery(orgId: string | null, query: QueryDefinition | null, nonce?: number) {
   const fingerprint = query
     ? JSON.stringify({
         tableId: query.tableId,
@@ -141,7 +141,9 @@ export function useRunQuery(orgId: string | null, query: QueryDefinition | null)
   return useQuery({
     queryKey:
       orgId && query
-        ? [...workspaceKeys.queryResult(orgId, query.id), fingerprint]
+        ? nonce != null
+          ? [...workspaceKeys.queryResult(orgId, query.id), fingerprint, nonce]
+          : [...workspaceKeys.queryResult(orgId, query.id), fingerprint]
         : ['workspace', 'query-result', 'none'],
     queryFn: () => runQueryOnServer(orgId!, query!),
     enabled: Boolean(orgId && query),

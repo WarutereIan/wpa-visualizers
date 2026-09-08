@@ -7,6 +7,7 @@ import {
   useRunQuery,
   useUpdateQuery,
 } from '#/lib/api/queries'
+import { runQueryDefinition } from '#/lib/queryEngine'
 import { useImportTable, useTables, useDeleteTable, useUpdateTableColumnType } from '#/lib/api/tables'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import {
@@ -123,17 +124,46 @@ export function useWorkspaceData() {
   }
 }
 
-export function useRunQueryResult(query: QueryDefinition | null) {
+export function useRunQueryResult(query: QueryDefinition | null, nonce?: number) {
   const workspaceReady = useWorkspaceReady()
   const orgId = useOrgId()
-  const demoRunQuery = useDataStore((s) => s.runQuery)
-  const serverResult = useRunQuery(workspaceReady ? orgId : null, workspaceReady ? query : null)
+  const demoTables = useDataStore((s) => s.tables)
+  const serverResult = useRunQuery(
+    workspaceReady ? orgId : null,
+    workspaceReady ? query : null,
+    nonce,
+  )
 
   return useMemo(() => {
-    if (!query) return { rows: [] as DataRow[], isLoading: false }
+    if (!query) return { rows: [] as DataRow[], isLoading: false, error: null as string | null }
     if (!workspaceReady) {
-      return { rows: demoRunQuery(query.id), isLoading: false }
+      const table = demoTables.find((t) => t.id === query.tableId)
+      if (!table) {
+        return { rows: [] as DataRow[], isLoading: false, error: `Table not found: ${query.tableId}` }
+      }
+      try {
+        return { rows: runQueryDefinition(table, query, demoTables), isLoading: false, error: null }
+      } catch (err) {
+        return {
+          rows: [] as DataRow[],
+          isLoading: false,
+          error: err instanceof Error ? err.message : String(err),
+        }
+      }
     }
-    return { rows: serverResult.data ?? [], isLoading: serverResult.isLoading }
-  }, [query, workspaceReady, demoRunQuery, serverResult.data, serverResult.isLoading])
+    const error = serverResult.error
+      ? serverResult.error instanceof Error
+        ? serverResult.error.message
+        : String(serverResult.error)
+      : null
+    return { rows: serverResult.data ?? [], isLoading: serverResult.isLoading, error }
+  }, [
+    query,
+    workspaceReady,
+    demoTables,
+    nonce,
+    serverResult.data,
+    serverResult.isLoading,
+    serverResult.error,
+  ])
 }
