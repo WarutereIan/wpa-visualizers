@@ -19,6 +19,17 @@ export interface DataFilter {
   column: string
   operator: DataFilterOperator
   value: string
+  /** When set, value is supplied at runtime from this parameter instead of `value`. */
+  param?: string
+}
+
+export interface QueryParameter {
+  name: string
+  title: string
+  type: string
+  default: string | number | null
+  enumOptions?: string[]
+  queryId?: string
 }
 
 export type AggregationOperator = 'sum' | 'count' | 'avg'
@@ -65,6 +76,7 @@ export interface QueryDefinition {
   computedFields?: QueryComputedField[]
   sort?: QuerySort[]
   limit?: number | null
+  parameters?: QueryParameter[]
   createdAt: string
   updatedAt: string
 }
@@ -87,6 +99,7 @@ export function mapQueryDefinitionFromDb(qrow: Record<string, unknown>): QueryDe
     computedFields: (qrow.computed_fields as QueryDefinition['computedFields']) ?? [],
     sort: (qrow.sort as QueryDefinition['sort']) ?? [],
     limit: (qrow.row_limit as number | null | undefined) ?? null,
+    parameters: (qrow.parameters as QueryDefinition['parameters']) ?? [],
     createdAt: String(qrow.created_at ?? ''),
     updatedAt: String(qrow.updated_at ?? ''),
   }

@@ -1,5 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
+import {
+  applyParameters,
+  parameterMappingsFromWidgetOptions,
+  resolvePublicDefaultValues,
+} from '../_shared/params.ts'
 import { executeQueryForOrg } from '../_shared/runQueryEngine.ts'
 import { mapQueryDefinitionFromDb } from '../_shared/types.ts'
 
@@ -191,14 +196,37 @@ Deno.serve(async (req) => {
       const queryResults: Record<string, Record<string, unknown>[]> = {}
       const queryErrors: Record<string, string> = {}
 
+      const vizById = new Map(
+        visualizations.map((v: { id: string; query_id: string }) => [v.id, v]),
+      )
+      const mappingsByQueryId = new Map<
+        string,
+        ReturnType<typeof parameterMappingsFromWidgetOptions>
+      >()
+      for (const widget of widgets) {
+        const vizId = (widget as { visualization_id: string | null }).visualization_id
+        if (!vizId) continue
+        const viz = vizById.get(vizId)
+        if (!viz || mappingsByQueryId.has(viz.query_id)) continue
+        mappingsByQueryId.set(
+          viz.query_id,
+          parameterMappingsFromWidgetOptions((widget as { options?: unknown }).options),
+        )
+      }
+
       for (const qrow of queries) {
         const queryDef = mapQueryDefinitionFromDb(qrow as Record<string, unknown>)
+        const values = resolvePublicDefaultValues(
+          queryDef.parameters ?? [],
+          mappingsByQueryId.get(queryDef.id),
+        )
+        const executable = applyParameters(queryDef, values)
         try {
           queryResults[queryDef.id] = await executeQueryForOrg(
             admin,
             link.organization_id,
-            queryDef.tableId,
-            queryDef,
+            executable.tableId,
+            executable,
           )
         } catch (err) {
           queryErrors[queryDef.id] = err instanceof Error ? err.message : 'Query failed'
