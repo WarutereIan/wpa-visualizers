@@ -1,0 +1,93 @@
+{
+  "generatedBy": "scripts/prepare-geo.mjs",
+  "generatedAt": "2026-09-08T07:13:31.452Z",
+  "maps": [
+    {
+      "id": "world-countries",
+      "file": "world-countries.geojson",
+      "targetField": "code",
+      "fieldNames": {
+        "ABBREV": "ABBREV",
+        "ADMIN": "Admin name",
+        "CONTINENT": "Continent (Natural Earth)",
+        "ISO_A2": "ISO alpha-2 (Natural Earth)",
+        "ISO_A3": "ISO alpha-3 (Natural Earth)",
+        "ISO_N3": "ISO N3",
+        "NAME": "Natural Earth name",
+        "NAME_LONG": "Natural Earth long name",
+        "REGION_UN": "UN region",
+        "SUBREGION": "Subregion",
+        "code": "Code",
+        "continent": "Continent",
+        "iso_a2": "ISO 3166-1 alpha-2",
+        "iso_a3": "ISO 3166-1 alpha-3",
+        "name": "Name"
+      },
+      "source": "Natural Earth 110m Admin-0 countries (https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson)",
+      "license": "Public Domain (Natural Earth)",
+      "featureCount": 177,
+      "bytes": 240022
+    },
+    {
+      "id": "africa-countries",
+      "file": "africa-countries.geojson",
+      "targetField": "code",
+      "fieldNames": {
+        "ABBREV": "ABBREV",
+        "ADMIN": "Admin name",
+        "CONTINENT": "Continent (Natural Earth)",
+        "ISO_A2": "ISO alpha-2 (Natural Earth)",
+        "ISO_A3": "ISO alpha-3 (Natural Earth)",
+        "ISO_N3": "ISO N3",
+        "NAME": "Natural Earth name",
+        "NAME_LONG": "Natural Earth long name",
+        "REGION_UN": "UN region",
+        "SUBREGION": "Subregion",
+        "code": "Code",
+        "continent": "Continent",
+        "iso_a2": "ISO 3166-1 alpha-2",
+        "iso_a3": "ISO 3166-1 alpha-3",
+        "name": "Name"
+      },
+      "source": "Natural Earth 110m Admin-0 countries (https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson); filtered to Africa (continent or ISO region)",
+      "license": "Public Domain (Natural Earth)",
+      "featureCount": 51,
+      "bytes": 54468
+    },
+    {
+      "id": "kenya-counties",
+      "file": "kenya-counties.geojson",
+      "targetField": "code",
+      "fieldNames": {
+        "code": "Code",
+        "name": "Name",
+        "shapeGroup": "Shape group",
+        "shapeID": "Shape ID",
+        "shapeISO": "Shape ISO",
+        "shapeName": "Shape name",
+        "shapeType": "Shape type"
+      },
+      "source": "geoBoundaries gbOpen Kenya ADM1 (Counties) year 2020 (https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/KEN/ADM1/geoBoundaries-KEN-ADM1_simplified.geojson)",
+      "license": "Public Domain; distributed by geoBoundaries under CC BY 4.0",
+      "featureCount": 47,
+      "bytes": 171224
+    },
+    {
+      "id": "kenya-subcounties",
+      "file": "kenya-subcounties.geojson",
+      "targetField": "code",
+      "fieldNames": {
+        "code": "Code",
+        "name": "Name",
+        "shapeGroup": "Shape group",
+        "shapeID": "Shape ID",
+        "shapeName": "Shape name",
+        "shapeType": "Shape type"
+      },
+      "source": "geoBoundaries gbOpen Kenya ADM2 (Sub-Counties) year 2020 (https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/KEN/ADM2/geoBoundaries-KEN-ADM2_simplified.geojson)",
+      "license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO); distributed by geoBoundaries under CC BY 4.0",
+      "featureCount": 290,
+      "bytes": 272563
+    }
+  ]
+}
