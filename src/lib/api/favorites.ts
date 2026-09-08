@@ -18,7 +18,7 @@ function mapDbFavorite(row: DbFavorite): FavoriteItem {
   return { objectType: row.object_type, objectId: row.object_id }
 }
 
-async function fetchFavoritesForOrg(orgId: string): Promise<FavoriteItem[]> {
+async function fetchFavoritesForOrg(orgId: string, userId: string): Promise<FavoriteItem[]> {
   const supabase = getSupabase()
   if (!supabase) return []
 
@@ -26,17 +26,18 @@ async function fetchFavoritesForOrg(orgId: string): Promise<FavoriteItem[]> {
     .from('favorites')
     .select('*')
     .eq('organization_id', orgId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   throwIfSupabaseError(error, 'api.fetchFavorites', { orgId })
   return ((data ?? []) as DbFavorite[]).map(mapDbFavorite)
 }
 
-export function useFavoritesQuery(orgId: string | null) {
+export function useFavoritesQuery(orgId: string | null, userId: string | null) {
   return useQuery({
     queryKey: orgId ? workspaceKeys.favorites(orgId) : ['workspace', 'favorites', 'none'],
-    queryFn: () => fetchFavoritesForOrg(orgId!),
-    enabled: Boolean(orgId),
+    queryFn: () => fetchFavoritesForOrg(orgId!, userId!),
+    enabled: Boolean(orgId) && Boolean(userId),
   })
 }
 

@@ -17,7 +17,7 @@ export function useFavorites() {
   const demoIsFavorite = useDashboardStore((s) => s.isFavorite)
   const demoToggle = useDashboardStore((s) => s.toggleFavorite)
 
-  const serverQuery = useFavoritesQuery(workspaceReady ? orgId : null)
+  const serverQuery = useFavoritesQuery(workspaceReady ? orgId : null, workspaceReady ? userId : null)
   const toggleMutation = useToggleFavoriteMutation(
     workspaceReady ? orgId : null,
     workspaceReady ? userId : null,
