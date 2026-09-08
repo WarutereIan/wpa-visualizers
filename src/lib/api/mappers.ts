@@ -69,6 +69,7 @@ export interface DbDashboard {
   widgets: unknown
   theme?: unknown
   status: 'draft' | 'published' | 'archived'
+  tags?: string[]
   created_at: string
   updated_at: string
 }
@@ -187,6 +188,7 @@ export function mapDbDashboard(row: DbDashboard): DashboardDefinition {
     widgets: (row.widgets as DashboardDefinition['widgets']) ?? {},
     theme: normalizeDashboardTheme(row.theme),
     status: row.status,
+    tags: row.tags ?? [],
   }
 }
 
@@ -203,6 +205,7 @@ export function mapDashboardToDb(
     widgets: dashboard.widgets,
     theme: normalizeDashboardTheme(dashboard.theme),
     status: dashboard.status ?? 'draft',
+    tags: dashboard.tags ?? [],
   }
 }
 

@@ -101,18 +101,26 @@ function DashboardsIndexPage() {
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--line)] pt-3">
                   <Button variant="outline" size="sm" asChild>
-                    <Link to="/dashboards/$dashboardId/manage" params={{ dashboardId: item.id }}>
+                    <Link
+                      to="/dashboards/$dashboardId"
+                      params={{ dashboardId: item.id }}
+                      search={{ edit: true }}
+                    >
                       {item.kind === 'draft-only' ? 'Continue' : 'Edit'}
                     </Link>
                   </Button>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to="/dashboards/$dashboardId/preview" params={{ dashboardId: item.id }}>
-                      Preview
+                    <Link
+                      to="/dashboards/$dashboardId"
+                      params={{ dashboardId: item.id }}
+                      search={{ edit: false }}
+                    >
+                      View
                     </Link>
                   </Button>
                   {item.kind !== 'draft-only' && (
                     <Button variant="ghost" size="sm" asChild>
-                      <Link to="/dashboards/$dashboardId" params={{ dashboardId: item.id }}>
+                      <Link to="/dashboards/$dashboardId" params={{ dashboardId: item.id }} search={{ edit: false }}>
                         Open live
                       </Link>
                     </Button>

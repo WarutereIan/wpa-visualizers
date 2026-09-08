@@ -200,8 +200,11 @@ export default defineConfig(({ mode }) => ({
   define: {
     global: 'globalThis',
   },
+  ssr: {
+    noExternal: ['dompurify', 'markdown-it'],
+  },
   optimizeDeps: {
-    include: ['lodash', 'moment'],
+    include: ['lodash', 'moment', 'dompurify', 'markdown-it'],
     exclude: ['d3', 'plotly.js', 'plotly.js/dist/plotly.min.js', 'plotly.js/dist/plotly.js'],
     esbuildOptions: {
       define: {

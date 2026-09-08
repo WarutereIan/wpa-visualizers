@@ -9,7 +9,7 @@ import {
 } from '#/lib/api/mappers'
 import { workspaceKeys } from '#/lib/api/workspace'
 
-async function fetchWidgetsForDashboard(
+export async function fetchWidgetsForDashboard(
   orgId: string,
   dashboardId: string,
 ): Promise<DashboardWidget[]> {

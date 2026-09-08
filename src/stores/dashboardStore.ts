@@ -39,13 +39,18 @@ export function createNewDashboardDraft(opts?: {
   }
 }
 
+type DashboardUpdatePatch = Partial<
+  Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags'>
+>
+
 interface DashboardState {
   dashboards: DashboardDefinition[]
   widgets: DashboardWidget[]
   addDashboard: (name: string, description?: string) => DashboardDefinition
   /** Create or replace by id (used by dashboard builder save) */
   upsertDashboard: (d: DashboardDefinition) => void
-  updateDashboard: (id: string, patch: Partial<Pick<DashboardDefinition, 'name' | 'description' | 'layout' | 'widgets' | 'theme'>>) => void
+  updateDashboard: (id: string, patch: DashboardUpdatePatch) => void
+  duplicateDashboard: (id: string) => DashboardDefinition | undefined
   removeDashboard: (id: string) => void
   getById: (id: string) => DashboardDefinition | undefined
   listWidgets: (dashboardId: string) => DashboardWidget[]
@@ -102,6 +107,44 @@ export const useDashboardStore = create<DashboardState>()(
               : d,
           ),
         }))
+      },
+
+      duplicateDashboard: (id) => {
+        const existing = get().dashboards.find((d) => d.id === id)
+        if (!existing) return undefined
+        const now = nowIso()
+        const copyId = crypto.randomUUID()
+        const copy: DashboardDefinition = {
+          ...existing,
+          id: copyId,
+          name: `Copy of: ${existing.name}`,
+          status: 'draft',
+          tags: existing.tags ? [...existing.tags] : undefined,
+          theme: existing.theme ? { ...existing.theme } : undefined,
+          createdAt: now,
+          updatedAt: now,
+        }
+        const copiedWidgets = get()
+          .widgets.filter((w) => w.dashboardId === id)
+          .map((w) => ({
+            ...w,
+            id: crypto.randomUUID(),
+            dashboardId: copyId,
+            options: {
+              ...w.options,
+              position: { ...w.options.position },
+              parameterMappings: w.options.parameterMappings
+                ? { ...w.options.parameterMappings }
+                : undefined,
+            },
+            createdAt: now,
+            updatedAt: now,
+          }))
+        set((s) => ({
+          dashboards: [...s.dashboards, copy],
+          widgets: [...s.widgets, ...copiedWidgets],
+        }))
+        return copy
       },
 
       removeDashboard: (id) => {

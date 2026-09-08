@@ -36,9 +36,7 @@ import { Route as DataManagementImportRouteImport } from './routes/data-manageme
 import { Route as DashboardsAddRouteImport } from './routes/dashboards.add'
 import { Route as DashboardsDashboardIdRouteImport } from './routes/dashboards.$dashboardId'
 import { Route as ConnectionsConnectionIdRouteImport } from './routes/connections.$connectionId'
-import { Route as DashboardsDashboardIdPreviewRouteImport } from './routes/dashboards.$dashboardId.preview'
 import { Route as DashboardsDashboardIdManageRouteImport } from './routes/dashboards.$dashboardId.manage'
-import { Route as DashboardsDashboardIdEditRouteImport } from './routes/dashboards.$dashboardId.edit'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -177,22 +175,10 @@ const ConnectionsConnectionIdRoute = ConnectionsConnectionIdRouteImport.update({
   path: '/$connectionId',
   getParentRoute: () => ConnectionsRoute,
 } as any)
-const DashboardsDashboardIdPreviewRoute =
-  DashboardsDashboardIdPreviewRouteImport.update({
-    id: '/preview',
-    path: '/preview',
-    getParentRoute: () => DashboardsDashboardIdRoute,
-  } as any)
 const DashboardsDashboardIdManageRoute =
   DashboardsDashboardIdManageRouteImport.update({
     id: '/manage',
     path: '/manage',
-    getParentRoute: () => DashboardsDashboardIdRoute,
-  } as any)
-const DashboardsDashboardIdEditRoute =
-  DashboardsDashboardIdEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
     getParentRoute: () => DashboardsDashboardIdRoute,
   } as any)
 
@@ -224,9 +210,7 @@ export interface FileRoutesByFullPath {
   '/dashboards/': typeof DashboardsIndexRoute
   '/mappings/': typeof MappingsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
-  '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
-  '/dashboards/$dashboardId/preview': typeof DashboardsDashboardIdPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -256,9 +240,7 @@ export interface FileRoutesByTo {
   '/dashboards': typeof DashboardsIndexRoute
   '/mappings': typeof MappingsIndexRoute
   '/projects': typeof ProjectsIndexRoute
-  '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
-  '/dashboards/$dashboardId/preview': typeof DashboardsDashboardIdPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -289,9 +271,7 @@ export interface FileRoutesById {
   '/dashboards/': typeof DashboardsIndexRoute
   '/mappings/': typeof MappingsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
-  '/dashboards/$dashboardId/edit': typeof DashboardsDashboardIdEditRoute
   '/dashboards/$dashboardId/manage': typeof DashboardsDashboardIdManageRoute
-  '/dashboards/$dashboardId/preview': typeof DashboardsDashboardIdPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -323,9 +303,7 @@ export interface FileRouteTypes {
     | '/dashboards/'
     | '/mappings/'
     | '/projects/'
-    | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
-    | '/dashboards/$dashboardId/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -355,9 +333,7 @@ export interface FileRouteTypes {
     | '/dashboards'
     | '/mappings'
     | '/projects'
-    | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
-    | '/dashboards/$dashboardId/preview'
   id:
     | '__root__'
     | '/'
@@ -387,9 +363,7 @@ export interface FileRouteTypes {
     | '/dashboards/'
     | '/mappings/'
     | '/projects/'
-    | '/dashboards/$dashboardId/edit'
     | '/dashboards/$dashboardId/manage'
-    | '/dashboards/$dashboardId/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -609,25 +583,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConnectionsConnectionIdRouteImport
       parentRoute: typeof ConnectionsRoute
     }
-    '/dashboards/$dashboardId/preview': {
-      id: '/dashboards/$dashboardId/preview'
-      path: '/preview'
-      fullPath: '/dashboards/$dashboardId/preview'
-      preLoaderRoute: typeof DashboardsDashboardIdPreviewRouteImport
-      parentRoute: typeof DashboardsDashboardIdRoute
-    }
     '/dashboards/$dashboardId/manage': {
       id: '/dashboards/$dashboardId/manage'
       path: '/manage'
       fullPath: '/dashboards/$dashboardId/manage'
       preLoaderRoute: typeof DashboardsDashboardIdManageRouteImport
-      parentRoute: typeof DashboardsDashboardIdRoute
-    }
-    '/dashboards/$dashboardId/edit': {
-      id: '/dashboards/$dashboardId/edit'
-      path: '/edit'
-      fullPath: '/dashboards/$dashboardId/edit'
-      preLoaderRoute: typeof DashboardsDashboardIdEditRouteImport
       parentRoute: typeof DashboardsDashboardIdRoute
     }
   }
@@ -671,15 +631,11 @@ const OutputsAndIndicatorsRouteWithChildren =
   OutputsAndIndicatorsRoute._addFileChildren(OutputsAndIndicatorsRouteChildren)
 
 interface DashboardsDashboardIdRouteChildren {
-  DashboardsDashboardIdEditRoute: typeof DashboardsDashboardIdEditRoute
   DashboardsDashboardIdManageRoute: typeof DashboardsDashboardIdManageRoute
-  DashboardsDashboardIdPreviewRoute: typeof DashboardsDashboardIdPreviewRoute
 }
 
 const DashboardsDashboardIdRouteChildren: DashboardsDashboardIdRouteChildren = {
-  DashboardsDashboardIdEditRoute: DashboardsDashboardIdEditRoute,
   DashboardsDashboardIdManageRoute: DashboardsDashboardIdManageRoute,
-  DashboardsDashboardIdPreviewRoute: DashboardsDashboardIdPreviewRoute,
 }
 
 const DashboardsDashboardIdRouteWithChildren =
