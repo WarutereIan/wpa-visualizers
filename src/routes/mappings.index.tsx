@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { BoundaryMapsSection } from '#/components/geo/BoundaryMapsSection'
 import { useWorkspaceMappings } from '#/hooks/useWorkspaceMappings'
 import { Button } from '#/components/ui/button'
 
@@ -58,6 +59,8 @@ function MappingsIndexPage() {
           ))}
         </ul>
       )}
+
+      <BoundaryMapsSection />
     </div>
   )
 }
