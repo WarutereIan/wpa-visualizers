@@ -1,24 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { AddTextboxModal } from '#/components/dashboard/redash/AddTextboxModal'
 import { AddWidgetModal } from '#/components/dashboard/redash/AddWidgetModal'
 import { DashboardGrid } from '#/components/dashboard/redash/DashboardGrid'
 import { DashboardHeader } from '#/components/dashboard/redash/DashboardHeader'
+import { ParameterBar } from '#/components/dashboard/redash/ParameterBar'
 import { Button } from '#/components/ui/button'
 import { useDashboardWidgets } from '#/hooks/useDashboardWidgets'
 import { useWorkspaceDashboards } from '#/hooks/useWorkspaceDashboards'
+import { useWorkspaceData } from '#/hooks/useWorkspaceData'
+import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
 import { useWorkspaceReady } from '#/lib/api/workspace'
+import { collectDashboardParameters, defaultParameterValues } from '#/lib/dashboardParameters'
 import { canEditDashboards } from '#/lib/permissions'
+import type { ParameterValues } from '#/lib/queryParameters'
 import { useAuthStore } from '#/stores/authStore'
 import type { DashboardWidget } from '#/types/visualization'
 
 const ARCHIVE_CONFIRM =
   'Archive Dashboard? This dashboard will be removed from the dashboards list...'
-
-function DashboardParameterBar() {
-  // Task 13: dashboard-level parameter controls
-  return null
-}
 
 export function DashboardPage({ dashboardId }: { dashboardId: string }) {
   const navigate = useNavigate()
@@ -28,7 +28,32 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
   const canEdit = canEditDashboards(role, workspaceReady)
   const { getById, updateDashboard, duplicateDashboard, isLoading } = useWorkspaceDashboards()
   const { widgets } = useDashboardWidgets(dashboardId)
+  const { queries } = useWorkspaceData()
+  const { visualizations } = useWorkspaceVisualizations()
   const dashboard = getById(dashboardId)
+
+  const dashboardParams = useMemo(
+    () => collectDashboardParameters(widgets, visualizations, queries),
+    [widgets, visualizations, queries],
+  )
+  const [dashboardParamValues, setDashboardParamValues] = useState<ParameterValues>({})
+
+  useEffect(() => {
+    setDashboardParamValues((prev) => {
+      const seeded = defaultParameterValues(dashboardParams)
+      const next: ParameterValues = {}
+      let changed = Object.keys(prev).some((key) => !(key in seeded))
+      for (const param of dashboardParams) {
+        if (param.name in prev) {
+          next[param.name] = prev[param.name]
+        } else {
+          next[param.name] = seeded[param.name]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [dashboardParams])
 
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [autoRefreshSeconds, setAutoRefreshSeconds] = useState<number | null>(null)
@@ -113,18 +138,19 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
         onRename={(name) => void updateDashboard(dashboardId, { name })}
       />
 
-      <DashboardParameterBar />
+      <ParameterBar
+        parameters={dashboardParams}
+        values={dashboardParamValues}
+        onApply={setDashboardParamValues}
+      />
 
       <DashboardGrid
         dashboardId={dashboardId}
         editing={editing}
-        dashboardParamValues={{}}
+        dashboardParamValues={dashboardParamValues}
         refreshNonce={refreshNonce}
         onEditWidget={(widget) => {
-          if (widget.visualizationId) {
-            // Task 13: widget-level parameter editor
-            return
-          }
+          if (widget.visualizationId) return
           setTextboxEdit(widget)
           setTextboxModalOpen(true)
         }}

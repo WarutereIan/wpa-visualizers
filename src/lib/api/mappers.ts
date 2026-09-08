@@ -9,7 +9,7 @@ import type {
 } from '#/types/data'
 import type { DashboardDefinition } from '#/types/dashboard'
 import type { MappingDefinition } from '#/types/mapping'
-import type { DashboardWidget, RedashVisualizationType, VisualizationDefinition } from '#/types/visualization'
+import type { DashboardWidget, QueryParameter, RedashVisualizationType, VisualizationDefinition } from '#/types/visualization'
 import { normalizeDashboardTheme } from '#/lib/chartPalettes'
 import type {
   OutputIndicatorLink,
@@ -56,6 +56,7 @@ export interface DbQueryDefinition {
   group_by_grains?: unknown
   computed_fields?: unknown
   joins?: unknown
+  parameters?: unknown
   created_at: string
   updated_at: string
 }
@@ -151,6 +152,7 @@ export function mapDbQuery(row: DbQueryDefinition): QueryDefinition {
     groupByGrains: (row.group_by_grains as QueryDefinition['groupByGrains']) ?? {},
     computedFields: (row.computed_fields as QueryDefinition['computedFields']) ?? [],
     joins: (row.joins as QueryDefinition['joins']) ?? [],
+    parameters: (row.parameters as QueryParameter[]) ?? [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -174,6 +176,7 @@ export function mapQueryToDb(
     group_by_grains: query.groupByGrains ?? {},
     computed_fields: query.computedFields ?? [],
     joins: query.joins ?? [],
+    parameters: query.parameters ?? [],
   }
 }
 

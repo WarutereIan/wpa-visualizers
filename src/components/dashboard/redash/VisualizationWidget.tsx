@@ -2,12 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { MoreHorizontal, RefreshCw } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { ParameterInput } from '#/components/dashboard/redash/ParameterInput'
+import { ParameterMappingForm } from '#/components/dashboard/redash/ParameterMappingForm'
 import { useVizLib } from '#/components/data/vizLibClient'
+import { Button } from '#/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
+import { useDashboardWidgets } from '#/hooks/useDashboardWidgets'
 import { useVisualizationResult } from '#/hooks/useVisualizationResult'
 import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
-import { type ParameterValues, resolveWidgetParameters } from '#/lib/queryParameters'
-import type { DashboardWidget, RedashQueryResult } from '#/types/visualization'
+import { defaultParameterMappings } from '#/lib/addWidget'
+import { defaultParameterValues } from '#/lib/dashboardParameters'
+import { usedParameters, type ParameterValues, resolveWidgetParameters } from '#/lib/queryParameters'
+import type { DashboardWidget, ParameterMapping, RedashQueryResult } from '#/types/visualization'
 
 export type VisualizationWidgetProps = {
   widget: DashboardWidget
@@ -70,7 +83,6 @@ export function VisualizationWidget({
   editing,
   paramValues,
   refreshNonce,
-  onEdit,
   onRemove,
 }: VisualizationWidgetProps) {
   const { Renderer, error: vizError } = useVizLib()
@@ -80,6 +92,44 @@ export function VisualizationWidget({
   const catalogQuery = visualization
     ? (queries.find((item) => item.id === visualization.queryId) ?? null)
     : null
+  const { updateWidget } = useDashboardWidgets(widget.dashboardId)
+
+  const usedParams = useMemo(
+    () => (catalogQuery ? usedParameters(catalogQuery) : []),
+    [catalogQuery],
+  )
+  const widgetLevelParams = useMemo(
+    () =>
+      usedParams.filter((param) => {
+        const mapping = widget.options.parameterMappings?.[param.name]
+        return !mapping || mapping.type === 'widget-level'
+      }),
+    [usedParams, widget.options.parameterMappings],
+  )
+
+  const [widgetValues, setWidgetValues] = useState<ParameterValues>({})
+  useEffect(() => {
+    setWidgetValues((prev) => {
+      const seeded = defaultParameterValues(widgetLevelParams)
+      const next: ParameterValues = {}
+      let changed = Object.keys(prev).some((key) => !(key in seeded))
+      for (const param of widgetLevelParams) {
+        const mapping = widget.options.parameterMappings?.[param.name]
+        const key = mapping?.type === 'widget-level' ? mapping.mapTo : param.name
+        if (key in prev) {
+          next[key] = prev[key]
+        } else {
+          next[key] = seeded[param.name]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [widgetLevelParams, widget.options.parameterMappings])
+
+  const [mappingOpen, setMappingOpen] = useState(false)
+  const [draftMappings, setDraftMappings] = useState<Record<string, ParameterMapping>>({})
+  const [savingMappings, setSavingMappings] = useState(false)
 
   const resolvedParams = useMemo(
     () =>
@@ -87,9 +137,9 @@ export function VisualizationWidget({
         catalogQuery?.parameters ?? [],
         widget.options.parameterMappings,
         paramValues,
-        {},
+        widgetValues,
       ),
-    [catalogQuery?.parameters, widget.options.parameterMappings, paramValues],
+    [catalogQuery?.parameters, widget.options.parameterMappings, paramValues, widgetValues],
   )
 
   const { result, query, isLoading, error, lastRefreshedAt } = useVisualizationResult(
@@ -155,7 +205,12 @@ export function VisualizationWidget({
               type="button"
               onClick={() => {
                 setMenuOpen(false)
-                onEdit()
+                setDraftMappings(
+                  Object.keys(widget.options.parameterMappings ?? {}).length > 0
+                    ? (widget.options.parameterMappings ?? {})
+                    : defaultParameterMappings(usedParams),
+                )
+                setMappingOpen(true)
               }}
             >
               Edit Parameters
@@ -192,6 +247,25 @@ export function VisualizationWidget({
         </div>
       </header>
 
+      {widgetLevelParams.length > 0 ? (
+        <div className="rd-tile-params">
+          {widgetLevelParams.map((parameter) => {
+            const mapping = widget.options.parameterMappings?.[parameter.name]
+            const key = mapping?.type === 'widget-level' ? mapping.mapTo : parameter.name
+            return (
+              <label key={parameter.name} className="rd-filter">
+                <span className="rd-filter-label">{parameter.title || parameter.name}</span>
+                <ParameterInput
+                  parameter={parameter}
+                  value={widgetValues[key] ?? parameter.default ?? null}
+                  onChange={(next) => setWidgetValues((prev) => ({ ...prev, [key]: next }))}
+                />
+              </label>
+            )
+          })}
+        </div>
+      ) : null}
+
       <div className="rd-tile-body">
         {vizError ? (
           <div className="rd-muted">{vizError}</div>
@@ -221,6 +295,42 @@ export function VisualizationWidget({
           {formatRefreshedAt(lastRefreshedAt)}
         </span>
       </footer>
+
+      <Dialog open={mappingOpen} onOpenChange={setMappingOpen}>
+        <DialogContent className="sm:max-w-2xl" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit Parameters</DialogTitle>
+          </DialogHeader>
+          {usedParams.length === 0 ? (
+            <p className="text-sm text-[var(--sea-ink-soft)]">This query has no parameters.</p>
+          ) : (
+            <ParameterMappingForm
+              parameters={usedParams}
+              value={draftMappings}
+              onChange={setDraftMappings}
+            />
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setMappingOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={savingMappings}
+              onClick={() => {
+                setSavingMappings(true)
+                void updateWidget(widget.id, {
+                  options: { ...widget.options, parameterMappings: draftMappings },
+                })
+                  .then(() => setMappingOpen(false))
+                  .finally(() => setSavingMappings(false))
+              }}
+            >
+              {savingMappings ? 'Saving…' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

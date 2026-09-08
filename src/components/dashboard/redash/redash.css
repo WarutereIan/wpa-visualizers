@@ -139,12 +139,23 @@
   justify-content: center;
 }
 
+.rd-parameter-bar {
+  margin: 0 0 12px;
+}
+
 .rd-filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.rd-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 8rem;
 }
 
 .rd-filters input[type='date'] {
@@ -157,9 +168,18 @@
   font-size: 14px;
 }
 
-.rd-filters .rd-filter-label {
+.rd-filters .rd-filter-label,
+.rd-filter-label {
   font-size: 13px;
   color: rgba(0, 0, 0, 0.45);
+}
+
+.rd-tile-params {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 15px 8px;
 }
 
 .rd-grid {

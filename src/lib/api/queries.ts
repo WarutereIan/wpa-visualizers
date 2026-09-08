@@ -203,6 +203,7 @@ export function useUpdateQuery(orgId: string | null) {
       if (patch.groupByGrains !== undefined) update.group_by_grains = patch.groupByGrains
       if (patch.computedFields !== undefined) update.computed_fields = patch.computedFields
       if (patch.joins !== undefined) update.joins = patch.joins
+      if (patch.parameters !== undefined) update.parameters = patch.parameters
 
       const { data, error } = await supabase
         .from('query_definitions')

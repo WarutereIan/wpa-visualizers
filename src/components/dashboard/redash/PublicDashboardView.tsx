@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 import GridLayout, { WidthProvider } from 'react-grid-layout/legacy'
 import { DimesBiLogo } from '#/components/brand/DimesBiLogo'
+import { ParameterBar } from '#/components/dashboard/redash/ParameterBar'
 import { TextboxWidget } from '#/components/dashboard/redash/TextboxWidget'
 import { useVizLib } from '#/components/data/vizLibClient'
+import { collectDashboardParameters, defaultParameterValues } from '#/lib/dashboardParameters'
 import {
   mapDbDashboardWidget,
   mapDbQuery,
@@ -112,6 +114,8 @@ export function PublicDashboardView({
   const visualizations = payload.visualizations.map(mapDbVisualization)
   const queries = payload.queries.map(mapDbQuery)
   const layout = widgets.map(positionToLayoutItem)
+  const dashboardParams = collectDashboardParameters(widgets, visualizations, queries)
+  const dashboardParamValues = defaultParameterValues(dashboardParams)
 
   return (
     <div className="rd-page min-h-screen px-4 py-4 md:px-6">
@@ -125,6 +129,13 @@ export function PublicDashboardView({
       {payload.dashboard.description ? (
         <p className="mb-4 text-sm text-[rgba(0,0,0,0.45)]">{payload.dashboard.description}</p>
       ) : null}
+
+      <ParameterBar
+        parameters={dashboardParams}
+        values={dashboardParamValues}
+        onApply={() => undefined}
+        disabled
+      />
 
       {widgets.length === 0 ? (
         <div className="rd-empty">

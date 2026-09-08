@@ -1,6 +1,13 @@
-import { useMemo, useState } from 'react'
-import { QueryBuilder, type Field, type RuleGroupType } from 'react-querybuilder'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  QueryBuilder,
+  ValueEditor,
+  type Field,
+  type RuleGroupType,
+  type ValueEditorProps,
+} from 'react-querybuilder'
 import 'react-querybuilder/dist/query-builder.css'
+import { QueryParametersEditor } from '#/components/data/QueryParametersEditor'
 import { VisualizationTabs } from '#/components/data/VisualizationTabs'
 import { Button } from '#/components/ui/button'
 import {
@@ -28,6 +35,7 @@ import type {
   QueryAggregation,
   QueryDefinition,
 } from '#/types/data'
+import type { QueryParameter } from '#/types/visualization'
 
 export type QueryEditorProps = {
   query: QueryDefinition
@@ -112,6 +120,17 @@ export function QueryEditor({
   const groupBy = query.groupBy ?? []
   const aggregations = query.aggregations ?? []
   const gap = compact ? 'space-y-4' : 'space-y-5'
+
+  const setFilterParam = useCallback(
+    (filterId: string, param: string | undefined) => {
+      onChange({
+        filters: query.filters.map((filter) =>
+          filter.id === filterId ? { ...filter, param } : filter,
+        ),
+      })
+    },
+    [onChange, query.filters],
+  )
 
   if (!activeTable) {
     return (
@@ -255,19 +274,30 @@ export function QueryEditor({
         </div>
       </div>
 
+      <QueryParametersEditor
+        key={query.id}
+        parameters={query.parameters ?? []}
+        onChange={(parameters) => onChange({ parameters })}
+      />
+
       <div className="space-y-2">
         <p className="text-sm font-medium text-[var(--sea-ink)]">Filters</p>
         <p className="text-[11px] text-[var(--sea-ink-soft)]">
           Flat AND rules. Operators follow column type (contains for text, comparisons for numbers
-          and dates).
+          and dates). Bind a filter to a declared parameter to supply its value at runtime.
         </p>
         <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-2 [&_.ruleGroup]:space-y-2 [&_.ruleGroup-header]:mb-1">
           <QueryBuilder
             fields={queryFields}
             query={qbQuery}
-            onQueryChange={(next) => onChange({ filters: qbToDataFilters(next) })}
+            onQueryChange={(next) => onChange({ filters: qbToDataFilters(next, query.filters) })}
             showCombinatorsBetweenRules
-            controlElements={{ addGroupAction: () => null }}
+            controlElements={{ addGroupAction: () => null, valueEditor: FilterValueEditor }}
+            context={{
+              parameters: query.parameters ?? [],
+              filters: query.filters,
+              onBindParam: setFilterParam,
+            }}
           />
         </div>
       </div>
@@ -983,17 +1013,58 @@ function qbOperatorToData(op: string): DataFilterOperator {
   }
 }
 
+type FilterBuilderContext = {
+  parameters: QueryParameter[]
+  filters: DataFilter[]
+  onBindParam: (filterId: string, param: string | undefined) => void
+}
+
+function FilterValueEditor(props: ValueEditorProps) {
+  const ctx = (props as ValueEditorProps & { context?: FilterBuilderContext }).context
+  const filterId = String(props.rule.id ?? '')
+  const filters: DataFilter[] = ctx?.filters ?? []
+  const parameters: QueryParameter[] = ctx?.parameters ?? []
+  const bound = filters.find((filter) => filter.id === filterId)?.param
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <ValueEditor {...props} disabled={Boolean(bound) || props.disabled} />
+      <label className="flex items-center gap-1 text-[11px] text-[var(--sea-ink-soft)]">
+        bind to parameter
+        <select
+          aria-label={`Bind ${props.rule.field} to parameter`}
+          value={bound ?? ''}
+          className="h-7 rounded border border-[var(--line)] bg-[var(--surface-strong)] px-2 text-xs text-[var(--sea-ink)]"
+          onChange={(event) => ctx?.onBindParam(filterId, event.target.value || undefined)}
+        >
+          <option value="">None</option>
+          {parameters.map((param) => (
+            <option key={param.name} value={param.name}>
+              {param.title || param.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  )
+}
+
 /** Flat rules only — nested groups are not executed by the query engine. */
-function qbToDataFilters(query: RuleGroupType): DataFilter[] {
+function qbToDataFilters(query: RuleGroupType, previous: DataFilter[] = []): DataFilter[] {
   return query.rules
     .filter(
       (r): r is { id?: string; field: string; operator: string; value: string } =>
         typeof r === 'object' && 'field' in r,
     )
-    .map((rule, idx) => ({
-      id: rule.id ?? `flt-${idx}`,
-      column: rule.field,
-      operator: qbOperatorToData(rule.operator),
-      value: String(rule.value ?? ''),
-    }))
+    .map((rule, idx) => {
+      const id = rule.id ?? `flt-${idx}`
+      const prev = previous.find((filter) => filter.id === id)
+      return {
+        id,
+        column: rule.field,
+        operator: qbOperatorToData(rule.operator),
+        value: String(rule.value ?? ''),
+        ...(prev?.param ? { param: prev.param } : {}),
+      }
+    })
 }
