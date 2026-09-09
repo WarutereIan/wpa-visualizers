@@ -16,13 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useDashboardWidgets } from '#/hooks/useDashboardWidgets'
 import { useRunQueryResult, useWorkspaceData } from '#/hooks/useWorkspaceData'
@@ -32,7 +25,6 @@ import { filterByProjectScope, matchesProjectScope } from '#/lib/projectScope'
 import {
   defaultParameterMappings,
   filterQueriesByName,
-  pickDefaultVisualization,
   visualizationWidgetDraft,
 } from '#/lib/addWidget'
 import { previewQueryRows } from '#/lib/queryPreview'
@@ -71,7 +63,8 @@ export function AddWidgetModal({
   const [browseSearch, setBrowseSearch] = useState('')
   const [search, setSearch] = useState('')
   const [selectedQuery, setSelectedQuery] = useState<QueryDefinition | null>(null)
-  const [visualizationId, setVisualizationId] = useState<string | null>(null)
+  const [selectedVizIds, setSelectedVizIds] = useState<string[]>([])
+  const [collapsedQueryIds, setCollapsedQueryIds] = useState<Set<string>>(() => new Set())
   const [parameterMappings, setParameterMappings] = useState<Record<string, ParameterMapping>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +76,8 @@ export function AddWidgetModal({
     setBrowseSearch('')
     setSearch('')
     setSelectedQuery(null)
-    setVisualizationId(null)
+    setSelectedVizIds([])
+    setCollapsedQueryIds(new Set())
     setParameterMappings({})
     setSaving(false)
     setError(null)
@@ -93,6 +87,10 @@ export function AddWidgetModal({
   const queryById = useMemo(
     () => new Map(queries.map((query) => [query.id, query])),
     [queries],
+  )
+  const vizById = useMemo(
+    () => new Map(visualizations.map((viz) => [viz.id, viz])),
+    [visualizations],
   )
   const scopedQueries = useMemo(
     () => filterByProjectScope(queries, selectedProjectId),
@@ -150,8 +148,19 @@ export function AddWidgetModal({
   }, [visualizations, queryById, browseSearch, selectedProjectId, scopedQueries])
 
   const queryTabVisualizations = selectedQuery ? listByQuery(selectedQuery.id) : []
-  const parameters = selectedQuery ? usedParameters(selectedQuery) : []
   const filteredQueries = filterQueriesByName(scopedQueries, search)
+
+  const selectedVizList = useMemo(
+    () => selectedVizIds.map((id) => vizById.get(id)).filter(Boolean) as VisualizationDefinition[],
+    [selectedVizIds, vizById],
+  )
+  const selectedQueryIds = useMemo(
+    () => [...new Set(selectedVizList.map((viz) => viz.queryId))],
+    [selectedVizList],
+  )
+  const parametersQuery =
+    selectedQueryIds.length === 1 ? (queryById.get(selectedQueryIds[0]) ?? null) : null
+  const parameters = parametersQuery ? usedParameters(parametersQuery) : []
 
   const selectedTable = selectedQuery
     ? tables.find((t) => t.id === selectedQuery.tableId)
@@ -172,20 +181,57 @@ export function AddWidgetModal({
     return toRedashResult(previewRows, selectedQuery, selectedTable.columns)
   }, [selectedQuery, selectedTable, previewRows])
 
-  const selectVisualization = (viz: VisualizationDefinition) => {
-    const query = queryById.get(viz.queryId) ?? null
-    setSelectedQuery(query)
-    setVisualizationId(viz.id)
-    setParameterMappings(
-      query ? defaultParameterMappings(usedParameters(query)) : {},
-    )
+  const syncMappingsForSelection = (nextIds: string[]) => {
+    const nextVizs = nextIds
+      .map((id) => vizById.get(id))
+      .filter(Boolean) as VisualizationDefinition[]
+    const queryIds = [...new Set(nextVizs.map((viz) => viz.queryId))]
+    if (queryIds.length === 1) {
+      const query = queryById.get(queryIds[0])
+      setParameterMappings(query ? defaultParameterMappings(usedParameters(query)) : {})
+    } else {
+      setParameterMappings({})
+    }
+  }
+
+  useEffect(() => {
+    syncMappingsForSelection(selectedVizIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- remap when selection or viz catalog changes
+  }, [selectedVizIds, vizById, queryById])
+
+  const toggleVisualization = (viz: VisualizationDefinition) => {
+    setSelectedVizIds((prev) => {
+      const exists = prev.includes(viz.id)
+      return exists ? prev.filter((id) => id !== viz.id) : [...prev, viz.id]
+    })
+    setSelectedQuery(queryById.get(viz.queryId) ?? null)
+  }
+
+  const toggleGroupSelection = (group: BrowseGroup) => {
+    const ids = group.visualizations.map((viz) => viz.id)
+    if (ids.length === 0) return
+    setSelectedVizIds((prev) => {
+      const allSelected = ids.every((id) => prev.includes(id))
+      return allSelected
+        ? prev.filter((id) => !ids.includes(id))
+        : [...new Set([...prev, ...ids])]
+    })
+    if (group.query) setSelectedQuery(group.query)
+  }
+
+  const toggleCollapsed = (queryId: string) => {
+    setCollapsedQueryIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(queryId)) next.delete(queryId)
+      else next.add(queryId)
+      return next
+    })
   }
 
   const selectQuery = (query: QueryDefinition) => {
     setSelectedQuery(query)
     setSearch(query.name)
-    const vizs = listByQuery(query.id)
-    setVisualizationId(pickDefaultVisualization(vizs)?.id ?? null)
+    setSelectedVizIds([])
     setParameterMappings(defaultParameterMappings(usedParameters(query)))
   }
 
@@ -205,19 +251,28 @@ export function AddWidgetModal({
       after.find((v) => !vizIdsBeforeCreate.has(v.id) && v.type !== 'TABLE') ??
       after.find((v) => !vizIdsBeforeCreate.has(v.id))
     if (created) {
-      setVisualizationId(created.id)
-      setParameterMappings(defaultParameterMappings(usedParameters(selectedQuery)))
+      setSelectedVizIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]))
     }
   }
 
   const handleAdd = async () => {
-    if (!visualizationId) return
+    if (selectedVizIds.length === 0) return
     setSaving(true)
     setError(null)
     try {
-      await createWidget(
-        visualizationWidgetDraft(dashboardId, existingWidgets, visualizationId, parameterMappings),
-      )
+      let placed = [...existingWidgets]
+      for (const vizId of selectedVizIds) {
+        const viz = vizById.get(vizId)
+        const query = viz ? queryById.get(viz.queryId) : null
+        const mappings =
+          parametersQuery && query && query.id === parametersQuery.id
+            ? parameterMappings
+            : defaultParameterMappings(query ? usedParameters(query) : [])
+        const created = await createWidget(
+          visualizationWidgetDraft(dashboardId, placed, vizId, mappings),
+        )
+        placed = [...placed, created]
+      }
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -225,6 +280,13 @@ export function AddWidgetModal({
       setSaving(false)
     }
   }
+
+  const addLabel =
+    selectedVizIds.length === 0
+      ? 'Add to Dashboard'
+      : selectedVizIds.length === 1
+        ? 'Add to Dashboard'
+        : `Add ${selectedVizIds.length} to Dashboard`
 
   return (
     <>
@@ -243,9 +305,23 @@ export function AddWidgetModal({
 
               <TabsContent value="browse-all" className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-[var(--sea-ink)]">
-                    Choose Visualization
-                  </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-sm font-medium text-[var(--sea-ink)]">
+                      Choose visualizations
+                    </label>
+                    {selectedVizIds.length > 0 ? (
+                      <button
+                        type="button"
+                        className="text-xs text-[var(--lagoon-deep)] hover:underline"
+                        onClick={() => {
+                          setSelectedVizIds([])
+                          setParameterMappings({})
+                        }}
+                      >
+                        Clear selection ({selectedVizIds.length})
+                      </button>
+                    ) : null}
+                  </div>
                   <Command className="mt-1">
                     <CommandInput
                       placeholder="Search visualizations or queries…"
@@ -253,59 +329,114 @@ export function AddWidgetModal({
                       onValueChange={setBrowseSearch}
                       aria-label="Search visualizations or queries"
                     />
-                    <CommandList className="max-h-64">
+                    <CommandList className="max-h-[28rem]">
                       {browseGroups.length === 0 ? (
                         <CommandEmpty>No queries found in this project scope.</CommandEmpty>
                       ) : (
-                        browseGroups.map((group) => (
-                          <div key={group.queryId}>
-                            <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-                              <span className="text-xs font-medium text-[var(--sea-ink-soft)]">
-                                {group.queryName}
-                              </span>
-                              {group.query ? (
+                        browseGroups.map((group) => {
+                          const collapsed = collapsedQueryIds.has(group.queryId)
+                          const groupIds = group.visualizations.map((viz) => viz.id)
+                          const selectedInGroup = groupIds.filter((id) =>
+                            selectedVizIds.includes(id),
+                          ).length
+                          const allGroupSelected =
+                            groupIds.length > 0 && selectedInGroup === groupIds.length
+
+                          return (
+                            <div
+                              key={group.queryId}
+                              className="border-b border-[var(--line)] last:border-b-0"
+                            >
+                              <div className="flex items-center gap-2 bg-[var(--surface)]/60 px-2 py-2.5">
                                 <button
                                   type="button"
-                                  className="text-[11px] font-medium text-[var(--lagoon-deep)] hover:underline"
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    openNewVisualization(group.query!)
-                                  }}
+                                  className="flex min-h-10 min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-[var(--surface)]"
+                                  onClick={() => toggleCollapsed(group.queryId)}
+                                  aria-expanded={!collapsed}
                                 >
-                                  + New visualization
-                                </button>
-                              ) : null}
-                            </div>
-                            {group.visualizations.length === 0 ? (
-                              <div className="px-2 pb-2 text-xs text-[var(--sea-ink-soft)]">
-                                No visualizations yet — create one to add a widget.
-                              </div>
-                            ) : (
-                              group.visualizations.map((viz) => (
-                                <CommandItem
-                                  key={viz.id}
-                                  value={`${group.queryName} ${viz.name}`}
-                                  onSelect={() => selectVisualization(viz)}
-                                  className={cn(
-                                    visualizationId === viz.id &&
-                                      'bg-[var(--surface)] text-[var(--sea-ink)]',
-                                  )}
-                                >
-                                  <span className="flex min-w-0 flex-1 items-center gap-2">
-                                    <span className="truncate">{viz.name}</span>
-                                    <span className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--sea-ink-soft)]">
-                                      {REDASH_VIZ_TYPE_LABELS[viz.type]}
-                                    </span>
+                                  <span
+                                    className="w-4 shrink-0 text-sm text-[var(--sea-ink-soft)]"
+                                    aria-hidden
+                                  >
+                                    {collapsed ? '▸' : '▾'}
                                   </span>
-                                  <span className="ml-2 shrink-0 text-xs text-[var(--sea-ink-soft)]">
+                                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--sea-ink)]">
                                     {group.queryName}
                                   </span>
-                                </CommandItem>
-                              ))
-                            )}
-                          </div>
-                        ))
+                                  <span className="shrink-0 text-xs text-[var(--sea-ink-soft)]">
+                                    {group.visualizations.length} widget
+                                    {group.visualizations.length === 1 ? '' : 's'}
+                                    {selectedInGroup > 0 ? ` · ${selectedInGroup} selected` : ''}
+                                  </span>
+                                </button>
+                                {groupIds.length > 0 ? (
+                                  <button
+                                    type="button"
+                                    className="shrink-0 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--lagoon-deep)] hover:bg-[var(--surface)] hover:underline"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      toggleGroupSelection(group)
+                                    }}
+                                  >
+                                    {allGroupSelected ? 'Clear' : 'Select all'}
+                                  </button>
+                                ) : null}
+                                {group.query ? (
+                                  <button
+                                    type="button"
+                                    className="shrink-0 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--lagoon-deep)] hover:bg-[var(--surface)] hover:underline"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      openNewVisualization(group.query!)
+                                    }}
+                                  >
+                                    + New
+                                  </button>
+                                ) : null}
+                              </div>
+
+                              {!collapsed ? (
+                                group.visualizations.length === 0 ? (
+                                  <div className="px-3 pb-2 text-xs text-[var(--sea-ink-soft)]">
+                                    No visualizations yet — create one to add a widget.
+                                  </div>
+                                ) : (
+                                  group.visualizations.map((viz) => {
+                                    const checked = selectedVizIds.includes(viz.id)
+                                    return (
+                                      <CommandItem
+                                        key={viz.id}
+                                        value={`${group.queryName} ${viz.name} ${viz.id}`}
+                                        onSelect={() => toggleVisualization(viz)}
+                                        className={cn(
+                                          'cursor-pointer',
+                                          checked && 'bg-[var(--surface)] text-[var(--sea-ink)]',
+                                        )}
+                                      >
+                                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            readOnly
+                                            tabIndex={-1}
+                                            className="shrink-0"
+                                            aria-hidden
+                                          />
+                                          <span className="truncate">{viz.name}</span>
+                                          <span className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--sea-ink-soft)]">
+                                            {REDASH_VIZ_TYPE_LABELS[viz.type]}
+                                          </span>
+                                        </span>
+                                      </CommandItem>
+                                    )
+                                  })
+                                )
+                              ) : null}
+                            </div>
+                          )
+                        })
                       )}
                     </CommandList>
                   </Command>
@@ -325,7 +456,7 @@ export function AddWidgetModal({
                         setSearch(value)
                         if (selectedQuery && value !== selectedQuery.name) {
                           setSelectedQuery(null)
-                          setVisualizationId(null)
+                          setSelectedVizIds([])
                           setParameterMappings({})
                         }
                       }}
@@ -352,48 +483,51 @@ export function AddWidgetModal({
 
                 {selectedQuery ? (
                   <div className="space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <label
-                          className="text-sm font-medium text-[var(--sea-ink)]"
-                          htmlFor="widget-visualization"
-                        >
-                          Visualization
-                        </label>
-                        <Select
-                          value={visualizationId ?? undefined}
-                          onValueChange={setVisualizationId}
-                        >
-                          <SelectTrigger id="widget-visualization" className="mt-1" aria-label="Visualization">
-                            <SelectValue placeholder="Select a visualization" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {queryTabVisualizations.map((viz) => (
-                              <SelectItem key={viz.id} value={viz.id}>
-                                {viz.name} ({REDASH_VIZ_TYPE_LABELS[viz.type]})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-sm font-medium text-[var(--sea-ink)]">
+                        Visualizations
+                      </label>
                       <Button
                         type="button"
+                        size="sm"
                         variant="outline"
                         onClick={() => openNewVisualization(selectedQuery)}
                       >
                         New visualization
                       </Button>
                     </div>
-                    <p className="text-xs text-[var(--sea-ink-soft)]">
-                      Create any chart type (Chart, Gauge, Treemap, Map, …) for this query, then add
-                      it to the dashboard.
-                    </p>
+                    {queryTabVisualizations.length === 0 ? (
+                      <p className="text-xs text-[var(--sea-ink-soft)]">
+                        No visualizations yet. Create one, then add it to the dashboard.
+                      </p>
+                    ) : (
+                      <ul className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-[var(--line)] p-2">
+                        {queryTabVisualizations.map((viz) => {
+                          const checked = selectedVizIds.includes(viz.id)
+                          return (
+                            <li key={viz.id}>
+                              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-[var(--surface)]">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleVisualization(viz)}
+                                />
+                                <span className="min-w-0 flex-1 truncate">{viz.name}</span>
+                                <span className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--sea-ink-soft)]">
+                                  {REDASH_VIZ_TYPE_LABELS[viz.type]}
+                                </span>
+                              </label>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
                   </div>
                 ) : null}
               </TabsContent>
             </Tabs>
 
-            {selectedQuery && parameters.length > 0 ? (
+            {parametersQuery && parameters.length > 0 ? (
               <div>
                 <p className="mb-2 text-sm font-medium text-[var(--sea-ink)]">Parameters</p>
                 <ParameterMappingForm
@@ -402,6 +536,10 @@ export function AddWidgetModal({
                   onChange={setParameterMappings}
                 />
               </div>
+            ) : selectedQueryIds.length > 1 ? (
+              <p className="text-xs text-[var(--sea-ink-soft)]">
+                Multiple queries selected — each widget will use default parameter mappings.
+              </p>
             ) : null}
 
             {error ? <p className="text-xs text-red-700">{error}</p> : null}
@@ -414,9 +552,9 @@ export function AddWidgetModal({
             <Button
               type="button"
               onClick={() => void handleAdd()}
-              disabled={!visualizationId || saving}
+              disabled={selectedVizIds.length === 0 || saving}
             >
-              {saving ? 'Adding…' : 'Add to Dashboard'}
+              {saving ? 'Adding…' : addLabel}
             </Button>
           </DialogFooter>
         </DialogContent>

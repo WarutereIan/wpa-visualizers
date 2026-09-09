@@ -42,7 +42,15 @@ export function createNewDashboardDraft(opts?: {
 type DashboardUpdatePatch = Partial<
   Pick<
     DashboardDefinition,
-    'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags' | 'projectId'
+    | 'name'
+    | 'description'
+    | 'layout'
+    | 'widgets'
+    | 'theme'
+    | 'status'
+    | 'tags'
+    | 'projectId'
+    | 'isTemplate'
   >
 >
 
@@ -148,6 +156,7 @@ export const useDashboardStore = create<DashboardState>()(
           id: copyId,
           name: `Copy of: ${existing.name}`,
           status: 'draft',
+          isTemplate: false,
           tags: existing.tags ? [...existing.tags] : undefined,
           theme: existing.theme ? { ...existing.theme } : undefined,
           createdAt: now,

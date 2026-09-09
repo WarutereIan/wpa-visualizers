@@ -28,6 +28,7 @@ export type VisualizationWidgetProps = {
   paramValues: ParameterValues
   refreshNonce: number
   onEdit: () => void
+  onEditData?: () => void
   onRemove: () => void
 }
 
@@ -83,6 +84,7 @@ export function VisualizationWidget({
   editing,
   paramValues,
   refreshNonce,
+  onEditData,
   onRemove,
 }: VisualizationWidgetProps) {
   const { Renderer, error: vizError } = useVizLib()
@@ -215,6 +217,17 @@ export function VisualizationWidget({
             >
               Edit Parameters
             </button>
+            {editing && onEditData ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onEditData()
+                }}
+              >
+                Edit data
+              </button>
+            ) : null}
             {editing ? (
               <button
                 type="button"
@@ -278,13 +291,15 @@ export function VisualizationWidget({
         ) : !Renderer ? (
           <div className="rd-muted">Loading visualization…</div>
         ) : (
-          <div className="rd-tile-viz">
-            <Renderer
-              type={visualization.type}
-              options={visualization.options}
-              data={result}
-              visualizationName={visualization.name}
-            />
+          <div className="rd-tile-viz dashboard-widget-wrapper">
+            <div className="rd-tile-viz-scale">
+              <Renderer
+                type={visualization.type}
+                options={visualization.options}
+                data={result}
+                visualizationName={visualization.name}
+              />
+            </div>
           </div>
         )}
       </div>

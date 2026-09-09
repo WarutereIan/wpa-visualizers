@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import {
   QueryBuilder,
   ValueEditor,
@@ -7,6 +7,7 @@ import {
   type ValueEditorProps,
 } from 'react-querybuilder'
 import 'react-querybuilder/dist/query-builder.css'
+import { InsightPanel } from '#/components/data/InsightPanel'
 import { QueryParametersEditor } from '#/components/data/QueryParametersEditor'
 import { VisualizationTabs } from '#/components/data/VisualizationTabs'
 import { Button } from '#/components/ui/button'
@@ -16,6 +17,7 @@ import {
   useRunQueryResult,
   useWorkspaceData,
 } from '#/hooks/useWorkspaceData'
+import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
 import {
   defaultAggregationAlias,
   firstNumericColumn,
@@ -51,6 +53,9 @@ export type QueryEditorProps = {
   footer?: React.ReactNode
   /** Inline column type edits for the active table. */
   onColumnTypeChange?: (columnName: string, type: DataColumnType) => void
+  /** When set, visualizations can be added directly to this dashboard. */
+  dashboardId?: string | null
+  existingWidgets?: import('#/types/visualization').DashboardWidget[]
 }
 
 export function QueryEditor({
@@ -62,17 +67,61 @@ export function QueryEditor({
   tableActions,
   footer,
   onColumnTypeChange,
+  dashboardId = null,
+  existingWidgets = [],
 }: QueryEditorProps) {
-  const [showAdvanced, setShowAdvanced] = useState(
-    () =>
+  const [openRail, setOpenRail] = useState<{
+    insight: boolean
+    filters: boolean
+    data: boolean
+    advanced: boolean
+  }>(() => ({
+    insight: true,
+    filters: (query.filters?.length ?? 0) > 0 || (query.parameters?.length ?? 0) > 0,
+    data: false,
+    advanced:
       (query.joins?.length ?? 0) > 0 ||
       (query.computedFields?.length ?? 0) > 0 ||
       (query.sort?.length ?? 0) > 0 ||
       query.limit != null,
-  )
+  }))
   const [showSchema, setShowSchema] = useState(false)
+  const [showDataTable, setShowDataTable] = useState(() => !splitPreview)
+  const [editorRequest, setEditorRequest] = useState<string | null>(null)
   const { queries: savedQueries } = useWorkspaceData()
+  const { listByQuery, createVisualization, updateVisualization } = useWorkspaceVisualizations()
   const isSavedQuery = Boolean(query.id) && savedQueries.some((q) => q.id === query.id)
+  const visualizations = listByQuery(query.id)
+
+  const ensureChart = useCallback(
+    (options: Record<string, unknown>, name?: string) => {
+      if (!isSavedQuery) return
+      const existing = listByQuery(query.id).find((v) => v.type === 'CHART')
+      if (existing) {
+        void updateVisualization(existing.id, {
+          options: { ...existing.options, ...options },
+          ...(name ? { name } : {}),
+        })
+        return
+      }
+      void createVisualization({
+        queryId: query.id,
+        type: 'CHART',
+        name: name ?? 'Chart',
+        options,
+      })
+    },
+    [createVisualization, isSavedQuery, listByQuery, query.id, updateVisualization],
+  )
+
+  const openChartEditor = useCallback(() => {
+    const chart = listByQuery(query.id).find((v) => v.type === 'CHART')
+    setEditorRequest(chart?.id ?? '__new__')
+  }, [listByQuery, query.id])
+
+  const toggleRail = useCallback((key: keyof typeof openRail) => {
+    setOpenRail((prev) => ({ ...prev, [key]: !prev[key] }))
+  }, [])
 
   const activeTable = tables.find((t) => t.id === query.tableId)
   const hasLocalRows = (activeTable?.rows?.length ?? 0) > 0
@@ -150,37 +199,32 @@ export function QueryEditor({
       previewError={previewError}
       compact={compact}
       sticky={splitPreview}
+      showDataTable={showDataTable}
+      onToggleDataTable={() => setShowDataTable((v) => !v)}
       visualizationTabs={
         isSavedQuery ? (
           <VisualizationTabs
             query={query}
             previewRows={previewRows}
             sourceColumns={activeTable.columns}
+            dashboardId={dashboardId}
+            existingWidgets={existingWidgets}
+            dominant={splitPreview}
+            editorRequest={editorRequest}
+            onEditorRequestHandled={() => setEditorRequest(null)}
           />
-        ) : null
+        ) : (
+          <p className="text-xs text-[var(--sea-ink-soft)]">
+            Save this query to create charts and add them to dashboards.
+          </p>
+        )
       }
     />
   )
 
   const form = (
     <div className={gap}>
-      {resultFieldHint.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <span className="w-full text-[11px] font-medium uppercase tracking-wide text-[var(--sea-ink-soft)]">
-            Result fields
-          </span>
-          {resultFieldHint.map((f) => (
-            <span
-              key={f}
-              className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-2 py-0.5 font-mono text-[11px] text-[var(--sea-ink)]"
-            >
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className={`grid gap-4 ${compact ? '' : 'md:grid-cols-2'}`}>
+      <div className={`grid gap-3 ${compact ? '' : 'sm:grid-cols-2'}`}>
         <div>
           <label className="text-sm font-medium text-[var(--sea-ink)]">Query name</label>
           <input
@@ -203,7 +247,7 @@ export function QueryEditor({
               </option>
             ))}
           </select>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+         {/*  <div className="mt-1 flex flex-wrap items-center gap-2">
             <button
               type="button"
               className="text-[11px] text-[var(--lagoon-deep)] underline"
@@ -212,7 +256,7 @@ export function QueryEditor({
               {showSchema ? 'Hide schema' : 'Schema & types'}
             </button>
             {tableActions}
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -245,189 +289,251 @@ export function QueryEditor({
         </ul>
       )}
 
-      <div>
-        <p className="text-sm font-medium text-[var(--sea-ink)]">Columns</p>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {activeTable.columns.map((col) => {
-            const checked = selectedColumns.includes(col.name)
-            return (
-              <label
-                key={col.name}
-                className="flex min-w-0 items-center gap-2.5 rounded-md border border-[var(--line)] bg-[var(--surface)] px-2.5 py-2 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  className="shrink-0"
-                  onChange={(e) => {
-                    const next = e.target.checked
-                      ? [...selectedColumns, col.name]
-                      : selectedColumns.filter((c) => c !== col.name)
-                    onChange({ selectedColumns: next })
-                  }}
-                />
-                <span className="min-w-0 flex-1 truncate">{col.name}</span>
-                <TypeBadge type={col.type} />
-              </label>
-            )
-          })}
+     {/*  {resultFieldHint.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <span className="w-full text-[11px] font-medium uppercase tracking-wide text-[var(--sea-ink-soft)]">
+            Result fields
+          </span>
+          {resultFieldHint.map((f) => (
+            <span
+              key={f}
+              className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-2 py-0.5 font-mono text-[11px] text-[var(--sea-ink)]"
+            >
+              {f}
+            </span>
+          ))}
         </div>
-      </div>
+      )} */}
 
-      <QueryParametersEditor
-        key={query.id}
-        parameters={query.parameters ?? []}
-        onChange={(parameters) => onChange({ parameters })}
-      />
-
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-[var(--sea-ink)]">Filters</p>
-        <p className="text-[11px] text-[var(--sea-ink-soft)]">
-          Flat AND rules. Operators follow column type (contains for text, comparisons for numbers
-          and dates). Bind a filter to a declared parameter to supply its value at runtime.
-        </p>
-        <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-2 [&_.ruleGroup]:space-y-2 [&_.ruleGroup-header]:mb-1">
-          <QueryBuilder
-            fields={queryFields}
-            query={qbQuery}
-            onQueryChange={(next) => onChange({ filters: qbToDataFilters(next, query.filters) })}
-            showCombinatorsBetweenRules
-            controlElements={{ addGroupAction: () => null, valueEditor: FilterValueEditor }}
-            context={{
-              parameters: query.parameters ?? [],
-              filters: query.filters,
-              onBindParam: setFilterParam,
-            }}
-          />
-        </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-medium text-[var(--sea-ink)]">GROUP BY</p>
-        <div className="mt-2 space-y-2">
-          {selectedColumns.map((col) => {
-            const checked = groupBy.includes(col)
-            const colDef = activeTable.columns.find((c) => c.name === col)
-            const grain = query.groupByGrains?.[col]
-            return (
-              <div
-                key={col}
-                className="flex flex-wrap items-center gap-2 rounded border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-sm"
-              >
-                <label className="flex items-center gap-2">
+<RailSection
+        title="Data"
+        open={openRail.data}
+        onToggle={() => toggleRail('data')}
+        summary="Columns, group by, aggregations"
+      >
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-[var(--sea-ink)]">Columns</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const allNames = activeTable.columns.map((c) => c.name)
+                const allSelected =
+                  allNames.length > 0 && allNames.every((name) => selectedColumns.includes(name))
+                onChange({ selectedColumns: allSelected ? [] : allNames })
+              }}
+            >
+              {activeTable.columns.length > 0 &&
+              activeTable.columns.every((c) => selectedColumns.includes(c.name))
+                ? 'Clear all'
+                : 'Select all'}
+            </Button>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {activeTable.columns.map((col) => {
+              const checked = selectedColumns.includes(col.name)
+              return (
+                <label
+                  key={col.name}
+                  className="flex min-w-0 items-center gap-2.5 rounded-md border border-[var(--line)] bg-[var(--surface)] px-2.5 py-2 text-sm"
+                >
                   <input
                     type="checkbox"
                     checked={checked}
+                    className="shrink-0"
                     onChange={(e) => {
                       const next = e.target.checked
-                        ? [...groupBy, col]
-                        : groupBy.filter((x) => x !== col)
-                      const grains = { ...(query.groupByGrains ?? {}) }
-                      if (!e.target.checked) delete grains[col]
-                      onChange({ groupBy: next, groupByGrains: grains })
+                        ? [...selectedColumns, col.name]
+                        : selectedColumns.filter((c) => c !== col.name)
+                      onChange({ selectedColumns: next })
                     }}
                   />
-                  <span>{col}</span>
-                  {colDef ? <TypeBadge type={colDef.type} /> : null}
+                  <span className="min-w-0 flex-1 truncate">{col.name}</span>
+                  <TypeBadge type={col.type} />
                 </label>
-                {checked && colDef?.type === 'date' && (
-                  <select
-                    value={grain ?? ''}
-                    onChange={(e) => {
-                      const grains = { ...(query.groupByGrains ?? {}) }
-                      const v = e.target.value
-                      if (!v) delete grains[col]
-                      else grains[col] = v as 'day' | 'week' | 'month' | 'quarter' | 'year'
-                      onChange({ groupByGrains: grains })
-                    }}
-                    className="h-7 rounded border border-[var(--line)] bg-[var(--surface-strong)] px-2 text-xs"
-                  >
-                    <option value="">Exact value</option>
-                    <option value="day">Day</option>
-                    <option value="week">Week</option>
-                    <option value="month">Month</option>
-                    <option value="quarter">Quarter</option>
-                    <option value="year">Year</option>
-                  </select>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        {selectedColumns.length === 0 && (
-          <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">
-            Select columns above to group by them.
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-[var(--sea-ink)]">Aggregations</p>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const numeric = firstNumericColumn(activeTable.columns)
-              const col = numeric ?? activeTable.columns[0]
-              onChange({
-                aggregations: [
-                  ...aggregations,
-                  createDefaultAggregation(col?.name ?? '', col?.type),
-                ],
-              })
-            }}
-          >
-            Add aggregation
-          </Button>
-        </div>
-        {aggregations.length === 0 ? (
-          <p className="text-xs text-[var(--sea-ink-soft)]">
-            No aggregations. Query returns row-level records. Result fields = selected columns.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {aggregations.map((agg) => (
-              <AggregationRow
-                key={agg.id}
-                agg={agg}
-                columns={activeTable.columns}
-                onColumnTypeChange={onColumnTypeChange}
-                onChange={(patch) =>
-                  onChange({
-                    aggregations: aggregations.map((a) =>
-                      a.id === agg.id ? { ...a, ...patch } : a,
-                    ),
-                  })
-                }
-                onRemove={() =>
-                  onChange({
-                    aggregations: aggregations.filter((a) => a.id !== agg.id),
-                  })
-                }
-              />
-            ))}
-            <p className="text-xs text-[var(--sea-ink-soft)]">
-              SUM/AVG only on number columns. Result fields = group-by keys plus each aggregation
-              alias.
-            </p>
+              )
+            })}
           </div>
-        )}
-      </div>
+        </div>
 
-      <div>
-        <button
-          type="button"
-          className="text-sm font-medium text-[var(--lagoon-deep)] underline"
-          onClick={() => setShowAdvanced((v) => !v)}
-        >
-          {showAdvanced ? 'Hide advanced' : 'More: joins, formulas, sort & limit'}
-        </button>
-      </div>
+        <div className="mt-4">
+          <p className="text-sm font-medium text-[var(--sea-ink)]">GROUP BY</p>
+          <div className="mt-2 space-y-2">
+            {selectedColumns.map((col) => {
+              const checked = groupBy.includes(col)
+              const colDef = activeTable.columns.find((c) => c.name === col)
+              const grain = query.groupByGrains?.[col]
+              return (
+                <div
+                  key={col}
+                  className="flex flex-wrap items-center gap-2 rounded border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-sm"
+                >
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...groupBy, col]
+                          : groupBy.filter((x) => x !== col)
+                        const grains = { ...(query.groupByGrains ?? {}) }
+                        if (!e.target.checked) delete grains[col]
+                        onChange({ groupBy: next, groupByGrains: grains })
+                      }}
+                    />
+                    <span>{col}</span>
+                    {colDef ? <TypeBadge type={colDef.type} /> : null}
+                  </label>
+                  {checked && colDef?.type === 'date' && (
+                    <select
+                      value={grain ?? ''}
+                      onChange={(e) => {
+                        const grains = { ...(query.groupByGrains ?? {}) }
+                        const v = e.target.value
+                        if (!v) delete grains[col]
+                        else grains[col] = v as 'day' | 'week' | 'month' | 'quarter' | 'year'
+                        onChange({ groupByGrains: grains })
+                      }}
+                      className="h-7 rounded border border-[var(--line)] bg-[var(--surface-strong)] px-2 text-xs"
+                    >
+                      <option value="">Exact value</option>
+                      <option value="day">Day</option>
+                      <option value="week">Week</option>
+                      <option value="month">Month</option>
+                      <option value="quarter">Quarter</option>
+                      <option value="year">Year</option>
+                    </select>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {selectedColumns.length === 0 && (
+            <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">
+              Select columns above to group by them.
+            </p>
+          )}
+        </div>
 
-      {showAdvanced && (
-        <>
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[var(--sea-ink)]">Aggregations</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const numeric = firstNumericColumn(activeTable.columns)
+                const col = numeric ?? activeTable.columns[0]
+                onChange({
+                  aggregations: [
+                    ...aggregations,
+                    createDefaultAggregation(col?.name ?? '', col?.type),
+                  ],
+                })
+              }}
+            >
+              Add aggregation
+            </Button>
+          </div>
+          {aggregations.length === 0 ? (
+            <p className="text-xs text-[var(--sea-ink-soft)]">
+              No aggregations. Query returns row-level records. Result fields = selected columns.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {aggregations.map((agg) => (
+                <AggregationRow
+                  key={agg.id}
+                  agg={agg}
+                  columns={activeTable.columns}
+                  onColumnTypeChange={onColumnTypeChange}
+                  onChange={(patch) =>
+                    onChange({
+                      aggregations: aggregations.map((a) =>
+                        a.id === agg.id ? { ...a, ...patch } : a,
+                      ),
+                    })
+                  }
+                  onRemove={() =>
+                    onChange({
+                      aggregations: aggregations.filter((a) => a.id !== agg.id),
+                    })
+                  }
+                />
+              ))}
+              <p className="text-xs text-[var(--sea-ink-soft)]">
+                SUM/AVG only on number columns. Result fields = group-by keys plus each aggregation
+                alias.
+              </p>
+            </div>
+          )}
+        </div>
+      </RailSection>
+
+      <RailSection
+        title="Insight"
+        open={openRail.insight}
+        onToggle={() => toggleRail('insight')}
+        summary="Chart, break-down, measure"
+      >
+        <InsightPanel
+          query={query}
+          columns={activeTable.columns}
+          visualizations={visualizations}
+          onQueryChange={onChange}
+          onEnsureChart={ensureChart}
+          onOpenEditor={isSavedQuery ? openChartEditor : undefined}
+        />
+      </RailSection>
+
+      <RailSection
+        title="Filters"
+        open={openRail.filters}
+        onToggle={() => toggleRail('filters')}
+        summary={
+          (query.filters?.length ?? 0) > 0
+            ? `${query.filters.length} rule${query.filters.length === 1 ? '' : 's'}`
+            : 'Optional'
+        }
+      >
+        <QueryParametersEditor
+          key={query.id}
+          parameters={query.parameters ?? []}
+          onChange={(parameters) => onChange({ parameters })}
+        />
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] text-[var(--sea-ink-soft)]">
+            Flat AND rules. Operators follow column type. Bind a filter to a declared parameter to
+            supply its value at runtime.
+          </p>
+          <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-2 [&_.ruleGroup]:space-y-2 [&_.ruleGroup-header]:mb-1">
+            <QueryBuilder
+              fields={queryFields}
+              query={qbQuery}
+              onQueryChange={(next) => onChange({ filters: qbToDataFilters(next, query.filters) })}
+              showCombinatorsBetweenRules
+              controlElements={{ addGroupAction: () => null, valueEditor: FilterValueEditor }}
+              context={{
+                parameters: query.parameters ?? [],
+                filters: query.filters,
+                onBindParam: setFilterParam,
+              }}
+            />
+          </div>
+        </div>
+      </RailSection>
+
+     
+
+      <RailSection
+        title="Advanced"
+        open={openRail.advanced}
+        onToggle={() => toggleRail('advanced')}
+        summary="Joins, formulas, sort & limit"
+      >
           <JoinsSection
             query={query}
             tables={tables}
@@ -435,7 +541,7 @@ export function QueryEditor({
             onChange={onChange}
           />
 
-          <div className="space-y-2">
+          <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-[var(--sea-ink)]">Computed fields</p>
               <Button
@@ -506,7 +612,7 @@ export function QueryEditor({
             ))}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-[var(--sea-ink)]">
                 Sort by (result field)
@@ -570,8 +676,7 @@ export function QueryEditor({
               />
             </div>
           </div>
-        </>
-      )}
+      </RailSection>
 
       {footer}
 
@@ -582,9 +687,11 @@ export function QueryEditor({
   if (!splitPreview) return form
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-5 md:flex-row md:items-stretch">
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto pr-1 md:pr-2">{form}</div>
-      <div className="min-h-[240px] w-full shrink-0 md:min-h-0 md:w-[min(42%,420px)] md:overflow-hidden">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+      <div className="min-h-0 min-w-0 overflow-y-auto pr-1 lg:w-[min(38%,420px)] lg:shrink-0 lg:pr-2">
+        {form}
+      </div>
+      <div className="min-h-[280px] w-full min-w-0 flex-1 lg:min-h-0 lg:overflow-hidden">
         {previewPanel}
       </div>
     </div>
@@ -599,6 +706,38 @@ function TypeBadge({ type }: { type: DataColumnType }) {
   )
 }
 
+function RailSection({
+  title,
+  open,
+  onToggle,
+  summary,
+  children,
+}: {
+  title: string
+  open: boolean
+  onToggle: () => void
+  summary?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+        aria-expanded={open}
+      >
+        <span className="text-sm font-semibold text-[var(--sea-ink)]">{title}</span>
+        <span className="flex items-center gap-2 text-[11px] text-[var(--sea-ink-soft)]">
+          {!open && summary ? <span className="truncate">{summary}</span> : null}
+          <span aria-hidden>{open ? '▾' : '▸'}</span>
+        </span>
+      </button>
+      {open ? <div className="border-t border-[var(--line)] px-3 py-3">{children}</div> : null}
+    </div>
+  )
+}
+
 function PreviewPanel({
   resultFieldHint,
   previewDisplayRows,
@@ -606,6 +745,8 @@ function PreviewPanel({
   previewError,
   compact,
   sticky,
+  showDataTable,
+  onToggleDataTable,
   visualizationTabs,
 }: {
   resultFieldHint: string[]
@@ -614,6 +755,8 @@ function PreviewPanel({
   previewError: string | null
   compact: boolean
   sticky: boolean
+  showDataTable: boolean
+  onToggleDataTable: () => void
   visualizationTabs?: React.ReactNode
 }) {
   return (
@@ -622,63 +765,88 @@ function PreviewPanel({
         sticky ? 'h-full' : ''
       }`}
     >
-      <p className="mb-2 shrink-0 text-sm font-medium text-[var(--sea-ink)]">
-        Preview ({previewDisplayRows.length} rows{previewLoading ? ', loading…' : ''})
-      </p>
-      {resultFieldHint.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {resultFieldHint.map((f) => (
-            <span
-              key={f}
-              className="rounded border border-[var(--line)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--sea-ink-soft)]"
-            >
-              {f}
-            </span>
-          ))}
+      <div className={sticky ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-3'}>
+        <div className={sticky ? 'min-h-0 flex-1 overflow-hidden' : undefined}>
+          {visualizationTabs}
         </div>
-      )}
-      {previewError && (
-        <p className="mb-2 shrink-0 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-800">
-          {previewError}
-        </p>
-      )}
-      <div
-        className={`min-h-0 overflow-auto ${
-          sticky ? 'flex-1' : compact ? 'max-h-[240px]' : 'max-h-[320px]'
-        }`}
-      >
-        {previewDisplayRows.length === 0 && !previewError ? (
-          <p className="text-xs text-[var(--sea-ink-soft)]">No rows returned.</p>
-        ) : previewDisplayRows.length === 0 ? null : (
-          <table className="w-max min-w-full text-left text-sm">
-            <thead className="sticky top-0 bg-[var(--sand)] text-xs uppercase text-[var(--sea-ink-soft)]">
-              <tr>
-                {Object.keys(previewDisplayRows[0] ?? {}).map((k) => (
-                  <th key={k} className="whitespace-nowrap px-3 py-2 font-medium">
-                    {k}
-                  </th>
+
+        <div className="shrink-0 border-t border-[var(--line)] pt-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              className="text-sm font-medium text-[var(--lagoon-deep)] underline"
+              onClick={onToggleDataTable}
+            >
+              {showDataTable ? 'Hide data table' : 'Show data table'}
+              <span className="ml-1 font-normal text-[var(--sea-ink-soft)] no-underline">
+                ({previewDisplayRows.length} rows{previewLoading ? ', loading…' : ''})
+              </span>
+            </button>
+            {resultFieldHint.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {resultFieldHint.slice(0, 6).map((f) => (
+                  <span
+                    key={f}
+                    className="rounded border border-[var(--line)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--sea-ink-soft)]"
+                  >
+                    {f}
+                  </span>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {previewDisplayRows.map((row, idx) => (
-                <tr key={idx} className="border-t border-[var(--line)]">
-                  {Object.keys(previewDisplayRows[0] ?? {}).map((k) => (
-                    <td
-                      key={`${idx}-${k}`}
-                      className="max-w-[220px] truncate whitespace-nowrap px-3 py-2"
-                      title={String(row[k] ?? '')}
-                    >
-                      {String(row[k] ?? '')}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                {resultFieldHint.length > 6 ? (
+                  <span className="text-[10px] text-[var(--sea-ink-soft)]">
+                    +{resultFieldHint.length - 6}
+                  </span>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          {previewError && (
+            <p className="mb-2 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-800">
+              {previewError}
+            </p>
+          )}
+
+          {showDataTable ? (
+            <div
+              className={`overflow-auto ${
+                sticky ? 'max-h-[220px]' : compact ? 'max-h-[240px]' : 'max-h-[320px]'
+              }`}
+            >
+              {previewDisplayRows.length === 0 && !previewError ? (
+                <p className="text-xs text-[var(--sea-ink-soft)]">No rows returned.</p>
+              ) : previewDisplayRows.length === 0 ? null : (
+                <table className="w-max min-w-full text-left text-sm">
+                  <thead className="sticky top-0 bg-[var(--sand)] text-xs uppercase text-[var(--sea-ink-soft)]">
+                    <tr>
+                      {Object.keys(previewDisplayRows[0] ?? {}).map((k) => (
+                        <th key={k} className="whitespace-nowrap px-3 py-2 font-medium">
+                          {k}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewDisplayRows.map((row, idx) => (
+                      <tr key={idx} className="border-t border-[var(--line)]">
+                        {Object.keys(previewDisplayRows[0] ?? {}).map((k) => (
+                          <td
+                            key={`${idx}-${k}`}
+                            className="max-w-[220px] truncate whitespace-nowrap px-3 py-2"
+                            title={String(row[k] ?? '')}
+                          >
+                            {String(row[k] ?? '')}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
-      {visualizationTabs}
     </div>
   )
 }

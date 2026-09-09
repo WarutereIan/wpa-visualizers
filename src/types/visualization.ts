@@ -42,10 +42,10 @@ export interface ParameterMapping {
 }
 
 export interface WidgetPosition {
-  col: number    // 0-5 (6-column grid)
+  col: number
   row: number
-  sizeX: number  // width in columns
-  sizeY: number  // height in grid rows
+  sizeX: number // width in columns
+  sizeY: number // height in grid rows
 }
 
 export interface DashboardWidget {
@@ -57,6 +57,8 @@ export interface DashboardWidget {
   text: string | null
   options: {
     position: WidgetPosition
+    /** Layout schema: 1 = 6-col/50px rows, 2 = 12-col/25px rows */
+    gridVersion?: number
     parameterMappings?: Record<string, ParameterMapping>
   }
   createdAt: string

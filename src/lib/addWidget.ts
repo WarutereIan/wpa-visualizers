@@ -1,6 +1,17 @@
 import { defaultTableVisualization } from '#/lib/visualizationOrder'
-import { DEFAULT_TEXT_SIZE, DEFAULT_VIZ_SIZE, findFreePosition } from '#/lib/widgetGrid'
-import type { DashboardWidget, ParameterMapping, QueryParameter, VisualizationDefinition } from '#/types/visualization'
+import {
+  DEFAULT_TEXT_SIZE,
+  DEFAULT_VIZ_SIZE,
+  GRID_VERSION,
+  findFreePosition,
+} from '#/lib/widgetGrid'
+import type { QueryDefinition } from '#/types/data'
+import type {
+  DashboardWidget,
+  ParameterMapping,
+  QueryParameter,
+  VisualizationDefinition,
+} from '#/types/visualization'
 
 /** Redash default: each used param maps to a dashboard parameter of the same name. */
 export function defaultParameterMappings(
@@ -36,6 +47,7 @@ export function visualizationWidgetDraft(
     text: null,
     options: {
       position: findFreePosition(existingWidgets, DEFAULT_VIZ_SIZE.sizeX, DEFAULT_VIZ_SIZE.sizeY),
+      gridVersion: GRID_VERSION,
       parameterMappings,
     },
   }
@@ -52,6 +64,32 @@ export function textboxWidgetDraft(
     text,
     options: {
       position: findFreePosition(existingWidgets, DEFAULT_TEXT_SIZE.sizeX, DEFAULT_TEXT_SIZE.sizeY),
+      gridVersion: GRID_VERSION,
     },
+  }
+}
+
+/** Copy a query definition for "Edit data" forks (strips identity timestamps). */
+export function cloneQueryInput(
+  query: QueryDefinition,
+  nameSuffix = '(edit)',
+): Omit<QueryDefinition, 'id' | 'createdAt' | 'updatedAt'> {
+  return {
+    name: `${query.name} ${nameSuffix}`.trim(),
+    tableId: query.tableId,
+    selectedColumns: [...(query.selectedColumns ?? [])],
+    filters: (query.filters ?? []).map((filter) => ({ ...filter })),
+    groupBy: [...(query.groupBy ?? [])],
+    aggregations: (query.aggregations ?? []).map((agg) => ({ ...agg })),
+    joins: query.joins?.map((join) => ({ ...join })),
+    groupByGrains: query.groupByGrains ? { ...query.groupByGrains } : undefined,
+    computedFields: query.computedFields?.map((field) => ({ ...field })),
+    sort: query.sort?.map((entry) => ({ ...entry })),
+    limit: query.limit ?? null,
+    parameters: query.parameters?.map((param) => ({
+      ...param,
+      enumOptions: param.enumOptions ? [...param.enumOptions] : undefined,
+    })),
+    projectId: query.projectId ?? null,
   }
 }

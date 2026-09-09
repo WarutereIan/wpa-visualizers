@@ -9,6 +9,7 @@ import {
 } from '#/lib/api/widgets'
 import { useOrgId, useWorkspaceReady } from '#/lib/api/workspace'
 import { useDashboardStore } from '#/stores/dashboardStore'
+import { normalizeDashboardWidget } from '#/lib/widgetGrid'
 import type { DashboardWidget } from '#/types/visualization'
 
 /** Unified dashboard widgets layer: Supabase when signed in, local demo store otherwise. */
@@ -27,9 +28,9 @@ export function useDashboardWidgets(dashboardId: string | null) {
   const deleteMutation = useDeleteWidget(workspaceReady ? orgId : null, dashboardId)
 
   const widgets = workspaceReady
-    ? (serverQuery.data ?? [])
+    ? (serverQuery.data ?? []).map(normalizeDashboardWidget)
     : dashboardId
-      ? demoWidgets.filter((w) => w.dashboardId === dashboardId)
+      ? demoWidgets.filter((w) => w.dashboardId === dashboardId).map(normalizeDashboardWidget)
       : []
 
   const createWidget = useCallback(
@@ -82,7 +83,7 @@ export function useAllDashboardWidgets() {
   const serverQuery = useAllWidgets(workspaceReady ? orgId : null)
 
   return {
-    widgets: workspaceReady ? (serverQuery.data ?? []) : demoWidgets,
+    widgets: (workspaceReady ? (serverQuery.data ?? []) : demoWidgets).map(normalizeDashboardWidget),
     isLoading: workspaceReady ? serverQuery.isLoading : false,
   }
 }

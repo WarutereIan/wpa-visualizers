@@ -350,9 +350,82 @@
 }
 
 .rd-tile-viz {
+  /* Render at a larger logical size, then scale down so marks/fonts aren't oversized. */
+  --rd-viz-scale: 0.75;
   position: absolute;
   inset: 0;
   overflow: hidden;
+}
+
+.rd-tile-viz-scale {
+  position: relative;
+  width: calc(100% / var(--rd-viz-scale));
+  height: calc(100% / var(--rd-viz-scale));
+  transform: scale(var(--rd-viz-scale));
+  transform-origin: top left;
+}
+
+/* Redash-style fixed widget layout: table fills height and keeps pagination visible. */
+.rd-tile-viz .table-visualization-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rd-tile-viz .table-visualization-container > div,
+.rd-tile-viz .table-visualization-container .ant-spin-nested-loading,
+.rd-tile-viz .table-visualization-container .ant-spin-container,
+.rd-tile-viz .table-visualization-container .ant-table-wrapper {
+  height: 100%;
+}
+
+.rd-tile-viz .table-visualization-container .ant-spin-container,
+.rd-tile-viz .table-visualization-container .ant-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rd-tile-viz .table-visualization-container .ant-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.rd-tile-viz .table-visualization-container .ant-pagination,
+.rd-tile-viz .table-visualization-container .ant-table-pagination {
+  flex: 0 0 auto;
+  float: none !important;
+  display: flex !important;
+  justify-content: center;
+  margin: 8px 0 4px !important;
+}
+
+/* Details view: keep paginator reachable inside fixed-height tiles. */
+.rd-tile-viz .details-viz {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  padding: 0 4px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rd-tile-viz .details-viz .ant-descriptions {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.rd-tile-viz .details-viz .paginator-container {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  padding-bottom: 4px;
 }
 
 .rd-textbox-body {

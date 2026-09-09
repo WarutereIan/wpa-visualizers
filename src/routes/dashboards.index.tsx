@@ -9,7 +9,7 @@ export const Route = createFileRoute('/dashboards/')({
   component: DashboardsIndexPage,
 })
 
-type ListTab = 'all' | 'favorites'
+type ListTab = 'all' | 'favorites' | 'templates'
 
 function formatUpdatedAt(iso: string) {
   const date = new Date(iso)
@@ -37,15 +37,15 @@ function collectTagCounts(dashboards: DashboardDefinition[]) {
 }
 
 function DashboardsIndexPage() {
-  const { dashboards, isLoading } = useWorkspaceDashboards()
+  const { dashboards, templates, isLoading } = useWorkspaceDashboards()
   const { isFavorite } = useFavorites()
   const [tab, setTab] = useState<ListTab>('all')
   const [query, setQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
   const listed = useMemo(
-    () => dashboards.filter((d) => d.status !== 'archived'),
-    [dashboards],
+    () => (tab === 'templates' ? templates : dashboards.filter((d) => d.status !== 'archived')),
+    [dashboards, templates, tab],
   )
 
   const tagCounts = useMemo(() => collectTagCounts(listed), [listed])
@@ -123,6 +123,15 @@ function DashboardsIndexPage() {
           >
             Favorites
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'templates'}
+            className={tab === 'templates' ? 'is-active' : undefined}
+            onClick={() => setTab('templates')}
+          >
+            Templates
+          </button>
         </div>
 
         {isLoading && listed.length === 0 ? (
@@ -132,9 +141,11 @@ function DashboardsIndexPage() {
             <p>
               {tab === 'favorites'
                 ? 'No favorite dashboards yet.'
-                : selectedTag || query
-                  ? 'No dashboards match these filters.'
-                  : 'There are no dashboards yet.'}
+                : tab === 'templates'
+                  ? 'No templates yet. Open a dashboard and use More → Save as template.'
+                  : selectedTag || query
+                    ? 'No dashboards match these filters.'
+                    : 'There are no dashboards yet.'}
             </p>
             {!query && !selectedTag && tab === 'all' ? (
               <Link to="/dashboards/add" className="rd-btn rd-btn-primary">

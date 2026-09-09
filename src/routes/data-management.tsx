@@ -23,7 +23,6 @@ import { ProjectMoveSelect } from '#/components/layout/ProjectScopeSelect'
 import { filterByProjectScope } from '#/lib/projectScope'
 import {
   findQueryUsages,
-  formatQueryUsageLines,
   formatQueryUsageSummary,
 } from '#/lib/queryUsage'
 import type { DataTable } from '#/types/data'
@@ -111,7 +110,7 @@ function QueryBuilderPage() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 text-sm text-[var(--sea-ink-soft)]">
+      <div className="px-4 py-3 text-sm text-[var(--sea-ink-soft)] md:px-5">
         Loading workspace data…
       </div>
     )
@@ -119,65 +118,69 @@ function QueryBuilderPage() {
 
   if (!activeQuery) {
     return (
-      <div className="space-y-6">
+      <div className="flex min-h-0 flex-1 flex-col">
         <LocalStorageMigrationBanner />
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] p-6 shadow-sm">
-          <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Query builder</h1>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--sea-ink-soft)]">
-            Manage reusable queries and source tables. You can also create or edit queries while
-            configuring widgets in the dashboard builder.
-          </p>
-        </div>
-        <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface-strong)] p-8 text-center">
-          <p className="text-sm text-[var(--sea-ink-soft)]">
-            {tables.length === 0
-              ? 'No tables yet. Import data to start building queries.'
-              : 'No queries in this project scope yet. Create a query or switch project.'}
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
+        <div className="flex flex-wrap items-end justify-between gap-2 border-b border-[var(--line)] px-4 py-3 md:px-5">
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--sea-ink)]">Query builder</h1>
+            <p className="mt-0.5 max-w-3xl text-sm text-[var(--sea-ink-soft)]">
+              Manage reusable queries and source tables. You can also create or edit queries while
+              configuring widgets in the dashboard builder.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             {tables.length === 0 ? (
-              <Button asChild>
+              <Button asChild size="sm">
                 <Link to="/data-management/import">Import data</Link>
               </Button>
             ) : (
-              <Button type="button" onClick={handleNewQuery}>
+              <Button type="button" size="sm" onClick={handleNewQuery}>
                 New query
               </Button>
             )}
           </div>
         </div>
-        <TablesManager
-          tables={scopedTables}
-          deletingTableId={deletingTableId}
-          onDelete={(tableId) => {
-            if (
-              !window.confirm(
-                'Delete this table? All queries bound to it will also be removed.',
+        <div className="px-4 py-8 text-center md:px-5">
+          <p className="text-sm text-[var(--sea-ink-soft)]">
+            {tables.length === 0
+              ? 'No tables yet. Import data to start building queries.'
+              : 'No queries in this project scope yet. Create a query or switch project.'}
+          </p>
+        </div>
+        <div className="px-4 pb-4 md:px-5">
+          <TablesManager
+            tables={scopedTables}
+            deletingTableId={deletingTableId}
+            onDelete={(tableId) => {
+              if (
+                !window.confirm(
+                  'Delete this table? All queries bound to it will also be removed.',
+                )
               )
-            )
-              return
-            setDeletingTableId(tableId)
-            void removeTable(tableId).finally(() => setDeletingTableId(null))
-          }}
-          onColumnTypeChange={(tableId, columnName, type) => {
-            void updateColumnType(tableId, columnName, type)
-          }}
-          onProjectChange={(tableId, projectId) => {
-            void updateTable(tableId, { projectId })
-          }}
-        />
+                return
+              setDeletingTableId(tableId)
+              void removeTable(tableId).finally(() => setDeletingTableId(null))
+            }}
+            onColumnTypeChange={(tableId, columnName, type) => {
+              void updateColumnType(tableId, columnName, type)
+            }}
+            onProjectChange={(tableId, projectId) => {
+              void updateTable(tableId, { projectId })
+            }}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-[calc(100dvh-7rem)] min-h-[520px] flex-col gap-3">
+    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col">
       <LocalStorageMigrationBanner />
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--sea-ink)]">Query builder</h1>
-          <p className="mt-1 max-w-2xl text-sm text-[var(--sea-ink-soft)]">
-            Reusable queries for dashboards. Preview stays visible while you shape the result.
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2 md:px-5">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold leading-tight text-[var(--sea-ink)]">Query builder</h1>
+          <p className="mt-0.5 max-w-2xl text-xs text-[var(--sea-ink-soft)]">
+            Break down and measure — query and chart stay in sync.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -191,7 +194,7 @@ function QueryBuilderPage() {
       </div>
 
       {showTables && (
-        <div className="shrink-0 overflow-y-auto max-h-56">
+        <div className="max-h-48 shrink-0 overflow-y-auto border-b border-[var(--line)] px-4 py-2 md:px-5">
           <TablesManager
             tables={scopedTables}
             deletingTableId={deletingTableId}
@@ -215,8 +218,8 @@ function QueryBuilderPage() {
         </div>
       )}
 
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)]">
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] px-3 py-2 sm:px-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] px-4 py-2 md:px-5">
           <label className="text-xs font-medium text-[var(--sea-ink-soft)]" htmlFor="active-query">
             Query
           </label>
@@ -256,20 +259,7 @@ function QueryBuilderPage() {
           </Button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
-          {activeUsages.length > 1 && (
-            <div className="mb-3 shrink-0 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              <p>
-                {formatQueryUsageSummary(activeUsages)} Changes here update every widget that uses
-                this query.
-              </p>
-              <ul className="mt-1 list-inside list-disc">
-                {formatQueryUsageLines(activeUsages).map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-2 md:px-5">
           <div className="min-h-0 flex-1 overflow-hidden">
             <QueryEditor
               query={activeQuery}
@@ -353,7 +343,7 @@ function QueryBuilderPage() {
             />
           </div>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

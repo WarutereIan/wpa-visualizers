@@ -82,13 +82,15 @@ function PublicVisualizationWidget({
         ) : result.rows.length === 0 && result.columns.length === 0 ? (
           <div className="rd-muted">No data</div>
         ) : (
-          <div className="rd-tile-viz">
-            <Renderer
-              type={visualization.type}
-              options={visualization.options}
-              data={result}
-              visualizationName={visualization.name}
-            />
+          <div className="rd-tile-viz dashboard-widget-wrapper">
+            <div className="rd-tile-viz-scale">
+              <Renderer
+                type={visualization.type}
+                options={visualization.options}
+                data={result}
+                visualizationName={visualization.name}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -110,7 +112,7 @@ export function PublicDashboardView({
       ...mapped,
       options: {
         ...mapped.options,
-        position: { col: 0, row: 0, sizeX: 3, sizeY: 8 },
+        position: { col: 0, row: 0, sizeX: 6, sizeY: 8 },
       },
     }
   })

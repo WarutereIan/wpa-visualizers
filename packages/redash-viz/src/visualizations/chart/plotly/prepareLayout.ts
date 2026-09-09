@@ -1,8 +1,11 @@
-import { isObject, isUndefined, filter, map } from "lodash";
+import { isObject, isString, isUndefined, filter, map } from "lodash";
 import { getPieDimensions } from "./preparePieData";
 
-function getAxisTitle(axis: any) {
-  return isObject(axis.title) ? axis.title.text : null;
+/** Plotly.js v3+ requires axis titles as `{ text }`, not bare strings. */
+function getAxisTitle(axis: any): { text: string } | undefined {
+  if (!axis?.title) return undefined;
+  const text = isObject(axis.title) ? axis.title.text : isString(axis.title) ? axis.title : null;
+  return text ? { text } : undefined;
 }
 
 function getAxisScaleType(axis: any) {
@@ -18,7 +21,7 @@ function getAxisScaleType(axis: any) {
 
 function prepareXAxis(axisOptions: any, additionalOptions: any) {
   const axis = {
-    title: getAxisTitle(axisOptions),
+    title: getAxisTitle(axisOptions) ?? null,
     type: getAxisScaleType(axisOptions),
     automargin: true,
     tickformat: axisOptions.tickFormat ?? null,
@@ -44,7 +47,7 @@ function prepareXAxis(axisOptions: any, additionalOptions: any) {
 
 function prepareYAxis(axisOptions: any) {
   return {
-    title: getAxisTitle(axisOptions),
+    title: getAxisTitle(axisOptions) ?? null,
     type: getAxisScaleType(axisOptions),
     automargin: true,
     autorange: true,

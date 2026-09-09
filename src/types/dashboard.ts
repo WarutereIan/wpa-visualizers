@@ -106,4 +106,6 @@ export interface DashboardDefinition {
   theme?: DashboardTheme
   tags?: string[]
   projectId?: string | null
+  /** When true, this dashboard is a reusable template (hidden from the main list). */
+  isTemplate?: boolean
 }

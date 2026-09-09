@@ -22,10 +22,19 @@ import { filterByProjectScope } from '#/lib/projectScope'
 export type QueryEditorModalProps = {
   open: boolean
   initialQueryId?: string | null
+  /** When set, visualizations can be added directly to this dashboard. */
+  dashboardId?: string | null
+  existingWidgets?: import('#/types/visualization').DashboardWidget[]
   onClose: () => void
 }
 
-export function QueryEditorModal({ open, initialQueryId, onClose }: QueryEditorModalProps) {
+export function QueryEditorModal({
+  open,
+  initialQueryId,
+  dashboardId = null,
+  existingWidgets = [],
+  onClose,
+}: QueryEditorModalProps) {
   const { tables, queries, createQuery, updateQuery, updateColumnType, loading } =
     useWorkspaceData()
   const { selectedProjectId } = useSelectedProject()
@@ -76,7 +85,12 @@ export function QueryEditorModal({ open, initialQueryId, onClose }: QueryEditorM
         className="inset-3 top-3 left-3 flex h-[calc(100dvh-1.5rem)] max-h-none w-[calc(100vw-1.5rem)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
       >
         <DialogHeader className="shrink-0 gap-3 border-b border-[var(--line)] px-4 py-3">
-          <DialogTitle>Query Editor</DialogTitle>
+          <div>
+            <DialogTitle>Query Editor</DialogTitle>
+            <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">
+              Insight on the left, live chart on the right — same layout as the query builder.
+            </p>
+          </div>
           {!loading ? (
             <div className="flex flex-wrap items-center gap-2">
               <label className="text-sm font-medium text-[var(--sea-ink)]">Query</label>
@@ -125,6 +139,8 @@ export function QueryEditorModal({ open, initialQueryId, onClose }: QueryEditorM
               tables={tables}
               compact
               splitPreview
+              dashboardId={dashboardId}
+              existingWidgets={existingWidgets}
               onChange={(patch) => void updateQuery(activeQuery.id, patch)}
               onColumnTypeChange={(columnName, type) => {
                 void updateColumnType(activeQuery.tableId, columnName, type)

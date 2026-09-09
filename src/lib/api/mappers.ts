@@ -12,6 +12,7 @@ import type { MappingDefinition } from '#/types/mapping'
 import { mappingFieldsFromOptions, mappingOptionsFromDefinition } from '#/lib/geo/choroplethMapping'
 import type { DashboardWidget, QueryParameter, RedashVisualizationType, VisualizationDefinition } from '#/types/visualization'
 import { normalizeDashboardTheme } from '#/lib/chartPalettes'
+import { normalizeWidgetOptions } from '#/lib/widgetGrid'
 import type {
   OutputIndicatorLink,
   OutputStatus,
@@ -76,6 +77,7 @@ export interface DbDashboard {
   status: 'draft' | 'published' | 'archived'
   tags?: string[]
   project_id?: string | null
+  is_template?: boolean
   created_at: string
   updated_at: string
 }
@@ -202,6 +204,7 @@ export function mapDbDashboard(row: DbDashboard): DashboardDefinition {
     status: row.status,
     tags: row.tags ?? [],
     projectId: row.project_id ?? null,
+    isTemplate: Boolean(row.is_template),
   }
 }
 
@@ -220,6 +223,7 @@ export function mapDashboardToDb(
     status: dashboard.status ?? 'draft',
     tags: dashboard.tags ?? [],
     project_id: dashboard.projectId ?? null,
+    is_template: Boolean(dashboard.isTemplate),
   }
 }
 
@@ -253,9 +257,13 @@ export function mapVisualizationToDb(
 }
 
 export function mapDbDashboardWidget(row: DbDashboardWidget): DashboardWidget {
-  const options = (row.options as DashboardWidget['options']) ?? {
-    position: { col: 0, row: 0, sizeX: 3, sizeY: 3 },
+  const rawOptions = (row.options as DashboardWidget['options']) ?? {
+    position: { col: 0, row: 0, sizeX: 6, sizeY: 3 },
   }
+  const { options } = normalizeWidgetOptions({
+    ...rawOptions,
+    position: rawOptions.position ?? { col: 0, row: 0, sizeX: 6, sizeY: 3 },
+  })
   return {
     id: row.id,
     dashboardId: row.dashboard_id,

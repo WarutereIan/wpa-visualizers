@@ -41,7 +41,7 @@ function DataImportPage() {
   const [koboBusy, setKoboBusy] = useState(false)
   const [koboMsg, setKoboMsg] = useState<string | null>(null)
 
-  const [excelTableName, setExcelTableName] = useState('Excel Import')
+  const [excelTableName, setExcelTableName] = useState('')
   const [excelBusy, setExcelBusy] = useState(false)
   const [excelMsg, setExcelMsg] = useState<string | null>(null)
   const [excelFile, setExcelFile] = useState<File | null>(null)
@@ -122,9 +122,9 @@ function DataImportPage() {
       if (useServerPath) {
         const result = await serverIngest.mutateAsync({
           connection: {
-            name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
+            name: excelTableName.trim() || tableNameFromFile(file.name),
             sourceType: 'excel',
-            tableName: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
+            tableName: excelTableName.trim() || tableNameFromFile(file.name),
             rows,
             projectId: selectedProjectId,
           },
@@ -132,7 +132,7 @@ function DataImportPage() {
         setExcelMsg(`Imported ${result.rowCount} rows via server ingest (${result.connectionId}).`)
       } else {
         const table = await importTable({
-          name: excelTableName.trim() || file.name.replace(/\.[^.]+$/, ''),
+          name: excelTableName.trim() || tableNameFromFile(file.name),
           rows,
           projectId: selectedProjectId,
         })
@@ -319,11 +319,27 @@ function DataImportPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <label className="text-sm font-medium text-[var(--sea-ink)]">Destination table name</label>
-                <input value={excelTableName} onChange={(e) => setExcelTableName(e.target.value)} className="mt-1 flex h-9 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm" />
+                <input
+                  value={excelTableName}
+                  onChange={(e) => setExcelTableName(e.target.value)}
+                  placeholder="Matches file name when you pick a file"
+                  className="mt-1 flex h-9 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-[var(--sea-ink)]">Excel file</label>
-                <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => { setExcelFile(e.target.files?.[0] ?? null); setExcelMsg(null) }} disabled={excelBusy} className="mt-1 block w-full text-sm" />
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    setExcelFile(file)
+                    setExcelMsg(null)
+                    if (file) setExcelTableName(tableNameFromFile(file.name))
+                  }}
+                  disabled={excelBusy}
+                  className="mt-1 block w-full text-sm"
+                />
               </div>
             </div>
             <Button type="button" onClick={runExcelImport} disabled={excelBusy || !excelFile}>{excelBusy ? 'Importing...' : 'Import file'}</Button>
@@ -547,6 +563,11 @@ async function fetchSurveyCtoPages(
     break
   }
   return out
+}
+
+function tableNameFromFile(fileName: string): string {
+  const base = fileName.replace(/\.[^.]+$/, '').trim()
+  return base || 'Excel Import'
 }
 
 function normalizeToRows(payload: unknown): DataRow[] {

@@ -13,6 +13,7 @@ import { useWorkspaceData } from '#/hooks/useWorkspaceData'
 import { useWorkspaceVisualizations } from '#/hooks/useWorkspaceVisualizations'
 import { useWorkspaceReady } from '#/lib/api/workspace'
 import { collectDashboardParameters, defaultParameterValues } from '#/lib/dashboardParameters'
+import { cloneQueryInput, visualizationWidgetDraft } from '#/lib/addWidget'
 import { canEditDashboards } from '#/lib/permissions'
 import type { ParameterValues } from '#/lib/queryParameters'
 import { useAuthStore } from '#/stores/authStore'
@@ -27,10 +28,11 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
   const workspaceReady = useWorkspaceReady()
   const role = useAuthStore((s) => s.role)
   const canEdit = canEditDashboards(role, workspaceReady)
-  const { getById, updateDashboard, duplicateDashboard, isLoading } = useWorkspaceDashboards()
-  const { widgets } = useDashboardWidgets(dashboardId)
-  const { queries } = useWorkspaceData()
-  const { visualizations } = useWorkspaceVisualizations()
+  const { getById, updateDashboard, duplicateDashboard, saveAsTemplate, isLoading } =
+    useWorkspaceDashboards()
+  const { widgets, createWidget } = useDashboardWidgets(dashboardId)
+  const { queries, createQuery } = useWorkspaceData()
+  const { visualizations, createVisualization } = useWorkspaceVisualizations()
   const dashboard = getById(dashboardId)
 
   const dashboardParams = useMemo(
@@ -63,8 +65,44 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
   const [textboxEdit, setTextboxEdit] = useState<DashboardWidget | null>(null)
   const [queryEditorOpen, setQueryEditorOpen] = useState(false)
   const [queryEditorInitialId, setQueryEditorInitialId] = useState<string | null>(null)
+  const [editingData, setEditingData] = useState(false)
 
   const editing = Boolean(edit && canEdit)
+
+  const handleEditWidgetData = async (widget: DashboardWidget) => {
+    if (!widget.visualizationId || editingData) return
+    const viz = visualizations.find((item) => item.id === widget.visualizationId)
+    const query = viz ? queries.find((item) => item.id === viz.queryId) : null
+    if (!viz || !query) {
+      window.alert('Could not find the query for this widget.')
+      return
+    }
+    setEditingData(true)
+    try {
+      const clonedQuery = await createQuery(cloneQueryInput(query))
+      const clonedViz = await createVisualization({
+        queryId: clonedQuery.id,
+        type: viz.type,
+        name: viz.name,
+        description: viz.description,
+        options: { ...(viz.options ?? {}) },
+      })
+      await createWidget(
+        visualizationWidgetDraft(
+          dashboardId,
+          widgets,
+          clonedViz.id,
+          widget.options.parameterMappings ?? {},
+        ),
+      )
+      setQueryEditorInitialId(clonedQuery.id)
+      setQueryEditorOpen(true)
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to fork widget data')
+    } finally {
+      setEditingData(false)
+    }
+  }
 
   useEffect(() => {
     if (autoRefreshSeconds == null) return
@@ -137,6 +175,12 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
             })
           })
         }}
+        onSaveAsTemplate={() => {
+          void saveAsTemplate(dashboardId).then((copy) => {
+            if (!copy) return
+            window.alert(`Saved template “${copy.name}”. Use New Dashboard → Start from to reuse it.`)
+          })
+        }}
         onFullscreen={toggleFullscreen}
         onRename={(name) => void updateDashboard(dashboardId, { name })}
       />
@@ -156,6 +200,9 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
           if (widget.visualizationId) return
           setTextboxEdit(widget)
           setTextboxModalOpen(true)
+        }}
+        onEditWidgetData={(widget) => {
+          void handleEditWidgetData(widget)
         }}
       />
 
@@ -217,6 +264,8 @@ export function DashboardPage({ dashboardId }: { dashboardId: string }) {
       <QueryEditorModal
         open={queryEditorOpen}
         initialQueryId={queryEditorInitialId}
+        dashboardId={dashboardId}
+        existingWidgets={widgets}
         onClose={() => {
           setQueryEditorOpen(false)
           setQueryEditorInitialId(null)

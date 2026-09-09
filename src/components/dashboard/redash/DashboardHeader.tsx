@@ -27,6 +27,7 @@ export type DashboardHeaderProps = {
   onUnpublish: () => void
   onArchive: () => void
   onDuplicate: () => void
+  onSaveAsTemplate: () => void
   onFullscreen: () => void
   onRename: (name: string) => void
 }
@@ -78,6 +79,7 @@ export function DashboardHeader({
   onUnpublish,
   onArchive,
   onDuplicate,
+  onSaveAsTemplate,
   onFullscreen,
   onRename,
 }: DashboardHeaderProps) {
@@ -245,6 +247,28 @@ export function DashboardHeader({
                 }}
               >
                 Duplicate
+              </button>
+            ) : null}
+            {canEdit && !dashboard.isTemplate ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(null)
+                  onSaveAsTemplate()
+                }}
+              >
+                Save as template
+              </button>
+            ) : null}
+            {canEdit && dashboard.isTemplate ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(null)
+                  void updateDashboard(dashboard.id, { isTemplate: false })
+                }}
+              >
+                Convert to dashboard
               </button>
             ) : null}
             {canEdit ? (

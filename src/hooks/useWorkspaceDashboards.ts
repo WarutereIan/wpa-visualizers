@@ -9,9 +9,40 @@ import { matchesProjectScope } from '#/lib/projectScope'
 type DashboardUpdatePatch = Partial<
   Pick<
     DashboardDefinition,
-    'name' | 'description' | 'layout' | 'widgets' | 'theme' | 'status' | 'tags' | 'projectId'
+    | 'name'
+    | 'description'
+    | 'layout'
+    | 'widgets'
+    | 'theme'
+    | 'status'
+    | 'tags'
+    | 'projectId'
+    | 'isTemplate'
   >
 >
+
+async function copyDashboardWidgets(
+  orgId: string,
+  sourceDashboardId: string,
+  targetDashboardId: string,
+  createWidget: ReturnType<typeof useCreateWidget>['mutateAsync'],
+) {
+  const widgets = await fetchWidgetsForDashboard(orgId, sourceDashboardId)
+  for (const widget of widgets) {
+    await createWidget({
+      dashboardId: targetDashboardId,
+      visualizationId: widget.visualizationId,
+      text: widget.text,
+      options: {
+        ...widget.options,
+        position: { ...widget.options.position },
+        parameterMappings: widget.options.parameterMappings
+          ? { ...widget.options.parameterMappings }
+          : undefined,
+      },
+    })
+  }
+}
 
 export function useWorkspaceDashboards() {
   const workspaceReady = useWorkspaceReady()
@@ -32,8 +63,13 @@ export function useWorkspaceDashboards() {
 
   const allDashboards = workspaceReady ? (serverQuery.data ?? []) : localDashboards
   const { selectedProjectId } = useSelectedProject()
-  const dashboards = allDashboards.filter(
+
+  const scoped = allDashboards.filter(
     (d) => d.status !== 'archived' && matchesProjectScope(d.projectId, selectedProjectId),
+  )
+  const dashboards = scoped.filter((d) => !d.isTemplate)
+  const templates = allDashboards.filter(
+    (d) => d.isTemplate && d.status !== 'archived',
   )
 
   const upsertDashboard = async (d: DashboardDefinition) => {
@@ -66,16 +102,26 @@ export function useWorkspaceDashboards() {
     localUpdate(id, patch)
   }
 
-  const duplicateDashboard = async (id: string): Promise<DashboardDefinition | undefined> => {
-    if (!workspaceReady) return localDuplicate(id)
+  const duplicateDashboard = async (
+    id: string,
+    overrides?: Partial<Pick<DashboardDefinition, 'name' | 'isTemplate' | 'status' | 'projectId'>>,
+  ): Promise<DashboardDefinition | undefined> => {
+    if (!workspaceReady) {
+      const copy = localDuplicate(id)
+      if (!copy || !overrides) return copy
+      localUpdate(copy.id, overrides)
+      return { ...copy, ...overrides }
+    }
     const existing = allDashboards.find((d) => d.id === id)
     if (!existing || !orgId) return undefined
     const now = new Date().toISOString()
     const copy: DashboardDefinition = {
       ...existing,
       id: crypto.randomUUID(),
-      name: `Copy of: ${existing.name}`,
-      status: 'draft',
+      name: overrides?.name ?? `Copy of: ${existing.name}`,
+      status: overrides?.status ?? 'draft',
+      isTemplate: overrides?.isTemplate ?? false,
+      projectId: overrides?.projectId !== undefined ? overrides.projectId : existing.projectId,
       tags: existing.tags ? [...existing.tags] : undefined,
       theme: existing.theme ? { ...existing.theme } : undefined,
       createdAt: now,
@@ -83,26 +129,41 @@ export function useWorkspaceDashboards() {
     }
     await upsertMutation.mutateAsync(copy)
     try {
-      const widgets = await fetchWidgetsForDashboard(orgId, id)
-      for (const widget of widgets) {
-        await createWidgetMutation.mutateAsync({
-          dashboardId: copy.id,
-          visualizationId: widget.visualizationId,
-          text: widget.text,
-          options: {
-            ...widget.options,
-            position: { ...widget.options.position },
-            parameterMappings: widget.options.parameterMappings
-              ? { ...widget.options.parameterMappings }
-              : undefined,
-          },
-        })
-      }
+      await copyDashboardWidgets(orgId, id, copy.id, createWidgetMutation.mutateAsync)
     } catch (err) {
       await deleteMutation.mutateAsync(copy.id).catch(() => undefined)
       throw err
     }
     return copy
+  }
+
+  const saveAsTemplate = async (id: string): Promise<DashboardDefinition | undefined> => {
+    const existing = allDashboards.find((d) => d.id === id)
+    if (!existing) return undefined
+    return duplicateDashboard(id, {
+      name: existing.name.startsWith('Template: ')
+        ? existing.name
+        : `Template: ${existing.name}`,
+      isTemplate: true,
+      status: 'draft',
+      projectId: null,
+    })
+  }
+
+  const createFromTemplate = async (
+    templateId: string,
+    name?: string,
+    projectId?: string | null,
+  ): Promise<DashboardDefinition | undefined> => {
+    const template = allDashboards.find((d) => d.id === templateId)
+    if (!template) return undefined
+    const baseName = template.name.replace(/^Template:\s*/i, '')
+    return duplicateDashboard(templateId, {
+      name: name?.trim() || baseName,
+      isTemplate: false,
+      status: 'draft',
+      projectId: projectId ?? null,
+    })
   }
 
   const getById = (id: string) => {
@@ -113,12 +174,16 @@ export function useWorkspaceDashboards() {
   return {
     workspaceReady,
     dashboards,
+    templates,
+    allDashboards,
     isLoading: workspaceReady ? serverQuery.isLoading : false,
     upsertDashboard,
     removeDashboard,
     addDashboard,
     updateDashboard,
     duplicateDashboard,
+    saveAsTemplate,
+    createFromTemplate,
     getById,
   }
 }

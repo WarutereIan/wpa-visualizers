@@ -15,7 +15,7 @@ const widget = (col: number, row: number, sizeX: number, sizeY: number): Dashboa
   dashboardId: 'd',
   visualizationId: null,
   text: 't',
-  options: { position: { col, row, sizeX, sizeY } },
+  options: { position: { col, row, sizeX, sizeY }, gridVersion: 2 },
   createdAt: '',
   updatedAt: '',
 })
@@ -60,7 +60,7 @@ describe('pickDefaultVisualization', () => {
 
 describe('visualizationWidgetDraft', () => {
   it('places a new viz widget in the first free slot at DEFAULT_VIZ_SIZE', () => {
-    const draft = visualizationWidgetDraft('dash-1', [widget(0, 0, 3, 8)], 'viz-1', {
+    const draft = visualizationWidgetDraft('dash-1', [widget(0, 0, 6, 8)], 'viz-1', {
       region: { type: 'dashboard-level', mapTo: 'region' },
     })
     expect(draft).toEqual({
@@ -68,7 +68,8 @@ describe('visualizationWidgetDraft', () => {
       visualizationId: 'viz-1',
       text: null,
       options: {
-        position: { col: 3, row: 0, sizeX: DEFAULT_VIZ_SIZE.sizeX, sizeY: DEFAULT_VIZ_SIZE.sizeY },
+        position: { col: 6, row: 0, sizeX: DEFAULT_VIZ_SIZE.sizeX, sizeY: DEFAULT_VIZ_SIZE.sizeY },
+        gridVersion: 2,
         parameterMappings: { region: { type: 'dashboard-level', mapTo: 'region' } },
       },
     })
@@ -89,6 +90,7 @@ describe('textboxWidgetDraft', () => {
           sizeX: DEFAULT_TEXT_SIZE.sizeX,
           sizeY: DEFAULT_TEXT_SIZE.sizeY,
         },
+        gridVersion: 2,
       },
     })
   })

@@ -8,6 +8,7 @@ import {
   GRID_COLS,
   GRID_MARGIN,
   GRID_ROW_HEIGHT,
+  GRID_VERSION,
   layoutItemToPosition,
   positionToLayoutItem,
 } from '#/lib/widgetGrid'
@@ -21,6 +22,7 @@ export type DashboardGridProps = {
   dashboardParamValues: ParameterValues
   refreshNonce: number
   onEditWidget: (w: DashboardWidget) => void
+  onEditWidgetData?: (w: DashboardWidget) => void
 }
 
 export function DashboardGrid({
@@ -29,6 +31,7 @@ export function DashboardGrid({
   dashboardParamValues,
   refreshNonce,
   onEditWidget,
+  onEditWidgetData,
 }: DashboardGridProps) {
   const { widgets, updateWidget, removeWidget, isLoading } = useDashboardWidgets(dashboardId)
   const layout = widgets.map(positionToLayoutItem)
@@ -45,11 +48,14 @@ export function DashboardGrid({
           prev.col === position.col &&
           prev.row === position.row &&
           prev.sizeX === position.sizeX &&
-          prev.sizeY === position.sizeY
+          prev.sizeY === position.sizeY &&
+          (widget.options.gridVersion ?? 0) >= 2
         ) {
           continue
         }
-        void updateWidget(widget.id, { options: { ...widget.options, position } })
+        void updateWidget(widget.id, {
+          options: { ...widget.options, position, gridVersion: GRID_VERSION },
+        })
       }
     },
     [editing, updateWidget, widgets],
@@ -92,6 +98,9 @@ export function DashboardGrid({
                 paramValues={dashboardParamValues}
                 refreshNonce={refreshNonce}
                 onEdit={() => onEditWidget(widget)}
+                onEditData={
+                  onEditWidgetData ? () => onEditWidgetData(widget) : undefined
+                }
                 onRemove={() => void removeWidget(widget.id)}
               />
             ) : (
